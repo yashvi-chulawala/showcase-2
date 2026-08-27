@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<body>
+<script>
+  let krpanoMock = {
+    call: function(cmd) {
+      console.log("KRPANO CALLED WITH:", cmd);
+    }
+  };
+  krpanoMock.call(`loadscene('scene_123', null, MERGE, BLEND(0.5))`);
+  krpanoMock.call("loadscene(scene_123, null, MERGE, BLEND(0.5));");
+</script>
+</body>
+</html>

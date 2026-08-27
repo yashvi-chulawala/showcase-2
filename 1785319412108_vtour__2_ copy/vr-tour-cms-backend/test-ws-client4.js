@@ -1,0 +1,29 @@
+const WebSocket = require('ws');
+const { GoogleAuth } = require('google-auth-library');
+
+async function run(modelName) {
+  const auth = new GoogleAuth({
+    keyFile: './service-account.json',
+    scopes: ['https://www.googleapis.com/auth/cloud-platform']
+  });
+  const client = await auth.getClient();
+  const token = await client.getAccessToken();
+  const wsUrl = `wss://us-central1-aiplatform.googleapis.com/ws/google.cloud.aiplatform.v1beta1.LlmBidiService/BidiGenerateContent?access_token=${token.token}`;
+  
+  const ws = new WebSocket(wsUrl);
+  
+  ws.on('open', () => {
+    ws.send(JSON.stringify({
+      setup: {
+        model: modelName
+      }
+    }));
+  });
+  ws.on('close', (code, reason) => {
+    console.log(`[${modelName}] Closed: ${code} - ${reason.toString()}`);
+  });
+}
+
+run(`projects/lively-tensor-500910-u0/locations/us-central1/publishers/google/models/gemini-2.0-flash-001`);
+run(`projects/lively-tensor-500910-u0/locations/us-central1/publishers/google/models/gemini-2.0-flash`);
+run(`projects/lively-tensor-500910-u0/locations/us-central1/publishers/google/models/gemini-1.5-pro-002`);

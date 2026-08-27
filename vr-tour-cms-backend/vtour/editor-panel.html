@@ -1,0 +1,2855 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Showcase 360 Editor — VR Tour CMS</title>
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet">
+
+  <style>
+    /* ==================== CORE DESIGN TOKENS & RESET ==================== */
+    :root {
+      --bg-bar1: #0e0e13;
+      --bg-bar2: #14141d;
+      --bg-bar3: #191924;
+      --bg-workspace: #09090b;
+      --bg-card: #1d1d26;
+      --bg-card-hover: #262634;
+      --text-main: #ffffff;
+      --text-muted: #8e8ea0;
+      --border-color: #2a2a38;
+      --accent-green: #10b981;
+      --accent-green-glow: rgba(16, 185, 129, 0.3);
+      --accent-green: #74b843;
+      --accent-orange: #f0573e;
+      --danger: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-workspace);
+      color: var(--text-main);
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ==================== HOTSPOT LAYERS LIST ==================== */
+    .hs-layers-list {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      margin-top: 10px;
+      background: #1c1c26;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      padding: 6px;
+      max-height: 250px;
+      overflow-y: auto;
+    }
+    .hs-layer-item {
+      display: flex;
+      align-items: center;
+      padding: 8px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      color: #94a3b8;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+    .hs-layer-item:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: #fff;
+    }
+    .hs-layer-item.active {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--accent-green);
+    }
+    .hs-layer-icon-action {
+      font-size: 14px;
+      margin-right: 12px;
+      opacity: 0.6;
+    }
+    .hs-layer-icon-type {
+      font-size: 14px;
+      margin-right: 8px;
+      color: #64748b;
+    }
+    .hs-layer-name {
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ==================== 1st BAR (TOP BAR) ==================== */
+    .top-bar {
+      height: 64px;
+      background: var(--bg-bar1);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      z-index: 100;
+      flex-shrink: 0;
+    }
+
+    .top-bar-left {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    /* Company Logo */
+    .logo-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2px 8px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .logo-container:hover {
+      transform: translateY(-1px);
+      filter: drop-shadow(0 2px 12px rgba(116, 184, 67, 0.35));
+    }
+
+    .company-logo-img {
+      height: 50px;
+      width: auto;
+      object-fit: contain;
+      display: block;
+    }
+
+    /* Showcase 360 Editor (name stacked) */
+    .app-title-stack {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.1;
+      border-left: 1px solid var(--border-color);
+      padding-left: 18px;
+    }
+
+    .app-title-top {
+      font-size: 15px;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: 0.3px;
+    }
+
+    .app-title-sub {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent-green);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+
+    /* Top Nav Group: File, Media, Hotspot */
+    .top-nav-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-left: 12px;
+      position: relative;
+    }
+
+    .nav-btn {
+      padding: 8px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .nav-btn:hover {
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .nav-btn.active {
+      color: #ffffff;
+      background: #232332;
+      border-color: rgba(16, 185, 129, 0.4);
+      box-shadow: 0 0 14px rgba(16, 185, 129, 0.15);
+    }
+
+    /* File Dropdown Menu */
+    .file-dropdown {
+      position: absolute;
+      top: 48px;
+      left: 0;
+      width: 190px;
+      background: #1c1c28;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      display: none;
+      flex-direction: column;
+      padding: 6px;
+      z-index: 200;
+    }
+
+    .file-dropdown-item {
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-main);
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: background 0.15s ease;
+    }
+
+    .file-dropdown-item:hover {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--accent-green);
+    }
+
+    /* Rightmost Section: ONLY Preview Button (Save button removed as requested) */
+    .top-bar-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-preview {
+      background: #232332;
+      color: #ffffff;
+      border: 1px solid var(--border-color);
+      padding: 8px 18px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-preview:hover {
+      background: var(--accent-green);
+      color: #000;
+      border-color: var(--accent-green);
+      box-shadow: 0 0 16px var(--accent-green-glow);
+      transform: translateY(-1px);
+    }
+
+    /* ==================== 2nd BAR (SUB-NAVIGATION BAR FOR MEDIA) ==================== */
+    .sub-bar {
+      height: 52px;
+      background: var(--bg-bar2);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      padding: 0 32px;
+      gap: 16px;
+      z-index: 90;
+      flex-shrink: 0;
+    }
+
+    .sub-tab-btn {
+      padding: 8px 24px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .sub-tab-btn:hover {
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .sub-tab-btn.active {
+      color: #ffffff;
+      background: #242432;
+      border-color: var(--accent-green);
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.2);
+    }
+
+    /* ==================== 2nd BAR & 3rd BAR FOR HOTSPOT EDITOR ==================== */
+    .editor-title-bar {
+      height: 38px;
+      background: var(--bg-bar2);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      font-weight: 700;
+      font-size: 14px;
+      color: #ffffff;
+      letter-spacing: 0.5px;
+      flex-shrink: 0;
+    }
+
+    .editor-toolbar-bar {
+      height: 44px;
+      background: var(--bg-bar3);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      flex-shrink: 0;
+    }
+
+    .toolbar-btn-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .editor-tool-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #e2e8f0;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .editor-tool-btn:hover {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: var(--accent-green);
+      color: #fff;
+    }
+
+    .editor-tool-btn.active {
+      background: var(--accent-green);
+      border-color: var(--accent-green);
+      color: #000;
+    }
+
+    /* ==================== MAIN PAGE CONTAINER ==================== */
+    .page-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      padding: 32px;
+    }
+
+    /* Cards Grid for Media Page */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 28px;
+      margin-bottom: 32px;
+      width: 100%;
+    }
+
+    #media-tab-images,
+    #media-tab-hotspots {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+    }
+
+    .upload-action-bar {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      padding: 20px 0 40px 0;
+    }
+
+    .btn-upload-center {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 36px;
+      background: linear-gradient(135deg, #242432, #1a1a24);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      border-radius: 99px;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 0 16px rgba(16, 185, 129, 0.15);
+      transition: all 0.25s ease;
+    }
+
+    .btn-upload-center:hover {
+      background: linear-gradient(135deg, #2a2a3c, #1f1f2e);
+      border-color: var(--accent-green);
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6), 0 0 24px var(--accent-green-glow);
+      transform: translateY(-2px);
+    }
+
+    /* 360 Image Card */
+    .image-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.25s ease;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .image-card.selected {
+      border: 3px solid var(--accent-green);
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+    }
+
+    .image-card:hover {
+      transform: translateY(-4px);
+      background: var(--bg-card-hover);
+      border-color: rgba(16, 185, 129, 0.4);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .image-card-thumb-wrap {
+      width: 100%;
+      height: 170px;
+      position: relative;
+      background: #111116;
+      overflow: hidden;
+    }
+
+    .image-card-thumb {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+
+    .image-card:hover .image-card-thumb {
+      transform: scale(1.05);
+    }
+
+    .image-card-badge {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 99px;
+      letter-spacing: 0.5px;
+    }
+
+    .image-card-body {
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .image-card-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #ffffff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 170px;
+    }
+
+    .image-card-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .image-card-info {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      overflow: hidden;
+    }
+    .image-card-tags-overlay {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      z-index: 10;
+      max-width: calc(100% - 20px);
+    }
+    .tag-chip {
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+
+    .card-action-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      background: rgba(255, 255, 255, 0.06);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .card-action-btn:hover {
+      background: rgba(16, 185, 129, 0.2);
+      color: var(--accent-green);
+      border-color: rgba(16, 185, 129, 0.3);
+    }
+
+    .card-action-btn.delete:hover {
+      background: rgba(239, 68, 68, 0.2);
+      color: var(--danger);
+      border-color: rgba(239, 68, 68, 0.3);
+    }
+
+    #media-icons-grid {
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 16px;
+    }
+
+    /* Hotspot Icon Card */
+    .icon-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 16px 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .icon-card:hover {
+      transform: translateY(-3px);
+      background: var(--bg-card-hover);
+      border-color: rgba(16, 185, 129, 0.4);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    .icon-card-svg-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s ease;
+    }
+
+    .icon-card:hover .icon-card-svg-wrap {
+      transform: scale(1.12);
+    }
+
+    .icon-card-label {
+      font-size: 14px;
+      font-weight: 700;
+      color: #ffffff;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+
+    /* Centered Upload Button at bottom of grid */
+    .upload-action-bar {
+      display: flex;
+      justify-content: center;
+      margin-top: 12px;
+      margin-bottom: 32px;
+    }
+
+    .btn-upload-center {
+      background: #242434;
+      color: #ffffff;
+      border: 1px solid var(--border-color);
+      padding: 12px 28px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-upload-center:hover {
+      background: var(--accent-green);
+      color: #000;
+      border-color: var(--accent-green);
+      box-shadow: 0 0 20px var(--accent-green-glow);
+      transform: translateY(-2px);
+    }
+
+    /* ==================== 3-COLUMN WORKSPACE FOR HOTSPOT EDITOR ==================== */
+    .editor-workspace-cols {
+      flex: 1;
+      display: flex;
+      flex-direction: row;
+      height: 100%;
+      overflow: hidden;
+    }
+
+
+    /* Custom Scrollbar for Dark Theme */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #111116; /* matches sidebar background */
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .sidebar-left {
+      width: 230px;
+      background: #111116;
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .sidebar-right {
+      width: 280px;
+      background: #111116;
+      border-left: 1px solid var(--border-color);
+      display: none;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+      flex-shrink: 0;
+      transition: all 0.25s ease-in-out;
+    }
+
+    .panel-close-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .panel-close-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+      transform: scale(1.08);
+    }
+
+    .panel-header {
+      height: 44px;
+      background: #16161e;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      font-size: 12px;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+
+    /* Left Sidebar: Panoramas rounded thumbnail list */
+    .scenes-list-editor {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .editor-scene-card {
+      background: #1a1a24;
+      border: 2px solid transparent;
+      border-radius: 4px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      flex-shrink: 0;
+      height: 110px;
+    }
+
+    .editor-scene-card:hover {
+      background: #232332;
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Wireframe match: blue rounded border on active scene card */
+    .editor-scene-card.active {
+      border-color: var(--accent-green);
+      box-shadow: 0 0 14px rgba(16, 185, 129, 0.4);
+      background: #232334;
+    }
+
+    .editor-scene-thumb-wrap {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      position: absolute;
+      top: 0;
+      left: 0;
+      background: #000;
+    }
+
+    .editor-scene-thumb {
+      display: block !important;
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover !important;
+      object-position: center !important;
+    }
+
+    .editor-scene-name {
+      padding: 8px 10px;
+      font-size: 13px;
+      font-weight: 400;
+      color: #ffffff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-align: left;
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 100%);
+      z-index: 10;
+    }
+
+    /* Center Viewport */
+    .pano-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      background: #09090b;
+      overflow: hidden;
+      height: 100%;
+    }
+
+    /* Right Sidebar: Property Editor Body */
+    .property-editor-body {
+      flex: 1;
+      padding: 28px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+      overflow-y: auto;
+    }
+
+    .property-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+
+    .property-group:last-of-type {
+      margin-bottom: 0;
+    }
+
+    .property-label {
+      font-size: 11px;
+      font-weight: 800;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin: 0 0 8px 0;
+    }
+
+    .property-input {
+      background: #181822;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      color: #ffffff;
+      padding: 12px 14px;
+      font-size: 14px;
+      font-family: inherit;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      outline: none;
+      width: 100%;
+    }
+
+    .property-input:focus {
+      border-color: var(--accent-green);
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.25);
+    }
+
+    .color-swatch-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: transform 0.15s ease;
+    }
+
+    .color-swatch-btn:hover {
+      transform: scale(1.15);
+      border-color: var(--accent-green) !important;
+    }
+
+    .property-btn-outline {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: #181822;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 10px;
+      color: #ffffff;
+      padding: 12px 16px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      width: 100%;
+    }
+
+    .property-btn-outline:hover {
+      background: rgba(16, 185, 129, 0.12);
+      border-color: var(--accent-green);
+      color: #fff;
+      transform: translateY(-1px);
+    }
+
+    .property-tabs-header {
+      display: flex;
+      gap: 8px;
+      padding: 12px 16px;
+      background: #121218;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .prop-tab-btn {
+      flex: 1;
+      padding: 9px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #94a3b8;
+      background: #1c1c28;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .prop-tab-btn:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .prop-tab-btn.active {
+      color: #fff;
+      background: #232334;
+      border-color: var(--accent-green);
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.25);
+    }
+
+    .property-select {
+      width: 100%;
+      padding: 12px 14px;
+      background: #181822;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 10px;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      outline: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .property-select:hover,
+    .property-select:focus {
+      border-color: var(--accent-green);
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.2);
+    }
+
+    .property-btn-danger {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 13px 16px;
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      border-radius: 12px;
+      color: var(--danger);
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-top: 28px;
+    }
+
+    .property-btn-danger:hover {
+      background: rgba(239, 68, 68, 0.25);
+      border-color: var(--danger);
+      box-shadow: 0 0 16px rgba(239, 68, 68, 0.3);
+    }
+
+    .icon-picker-mini-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .icon-mini-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 16px 8px;
+      background: #181822;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      color: #cbd5e1;
+    }
+
+    .icon-mini-card:hover {
+      background: rgba(16, 185, 129, 0.1);
+      border-color: rgba(16, 185, 129, 0.3);
+      color: #fff;
+    }
+
+    .icon-mini-card.active {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: var(--accent-green);
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.3);
+      color: #10b981;
+    }
+
+    .hotspot-active-banner {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--accent-green);
+      padding: 12px 14px;
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tag-input-container {
+      background: #181822;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      padding: 8px 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+      cursor: text;
+      min-height: 44px;
+      transition: all 0.2s ease;
+    }
+
+    .tag-input-container:focus-within {
+      border-color: var(--accent-green);
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.25);
+    }
+
+    .tags-chips-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .tag-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(16, 185, 129, 0.18);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .tag-chip-remove {
+      cursor: pointer;
+      opacity: 0.7;
+      font-weight: 800;
+      font-size: 14px;
+      line-height: 1;
+      transition: opacity 0.2s;
+    }
+
+    .tag-chip-remove:hover {
+      opacity: 1;
+      color: #ff5555;
+    }
+
+    .tag-input {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      flex: 1;
+      min-width: 90px;
+    }
+
+    .property-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    /* ==================== POP-OVERS, DRAG GHOST, TOAST ==================== */
+    #drag-ghost {
+      position: absolute;
+      display: none;
+      pointer-events: none;
+      z-index: 10000;
+      background: rgba(14, 14, 19, 0.95);
+      border: 1px solid var(--accent-green);
+      padding: 10px 18px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+      align-items: center;
+      gap: 10px;
+      color: #fff;
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .popover {
+      position: absolute;
+      display: none;
+      flex-direction: column;
+      z-index: 5000;
+      background: #181824;
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 18px;
+      width: 280px;
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8);
+      gap: 12px;
+    }
+
+    .popover-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: #fff;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 8px;
+    }
+
+    .icon-picker-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+
+    .icon-picker-item {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 10px 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .icon-picker-item:hover {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: var(--accent-green);
+      transform: translateY(-2px);
+    }
+
+    /* Modal / Overlay */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(6px);
+      z-index: 10000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-box {
+      background: #181824;
+      border: 1px solid var(--border-color);
+      border-radius: 24px;
+      width: 440px;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 14px;
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: #ffffff;
+    }
+
+    .modal-close {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 22px;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .modal-close:hover {
+      color: #fff;
+    }
+
+    .file-dropzone {
+      border: 2px dashed rgba(255, 255, 255, 0.2);
+      border-radius: 16px;
+      padding: 32px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .file-dropzone:hover {
+      border-color: var(--accent-green);
+      background: rgba(16, 185, 129, 0.05);
+    }
+
+    /* Toast notification container */
+    #toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 99999;
+      pointer-events: none;
+    }
+
+    .toast {
+      background: rgba(18, 18, 26, 0.95);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--accent-green);
+      color: #fff;
+      padding: 14px 22px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 13px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+      gap: 10px;
+      animation: toastSlideIn 0.3s ease-out;
+    }
+
+    @keyframes toastSlideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    /* ==================== ICON LIBRARY MODAL STYLES ==================== */
+    .lib-filter-btn {
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #cbd5e1;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+
+    .lib-filter-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+    }
+
+    .lib-filter-btn.active {
+      background: rgba(16, 185, 129, 0.2);
+      color: #10b981;
+      font-weight: 600;
+    }
+
+    .lib-icon-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 14px 10px 10px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 2px solid transparent;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .lib-icon-card:hover {
+      background: rgba(255, 255, 255, 0.07);
+    }
+
+    .lib-icon-card.selected {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: #10b981;
+    }
+
+    .lib-icon-svg-wrap {
+      width: 52px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 10px;
+    }
+
+    .lib-icon-label {
+      font-size: 11px;
+      color: #a1a1aa;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+      text-align: center;
+    }
+
+    /* ==================== WELCOME MODAL STYLES ==================== */
+    .welcome-modal, .welcome-modal * {
+      box-sizing: border-box;
+    }
+    .welcome-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(14, 14, 19, 0.7);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      z-index: 100000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      animation: modalFadeIn 0.3s ease-out;
+    }
+
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: scale(0.98); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .welcome-modal-content {
+      width: 900px;
+      max-width: 95vw;
+      height: 600px;
+      max-height: 90vh;
+      background: rgba(28, 28, 40, 0.85);
+      border-radius: 20px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      overflow: hidden;
+    }
+
+    .welcome-header {
+      height: 54px;
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      color: #ffffff;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .welcome-header button {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #a1a1aa;
+      font-size: 18px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .welcome-header button:hover {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+      border-color: rgba(239, 68, 68, 0.4);
+      transform: scale(1.05);
+    }
+
+    .welcome-body {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+      padding: 30px 40px;
+    }
+
+    .welcome-left {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+    }
+
+    .welcome-projects-header {
+      display: flex;
+      gap: 50px;
+      height: 100%;
+    }
+
+    .welcome-projects-header h3 {
+      color: #ffffff;
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .welcome-new-project {
+      display: flex;
+      flex-direction: column;
+      min-width: 140px;
+    }
+
+    .btn-new-project-huge {
+      width: 140px;
+      height: 140px;
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.05) 100%);
+      color: var(--accent-green);
+      font-size: 42px;
+      border: 2px dashed rgba(16, 185, 129, 0.4);
+      border-radius: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-new-project-huge::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.4) 0%, rgba(16, 185, 129, 0) 100%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .btn-new-project-huge:hover {
+      transform: translateY(-4px) scale(1.02);
+      border-style: solid;
+      border-color: var(--accent-green);
+      color: #fff;
+      box-shadow: 0 12px 30px rgba(16, 185, 129, 0.25);
+    }
+    
+    .btn-new-project-huge:hover::before {
+      opacity: 1;
+    }
+
+    .btn-new-project-huge span {
+      position: relative;
+      z-index: 1;
+    }
+
+    .welcome-open-link {
+      margin-top: 20px;
+      color: #94a3b8;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      transition: all 0.2s ease;
+    }
+
+    .welcome-open-link:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.15);
+      transform: translateY(-1px);
+    }
+
+    .welcome-recent-projects {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .welcome-recent-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 20px;
+      overflow-y: auto;
+      padding: 10px;
+      padding-right: 20px;
+      padding-bottom: 30px;
+      align-content: flex-start;
+    }
+    
+    .welcome-recent-grid::-webkit-scrollbar {
+      width: 6px;
+    }
+    .welcome-recent-grid::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.1);
+      border-radius: 10px;
+    }
+
+    .welcome-recent-card {
+      background: #1c1c26;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      cursor: pointer;
+      overflow: hidden;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .welcome-recent-card:hover {
+      border-color: var(--accent-green);
+      transform: translateY(-5px) scale(1.02);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6), 0 0 15px rgba(16, 185, 129, 0.2);
+    }
+
+    .welcome-recent-card-img-wrap {
+      width: 100%;
+      height: 110px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .welcome-recent-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.5s ease;
+    }
+
+    .welcome-recent-card:hover img {
+      transform: scale(1.08);
+    }
+
+    .welcome-recent-card-info {
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      background: linear-gradient(to bottom, #181822 0%, #13131c 100%);
+      border-top: 1px solid rgba(255, 255, 255, 0.03);
+      min-width: 0;
+    }
+
+    .welcome-recent-card-date {
+      font-size: 11px;
+      color: var(--accent-green);
+      margin-bottom: 4px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      opacity: 0.9;
+    }
+
+    .welcome-recent-card-title {
+      font-size: 14px;
+      color: #ffffff;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .bulk-action-bar {
+      position: fixed;
+      bottom: -100px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1d1d26;
+      border: 1px solid #333;
+      padding: 15px 30px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      z-index: 9999;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      transition: bottom 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .bulk-action-bar.visible {
+      bottom: 30px;
+    }
+    .bulk-action-text {
+      color: white;
+      font-weight: bold;
+      font-size: 16px;
+    }
+  </style>
+
+  <script src="tour.js"></script>
+</head>
+
+<body>
+
+  <!-- ==================== WELCOME MODAL ==================== -->
+  <div id="welcome-modal" class="welcome-modal" style="display: none;">
+    <div class="welcome-modal-content">
+      <div class="welcome-header">
+        <span>Showcase 360 Virtual Tour</span>
+        <button onclick="closeWelcomeModal()">×</button>
+      </div>
+      <div class="welcome-body">
+        <div class="welcome-left">
+          <div class="welcome-projects-header">
+            <div class="welcome-new-project">
+              <h3 style="color: #d4d4d8; font-size: 14px; font-weight: 500; margin-bottom: 12px;">New Project</h3>
+              <button onclick="newProjectAction()" class="btn-new-project-huge">+</button>
+              <a href="#" onclick="openProjectAction(); return false;" class="welcome-open-link">↩ Open...</a>
+            </div>
+            <div class="welcome-recent-projects">
+              <h3 style="color: #d4d4d8; font-size: 14px; font-weight: 500; margin-bottom: 12px;">Recent Projects</h3>
+              <div id="welcome-recent-grid" class="welcome-recent-grid">
+                <!-- Populated by JS -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- ==================== END WELCOME MODAL ==================== -->
+
+  <!-- ==================== RENAME MODAL ==================== -->
+  <style>
+    .rename-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(10, 10, 15, 0.8);
+      backdrop-filter: blur(6px);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .rename-box {
+      background: #1c1c28;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      width: 380px;
+      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.6);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      animation: modalFadeIn 0.2s ease-out;
+    }
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .rename-header {
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 2px solid var(--accent-green);
+      background: rgba(255, 255, 255, 0.02);
+    }
+    .rename-header h3 {
+      margin: 0;
+      color: #ffffff;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .rename-header button {
+      background: none;
+      border: none;
+      color: #888;
+      cursor: pointer;
+      font-size: 20px;
+      line-height: 1;
+      padding: 0;
+      transition: color 0.2s;
+    }
+    .rename-header button:hover {
+      color: #fff;
+    }
+    .rename-body {
+      padding: 24px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    .rename-input-styled {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      box-sizing: border-box;
+    }
+    .rename-input-styled:focus {
+      border-color: var(--accent-green);
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+    }
+    .rename-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+    .btn-rename-cancel {
+      background: transparent;
+      color: #bbb;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 8px 18px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-rename-cancel:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: #fff;
+    }
+    .btn-rename-confirm {
+      background: var(--accent-green);
+      color: #000;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-rename-confirm:hover {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+    }
+  </style>
+
+  <div id="rename-modal" class="rename-overlay" style="display: none;">
+    <div class="rename-box">
+      <div class="rename-header">
+        <h3>Rename Project</h3>
+        <button onclick="document.getElementById('rename-modal').style.display='none'">×</button>
+      </div>
+      <div class="rename-body">
+        <input type="text" id="rename-input" class="rename-input-styled" placeholder="Enter new project name" onkeydown="if(event.key==='Enter') confirmRenameAction()">
+        <div class="rename-footer">
+          <button class="btn-rename-cancel" onclick="document.getElementById('rename-modal').style.display='none'">Cancel</button>
+          <button class="btn-rename-confirm" onclick="confirmRenameAction()">Rename</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- ==================== END RENAME MODAL ==================== -->
+
+  <!-- ==================== 1st BAR (TOP BAR) ==================== -->
+  <header class="top-bar">
+    <div class="top-bar-left">
+      <!-- Company Logo -->
+      <div class="logo-container" onclick="switchMainPage('media')" title="Return to Media Library">
+        <img src="360-Eye-Logo.png" alt="360 EYE Logo" class="company-logo-img" onerror="this.src='logo.svg'">
+      </div>
+
+      <!-- Showcase 360 Editor (name stacked) -->
+      <div class="app-title-stack">
+        <span class="app-title-top">Showcase 360</span>
+        <span class="app-title-sub">Editor</span>
+      </div>
+
+      <!-- File Menu, Media Menu, Hotspot Menu -->
+      <div class="top-nav-group">
+        <button class="nav-btn" id="nav-btn-file" onclick="toggleFileDropdown(event)">
+          <span>File</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 9l6 6 6-6"></path>
+          </svg>
+        </button>
+
+        <button class="nav-btn active" id="nav-btn-media" onclick="switchMainPage('media')">
+          <span>Media</span>
+        </button>
+
+        <button class="nav-btn" id="nav-btn-hotspot" onclick="switchMainPage('hotspot')">
+          <span>Hotspot</span>
+        </button>
+
+        <!-- File Dropdown Menu -->
+        <div class="file-dropdown" id="file-dropdown">
+          <div class="file-dropdown-item" onclick="openProjectAction()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span>Import Project (.s360)</span>
+          </div>
+          <div class="file-dropdown-item" onclick="openWorkspaceFolderAction()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-6l-2-2H5a2 2 0 0 0-2 2z"></path>
+            </svg>
+            <span>Open Workspace Folder...</span>
+          </div>
+          <div class="file-dropdown-item" onclick="newProjectAction()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            <span>New Project</span>
+          </div>
+          <div class="file-dropdown-item" onclick="exportProjectAction()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+              <polyline points="17 21 17 13 7 13 7 21"></polyline>
+              <polyline points="7 3 7 8 15 8"></polyline>
+            </svg>
+            <span>Save Project (.s360)</span>
+          </div>
+        </div>
+        <input type="file" id="import-project-input" accept=".s360" style="display:none;" onchange="importProjectAction(event)">
+      </div>
+    </div>
+
+    <!-- Center Section: Project Name display -->
+    <style>
+      .custom-tooltip-btn {
+        position: relative;
+      }
+      .custom-tooltip-btn::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        bottom: -30px;
+        left: 50%;
+        transform: translateX(-50%) translateY(4px);
+        background: #1c1c28;
+        color: #fff;
+        padding: 5px 9px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        white-space: nowrap;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.2s;
+        pointer-events: none;
+        border: 1px solid rgba(255,255,255,0.1);
+        z-index: 1000;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+      }
+      .custom-tooltip-btn:hover::after {
+        opacity: 1;
+        visibility: visible;
+        transform: translateX(-50%) translateY(0);
+      }
+    </style>
+    <div class="top-bar-center" style="position: absolute; left: 50%; transform: translateX(-50%); display: flex; align-items: center;">
+      <div id="project-name-display-container" style="display:none; align-items: center; background: rgba(255,255,255,0.05); padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+        <span id="header-project-name" style="font-weight: 600; color: #fff; font-size: 14px; margin-right: 10px;"></span>
+        <button id="rename-project-btn" class="custom-tooltip-btn" data-tooltip="Rename Project" style="background:none;border:none;color:var(--text-muted);cursor:pointer;padding:0;transition:color 0.2s;display:flex;align-items:center;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--text-muted)'" onclick="renameProjectAction()">
+           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+             <path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+           </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Rightmost Section -->
+    <div class="top-bar-right">
+      <button class="btn-preview" onclick="window.open('tour.html', '_blank')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+          <circle cx="12" cy="12" r="3"></circle>
+        </svg>
+        <span>Preview</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ==================== 2nd BAR (SUB-NAVIGATION BAR FOR MEDIA) ==================== -->
+  <nav class="sub-bar" id="media-sub-bar">
+    <button class="sub-tab-btn active" id="sub-tab-images" onclick="switchMediaSubTab('images')">
+      <span>360 Image</span>
+    </button>
+    <button class="sub-tab-btn" id="sub-tab-hotspots" onclick="switchMediaSubTab('hotspots')">
+      <span>Hotspot</span>
+    </button>
+    <button class="sub-tab-btn" id="sub-tab-assets" onclick="switchMediaSubTab('assets')">
+      <span>Image</span>
+    </button>
+  </nav>
+
+  <!-- ==================== PAGE 1: MEDIA LIBRARY (HOME / MEDIA PAGE) ==================== -->
+  <main class="page-container" id="page-media">
+    <!-- 360 Image Tab Content -->
+    <section id="media-tab-images" style="display: flex; flex-direction: column; width: 100%;">
+      <div class="cards-grid" id="media-scenes-grid">
+        <!-- Dynamically populated by editor-panel.js -->
+      </div>
+
+      <!-- Centered Upload Button at bottom of grid -->
+      <div class="upload-action-bar">
+        <button class="btn-upload-center" onclick="openUploadSceneModal()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+          <span>upload</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Hotspot Icon Tab Content -->
+    <section id="media-tab-hotspots" style="display: none; flex-direction: column; width: 100%;">
+      <div style="display: flex; flex: 1; overflow: hidden; background: #1c2027; height: 100%;">
+        <!-- Left Sidebar -->
+        <div style="width: 180px; background: #16181d; border-right: 1px solid #282c35; padding: 16px 14px; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; flex-shrink: 0;">
+          <div style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 6px;">Family:</div>
+          <div class="lib-filter-btn media-icon-filter-btn active" data-filter="All" onclick="filterMediaIcons('All', this)">All</div>
+          <div class="lib-filter-btn media-icon-filter-btn" data-filter="Arrow" onclick="filterMediaIcons('Arrow', this)">Arrow</div>
+          <div class="lib-filter-btn media-icon-filter-btn" data-filter="Pin" onclick="filterMediaIcons('Pin', this)">Pin</div>
+          <div class="lib-filter-btn media-icon-filter-btn" data-filter="Dot" onclick="filterMediaIcons('Dot', this)">Dot</div>
+          <div class="lib-filter-btn media-icon-filter-btn" data-filter="Custom" onclick="filterMediaIcons('Custom', this)">Custom</div>
+        </div>
+
+        <!-- Icons Grid Area -->
+        <div style="flex: 1; padding: 20px; overflow-y: auto; background: #1e2128;">
+          <div class="cards-grid" id="media-icons-grid" style="align-content: start;">
+            <!-- Dynamically populated by editor-panel.js -->
+          </div>
+
+          <!-- Centered Upload Button at bottom of grid -->
+          <div class="upload-action-bar">
+            <button class="btn-upload-center" onclick="openUploadIconModal()">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              <span>upload</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Assets Tab Content -->
+    <section id="media-tab-assets" style="display: none; flex-direction: column; width: 100%;">
+      <div class="cards-grid" id="media-assets-grid">
+        <!-- Dynamically populated by editor-panel.js -->
+      </div>
+
+      <!-- Centered Upload Button at bottom of grid -->
+      <div class="upload-action-bar">
+        <button class="btn-upload-center" onclick="document.getElementById('asset-upload-input').click()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+          <span>upload</span>
+        </button>
+        <input type="file" id="asset-upload-input" style="display: none;" accept="image/png, image/jpeg, image/webp" multiple onchange="uploadAsset(event)">
+      </div>
+    </section>
+  </main>
+
+  <!-- ==================== PAGE 2: HOTSPOT EDITOR PAGE (KRPANO VIEWPORT & PROPERTY EDITOR) ==================== -->
+  <main id="page-hotspot-editor"
+    style="display: none; flex-direction: column; height: calc(100vh - 64px); background: #09090b; overflow: hidden;">
+
+    <!-- 3rd BAR: Toolbar (Arrow, Text, Image icon) -->
+    <div class="editor-toolbar-bar">
+      <div class="toolbar-btn-group">
+        <button class="editor-tool-btn" id="tool-btn-hotspot" onclick="openIconLibraryModal('add')"
+          title="Open Nav Icon Library to select an icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="7" y1="17" x2="17" y2="7"></line>
+            <polyline points="7 7 17 7 17 17"></polyline>
+          </svg>
+          <span>Nav Icon</span>
+        </button>
+
+        <button class="editor-tool-btn" id="tool-btn-text" onclick="openAddTextModal()"
+          title="Add standalone 3D text label">
+          <span style="font-family:serif; font-weight:900; font-size:16px; line-height:1;">T</span>
+          <span>Text</span>
+        </button>
+
+        <button class="editor-tool-btn" id="tool-btn-image" onclick="openImageHotspotTool()"
+          title="Add image hotspot icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+            <polyline points="21 15 16 10 5 21"></polyline>
+          </svg>
+          <span>Image</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 3-Column Workspace Below Toolbar -->
+    <div class="editor-workspace-cols">
+      <!-- Left Sidebar: Panoramas -->
+      <aside class="sidebar-left">
+        <div class="panel-header">
+          <span>Panoramas</span>
+          <span id="editor-scene-count-badge" style="color: var(--accent-green); font-weight: 600;">0</span>
+        </div>
+        <div style="padding: 10px 14px 0 14px;">
+          <select id="pano-tag-filter" class="property-select" style="padding: 6px 10px; font-size: 12px; height: 32px; min-height: 32px;" onchange="renderScenes()">
+            <option value="">All Tags</option>
+          </select>
+        </div>
+        <div class="scenes-list-editor" id="scenes-grid-editor">
+          <!-- Populated by editor-panel.js with rounded cards and blue border when active -->
+        </div>
+      </aside>
+
+      <!-- Center: 3D krpano VR Viewport -->
+      <div id="pano-wrapper" class="pano-wrapper">
+        <div id="pano-container" style="flex:1; position:relative; width:100%; height:100%; overflow:hidden;">
+          <div id="pano" style="width:100%; height:100%;"></div>
+        </div>
+
+        <!-- Drag-and-drop Ghost Preview -->
+        <div id="drag-ghost">
+          <span id="ghost-icon" style="font-weight: bold; color: #10b981;">[+]</span>
+          <span id="ghost-text">Add Hotspot</span>
+        </div>
+
+        <!-- Drop Popover Picker -->
+        <div class="popover" id="hotspot-popover">
+          <div class="popover-title">Add Hotspot to Scene</div>
+          <div style="font-size:11px; color:#94a3b8;">Select icon style to place hotspot immediately:</div>
+
+          <div class="icon-picker-grid" id="popover-icons-grid">
+            <div class="icon-picker-item" onclick="commitPopover('Arrow')">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="32" height="32">
+                <circle cx="32" cy="32" r="28" fill="#10b981" stroke="#ffffff" stroke-width="4" />
+                <path d="M24 20 L38 32 L24 44" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round"
+                  stroke-linejoin="round" />
+              </svg>
+              <div style="font-size:11px; font-weight:600; color:#fff;">Arrow</div>
+            </div>
+            <div class="icon-picker-item" onclick="commitPopover('Pin')">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="32" height="32">
+                <path d="M32 4 C18.7 4 8 14.7 8 28 C8 45.3 32 60 32 60 C32 60 56 45.3 56 28 C56 14.7 45.3 4 32 4 Z"
+                  fill="#ef4444" stroke="#ffffff" stroke-width="4" />
+                <circle cx="32" cy="24" r="10" fill="#ffffff" />
+              </svg>
+              <div style="font-size:11px; font-weight:600; color:#fff;">Pin</div>
+            </div>
+            <div class="icon-picker-item" onclick="commitPopover('Dot')">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="32" height="32">
+                <circle cx="32" cy="32" r="24" fill="#10b981" stroke="#ffffff" stroke-width="6" />
+                <circle cx="32" cy="32" r="10" fill="#ffffff" />
+              </svg>
+              <div style="font-size:11px; font-weight:600; color:#fff;">Dot</div>
+            </div>
+          </div>
+
+          <label style="display:flex; align-items:center; gap:8px; font-size:11px; color:#fff; cursor:pointer;">
+            <input type="checkbox" id="popover-return-cb" checked>
+            <span>Create Return Hotspot in Target Scene</span>
+          </label>
+          <div style="font-size:10px; color:#94a3b8; text-align:center;">Click an icon to place • Esc to cancel</div>
+        </div>
+
+        <!-- Standalone Text Modal -->
+        <div class="popover" id="text-hotspot-modal"
+          style="display:none; width: 320px; left: 50%; top: 50%; transform: translate(-50%, -50%); position: absolute; z-index: 5000;">
+          <div class="popover-title">Add Text to Panorama</div>
+          <div style="font-size:11px; color:#94a3b8;">Enter text label to display floating in the 3D scene:</div>
+          <div style="margin: 12px 0;">
+            <input type="text" id="add-text-input" class="property-input"
+              placeholder="e.g. UPSTAIRS, TERRASSE, ENTRANCE..." style="width: 100%;">
+          </div>
+          <div style="display:flex; justify-content:flex-end; gap:8px;">
+            <button class="icon-picker-item"
+              style="padding: 6px 12px; background: #3f3f46; border:none; color:#fff; border-radius:6px; cursor:pointer;"
+              onclick="closeAddTextModal()">Cancel</button>
+            <button class="icon-picker-item"
+              style="padding: 6px 16px; background: var(--accent-green); color:#000; font-weight:700; border:none; border-radius:6px; cursor:pointer;"
+              onclick="commitAddText()">Add Text</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Sidebar: Property Editor (Panorama & Hotspot panels) -->
+      <aside class="sidebar-right" id="editor-sidebar-right">
+        <div class="panel-header" style="justify-content: space-between; padding: 0 12px;">
+          <span>Property Editor</span>
+        </div>
+        <div class="property-tabs-header">
+          <button class="prop-tab-btn active" id="prop-tab-pano" onclick="switchPropertyPanel('pano')">Pano
+            Setting</button>
+          <button class="prop-tab-btn" id="prop-tab-hotspot" onclick="switchPropertyPanel('hotspot')">Hotspot
+            Setting</button>
+        </div>
+
+        <!-- SHARED HOTSPOTS LIST PANEL -->
+        <div class="property-group" id="prop-hs-list-group" style="display: none; padding: 16px 20px 0 20px; border-bottom: 1px solid var(--border-color); margin-bottom: 0;">
+          <div class="property-label" style="display: flex; align-items: center; cursor: pointer; user-select: none;" onclick="toggleHotspotList()">
+            <span id="hs-list-toggle-icon" style="font-size: 10px; margin-right: 6px; transition: transform 0.2s;">▼</span> 
+            <span>HOTSPOTS (<span id="hs-list-count">0</span>)</span>
+          </div>
+          <div id="prop-hs-list-container" class="hs-layers-list">
+            <!-- populated dynamically -->
+          </div>
+        </div>
+
+        <!-- PANEL 1: PANORAMA PROPERTIES -->
+        <div id="panel-pano-properties" class="property-editor-body">
+          <!-- 1. Title -->
+          <div class="property-group">
+            <label class="property-label">Title</label>
+            <input type="text" id="prop-pano-title" class="property-input" placeholder="e.g. Main Courtyard"
+              oninput="onPanoTitleInputDebounced()">
+          </div>
+
+          <!-- 2. Update Thumbnail -->
+          <div class="property-group">
+            <label class="property-label">Thumbnail</label>
+            <button class="property-btn-outline" onclick="triggerThumbUpload(event, activeSceneId)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect>
+                <circle cx="9" cy="9" r="2"></circle>
+                <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
+              </svg>
+              <span>Update Thumbnail</span>
+            </button>
+          </div>
+
+          <!-- 3. Set Initial View -->
+          <div class="property-group">
+            <label class="property-label">Initial View Point</label>
+            <button class="property-btn-outline" onclick="setInitialViewAngle(event)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="22" x2="18" y1="12" y2="12"></line>
+                <line x1="6" x2="2" y1="12" y2="12"></line>
+                <line x1="12" x2="12" y1="6" y2="2"></line>
+                <line x1="12" x2="12" y1="22" y2="18"></line>
+              </svg>
+              <span>Set Initial View</span>
+            </button>
+          </div>
+
+          <!-- 4. Tag Field -->
+          <div class="property-group">
+            <label class="property-label">Tag</label>
+            <div class="tag-input-container" id="pano-tags-container" onclick="focusTagInput()">
+              <div class="tags-chips-list" id="pano-tags-list"></div>
+              <input type="text" id="prop-pano-tag-input" class="tag-input" placeholder="+ Add tag (press Enter)"
+                onkeydown="onTagInputKeyDown(event)">
+            </div>
+            <div class="property-hint">Press Enter to add tag to panorama image</div>
+          </div>
+
+          <!-- 5. Zoom Settings -->
+          <div class="property-group">
+            <label class="property-label">Zoom Settings</label>
+            <input type="number" id="prop-pano-fov" class="property-input" value="114"
+              oninput="onPanoNumberInputDebounced('fov', 'prop-pano-fov')">
+          </div>
+
+          <!-- 6. Zoom Speed -->
+          <div class="property-group">
+            <label class="property-label">Zoom Speed</label>
+            <input type="number" id="prop-pano-fovspeed" class="property-input" value="50"
+              oninput="onPanoNumberInputDebounced('fovspeed', 'prop-pano-fovspeed')">
+          </div>
+
+          <!-- 5. GPS Coordinates -->
+          <div class="property-group">
+            <label class="property-label">GPS</label>
+            <input type="text" id="prop-pano-gps" class="property-input" placeholder="e.g. 21.13025, 72.77455" onblur="savePanoGPS()">
+          </div>
+
+
+
+        </div>
+
+        <!-- PANEL 2: HOTSPOT PROPERTIES -->
+        <div id="panel-hotspot-properties" class="property-editor-body" style="display: none;">
+          
+          <!-- HOTSPOT PROPERTIES FORM (Shown when a hotspot is selected) -->
+          <div id="prop-hs-empty-state" style="display: block;"></div>
+          <div id="prop-hs-content-state" style="display: none;">
+            
+            <!-- Style Copy/Paste -->
+            <div style="display:flex; gap: 8px; margin-bottom: 16px;">
+              <button class="property-btn-outline" style="flex:1; padding: 6px; font-size: 11px;" onclick="copyHotspotStyle()">
+                Copy Style
+              </button>
+              <button id="btn-paste-hotspot-style" class="property-btn-outline" style="flex:1; padding: 6px; font-size: 11px; opacity: 0.5; pointer-events: none;" onclick="pasteHotspotStyle()">
+                Paste Style
+              </button>
+            </div>
+
+            <!-- 1. Icon Section (Pin, Arrow, etc. + Custom Icons) -->
+            <div class="property-group">
+              <label class="property-label">Icon</label>
+              <div id="prop-hs-icons-grid" class="icon-picker-mini-grid">
+                <!-- Dynamically populated by renderHotspotIconPickerGrid() -->
+              </div>
+            </div>
+
+            <!-- Part below Icon: hidden when clicking anywhere other than a hotspot pin -->
+            <div id="prop-hs-details-section" style="display: none;">
+              
+              <!-- 1b. Size Section -->
+              <div class="property-group">
+                <label class="property-label">Icon Size</label>
+                <div style="display: flex; gap: 10px;">
+                  <div style="flex: 1;">
+                    <label style="font-size: 11px; color: #64748b; margin-bottom: 4px; display: block;">Horizontal (px)</label>
+                    <input type="number" id="prop-hs-width" class="property-input" oninput="onHotspotSizeChange()">
+                  </div>
+                  <div style="flex: 1;">
+                    <label style="font-size: 11px; color: #64748b; margin-bottom: 4px; display: block;">Vertical (px)</label>
+                    <input type="number" id="prop-hs-height" class="property-input" oninput="onHotspotSizeChange()">
+                  </div>
+                </div>
+              </div>
+              <!-- 2. Action Section -->
+              <div class="property-group">
+                <label class="property-label">Action</label>
+                <select id="prop-hs-action" class="property-select" onchange="onHotspotActionChange(this.value)">
+                  <option value="scene">Open Panorama</option>
+                  <option value="open_property_info">Open Property Information</option>
+                </select>
+              </div>
+
+              <!-- 3. Select Panoramas (Target Scene) -->
+              <div class="property-group">
+                <label class="property-label">Target Scene</label>
+                <button class="property-btn-outline"
+                  style="width: 100%; border-color: var(--accent-green); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 12px;"
+                  onclick="openSelectTargetSceneModal()">
+                  <img id="prop-hs-target-scene-img" src="" style="width: 160px; height: 90px; object-fit: cover; border-radius: 6px; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.3);" />
+                  <span id="prop-hs-target-scene-display" style="font-weight: 600; font-size: 14px;">Select Panorama</span>
+                </button>
+                <input type="hidden" id="prop-hs-target-scene" onchange="onHotspotTargetSceneChange(this.value)">
+              </div>
+
+
+
+
+              <!-- Delete Hotspot Button -->
+              <button class="property-btn-danger" onclick="deleteSelectedHotspotAction()">
+                🗑 Delete This Hotspot
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- PANEL 3: TEXT PROPERTIES -->
+        <div id="panel-text-properties" class="property-editor-body" style="display: none;">
+          <div id="prop-text-empty-state" style="display: block;"></div>
+          <div id="prop-text-content-state" style="display: none;">
+            <div id="prop-text-active-title"
+              style="margin-bottom: 12px; font-size: 14px; display:flex; align-items:center; letter-spacing:0.5px;">
+              <span style="color:#94a3b8; font-weight:800;">NO TEXT LABEL SELECTED</span>
+              <span style="font-size:11px; color:#64748b; margin-left:auto;">(Click 'T Text' to add)</span>
+            </div>
+
+            <!-- Text Properties Refined Layout -->
+            <div style="display:flex; flex-direction:column; gap:16px;">
+              
+              <!-- Style Copy/Paste -->
+              <div style="display:flex; gap: 8px;">
+                <button class="property-btn-outline" style="flex:1; padding: 6px; font-size: 11px;" onclick="copyTextStyle()">
+                  Copy Style
+                </button>
+                <button id="btn-paste-text-style" class="property-btn-outline" style="flex:1; padding: 6px; font-size: 11px; opacity: 0.5; pointer-events: none;" onclick="pasteTextStyle()">
+                  Paste Style
+                </button>
+              </div>
+
+              <!-- Content -->
+              <div>
+                <label style="display:block; font-size:10px; font-weight:800; color:#64748b; margin-bottom:6px; letter-spacing:1px; text-transform:uppercase;">Text Content</label>
+                <input type="text" id="prop-text-content" style="width:100%; padding:10px 12px; background:#e2e8f0; border:none; border-radius:8px; color:#0f172a; font-weight:700; font-size:14px; outline:none;" placeholder="e.g. BackView" oninput="onTextContentChangeDebounced()">
+              </div>
+
+              <!-- Checkboxes -->
+              <div style="display:flex; flex-direction:column; gap:8px;">
+                <label style="display:flex; align-items:center; gap:10px; cursor:pointer; color:#94a3b8; font-size:13px; font-weight:600;">
+                  <input type="checkbox" id="prop-text-sticker" onchange="onTextPropChange()" style="width:16px; height:16px; accent-color:#3b82f6; cursor:pointer;"> Apply as Sticker
+                </label>
+                <label style="display:flex; align-items:center; gap:10px; cursor:pointer; color:#94a3b8; font-size:13px; font-weight:600;">
+                  <input type="checkbox" id="prop-text-rollover" onchange="onTextPropChange()" style="width:16px; height:16px; accent-color:#3b82f6; cursor:pointer;"> Visible On RollOver
+                </label>
+              </div>
+
+              <!-- Sliders & Colors Grid -->
+              <style>
+                .text-prop-grid { display: grid; grid-template-columns: 95px 1fr 50px; gap: 10px; align-items: center; }
+                .text-prop-label { font-size: 12px; color: #94a3b8; text-align: right; }
+                
+                /* Custom Range Slider */
+                .text-prop-slider { 
+                  -webkit-appearance: none; width: 100%; height: 6px; background: #334155; border-radius: 4px; outline: none; padding:0; margin:0;
+                }
+                .text-prop-slider::-webkit-slider-thumb {
+                  -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #3b82f6; cursor: pointer; transition: 0.2s;
+                }
+                .text-prop-slider::-webkit-slider-thumb:hover { background: #60a5fa; transform: scale(1.1); }
+                
+                .text-prop-num { background: #1e293b; border: 1px solid #334155; border-radius: 6px; color: #fff; padding: 4px; text-align: center; font-size: 13px; outline: none; width: 100%; font-weight:600; -moz-appearance: textfield; }
+                .text-prop-num::-webkit-inner-spin-button, .text-prop-num::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+                
+                .text-prop-color { width: 100%; height: 28px; border: 1px solid #334155; border-radius: 6px; padding: 0; background: transparent; cursor: pointer; margin:0; }
+                .text-prop-color::-webkit-color-swatch-wrapper { padding: 0; }
+                .text-prop-color::-webkit-color-swatch { border: none; border-radius: 5px; }
+                
+                .text-prop-select { background: #1e293b; border: 1px solid #334155; border-radius: 6px; color: #fff; padding: 6px 10px; font-size: 13px; font-weight: 700; outline: none; width: 100%; cursor: pointer;}
+                .text-style-btn { background: #1e293b; border: 1px solid #334155; border-radius: 6px; color: #fff; width: 28px; height: 28px; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition:0.2s; }
+                .text-style-btn:hover { background: #334155; }
+                .text-style-btn.active { background: #3b82f6; border-color: #3b82f6; color:#fff; }
+                
+                .text-del-btn { background: #3f1619; border: 1px solid #7f1d1d; color: #f87171; border-radius: 8px; padding: 10px; font-weight: 700; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; font-size: 13px; width: 100%; margin-top: 10px; transition: 0.2s; }
+                .text-del-btn:hover { background: #7f1d1d; color: #fff; }
+              </style>
+
+              <div style="display:flex; flex-direction:column; gap:14px; margin-top:4px;">
+                <div class="text-prop-grid">
+                  <span class="text-prop-label">Opacity:</span>
+                  <input type="range" class="text-prop-slider" id="prop-text-opacity-slider" min="0" max="1" step="0.01" value="1" oninput="document.getElementById('prop-text-opacity').value=this.value; onTextPropChange()">
+                  <input type="number" class="text-prop-num" id="prop-text-opacity" min="0" max="1" step="0.01" value="1" oninput="document.getElementById('prop-text-opacity-slider').value=this.value; onTextPropChange()">
+                </div>
+
+                <div class="text-prop-grid">
+                  <span class="text-prop-label">Background:</span>
+                  <input type="color" class="text-prop-color" id="prop-text-bg-color" value="#FF0000" onchange="onTextPropChange()" oninput="onTextPropChange()">
+                  <div></div>
+                </div>
+
+                <div class="text-prop-grid">
+                  <span class="text-prop-label">Bg Opacity:</span>
+                  <input type="range" class="text-prop-slider" id="prop-text-bg-opacity-slider" min="0" max="1" step="0.01" value="1" oninput="document.getElementById('prop-text-bg-opacity').value=this.value; onTextPropChange()">
+                  <input type="number" class="text-prop-num" id="prop-text-bg-opacity" min="0" max="1" step="0.01" value="1" oninput="document.getElementById('prop-text-bg-opacity-slider').value=this.value; onTextPropChange()">
+                </div>
+
+                <div class="text-prop-grid">
+                  <span class="text-prop-label">Border:</span>
+                  <input type="color" class="text-prop-color" id="prop-text-border-color" value="#8b5cf6" onchange="onTextPropChange()" oninput="onTextPropChange()">
+                  <div></div>
+                </div>
+
+                <div class="text-prop-grid">
+                  <span class="text-prop-label">Border Opac:</span>
+                  <input type="range" class="text-prop-slider" id="prop-text-border-opacity-slider" min="0" max="1" step="0.01" value="1" oninput="document.getElementById('prop-text-border-opacity').value=this.value; onTextPropChange()">
+                  <input type="number" class="text-prop-num" id="prop-text-border-opacity" min="0" max="1" step="0.01" value="1" oninput="document.getElementById('prop-text-border-opacity-slider').value=this.value; onTextPropChange()">
+                </div>
+
+                <div class="text-prop-grid">
+                  <span class="text-prop-label">Border Size:</span>
+                  <input type="number" class="text-prop-num" id="prop-text-border-size" min="0" value="0" oninput="onTextPropChange()" style="grid-column: 2; width:60px;">
+                  <div></div>
+                </div>
+
+                <div class="text-prop-grid">
+                  <span class="text-prop-label">Border Radius:</span>
+                  <input type="number" class="text-prop-num" id="prop-text-border-radius" min="0" value="0" oninput="onTextPropChange()" style="grid-column: 2; width:60px;">
+                  <div></div>
+                </div>
+              </div>
+
+              <!-- Typography Box -->
+              <div style="background:rgba(255,255,255,0.03); padding:16px; border-radius:12px; margin-top:8px;">
+                <select id="prop-text-font" class="text-prop-select" onchange="onTextPropChange()">
+                  <option value="Arial">Arial</option>
+                  <option value="Helvetica">Helvetica</option>
+                  <option value="Times New Roman">Times New Roman</option>
+                  <option value="Courier New">Courier New</option>
+                  <option value="Verdana">Verdana</option>
+                  <option value="Georgia">Georgia</option>
+                  <option value="'Outfit', sans-serif">Outfit</option>
+                </select>
+                
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px;">
+                  <div style="display:flex; gap:8px; align-items:center;">
+                    <input type="number" class="text-prop-num" id="prop-text-font-size" min="8" value="17" oninput="onTextPropChange()" style="width:50px;">
+                    <input type="color" class="text-prop-color" id="prop-text-color" value="#FFFFFF" onchange="onTextPropChange()" oninput="onTextPropChange()" style="width:28px; height:28px;">
+                  </div>
+                  
+                  <div style="display:flex; gap:6px;">
+                    <button id="prop-text-bold" class="text-style-btn" onclick="toggleTextStyle('bold')"><b>B</b></button>
+                    <button id="prop-text-italic" class="text-style-btn" onclick="toggleTextStyle('italic')"><i>I</i></button>
+                    <button id="prop-text-underline" class="text-style-btn" onclick="toggleTextStyle('underline')"><u>U</u></button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Shadow controls -->
+              <div style="display:flex; flex-direction:column; gap:14px; margin-top:8px;">
+                <div class="text-prop-grid">
+                  <span class="text-prop-label">Shadow:</span>
+                  <input type="color" class="text-prop-color" id="prop-text-shadow-color" value="#000000" onchange="onTextPropChange()" oninput="onTextPropChange()">
+                  <div></div>
+                </div>
+
+                <div class="text-prop-grid">
+                  <span class="text-prop-label">Shadow Opac:</span>
+                  <input type="range" class="text-prop-slider" id="prop-text-shadow-opacity-slider" min="0" max="1" step="0.01" value="1" oninput="document.getElementById('prop-text-shadow-opacity').value=this.value; onTextPropChange()">
+                  <input type="number" class="text-prop-num" id="prop-text-shadow-opacity" min="0" max="1" step="0.01" value="1" oninput="document.getElementById('prop-text-shadow-opacity-slider').value=this.value; onTextPropChange()">
+                </div>
+              </div>
+
+            </div>
+
+            <div id="prop-text-details-section" style="margin-top:20px;">
+              <!-- Delete Text Hotspot Button -->
+              <button class="text-del-btn" onclick="deleteSelectedHotspotAction()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+                Delete This Text Label
+              </button>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <!-- Hidden input for thumbnail image upload -->
+  <input type="file" id="thumb-upload-input" accept="image/*" style="display:none;">
+
+  <!-- ==================== UPLOAD MODALS ==================== -->
+  <!-- 1. Upload 360 Panorama Modal -->
+  <div class="modal-overlay" id="modal-upload-scene">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span class="modal-title">Upload 360 Panorama</span>
+        <button class="modal-close" onclick="closeUploadSceneModal()">×</button>
+      </div>
+      <div class="file-dropzone" onclick="document.getElementById('file-upload-scene').click()">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:12px;">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="17 8 12 3 7 8"></polyline>
+          <line x1="12" y1="3" x2="12" y2="15"></line>
+        </svg>
+        <div style="font-weight:700; font-size:14px; color:#fff;">Click or Drop 360 Image Here</div>
+        <div id="scene-file-label" style="font-size:12px; color:var(--text-muted); margin-top:6px;">Supports
+          equirectangular JPEG, PNG, or TIFF</div>
+      </div>
+      <input type="file" id="file-upload-scene" accept="image/*" multiple style="display:none;"
+        onchange="onSceneFileSelected(event)">
+
+      <div class="property-group">
+        <label class="property-label">Scene Title</label>
+        <input type="text" id="upload-scene-title" class="property-input" placeholder="e.g. Lobby Interior">
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:8px;">
+        <button class="property-btn-outline" style="width:auto; padding:10px 18px;"
+          onclick="closeUploadSceneModal()">Cancel</button>
+        <button class="btn-upload-center" id="btn-submit-scene-upload" style="margin:0; padding:10px 24px;"
+          onclick="submitSceneUpload()">Start Upload</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE 1: SCENE PREVIEW MODAL -->
+  <div class="modal-overlay" id="modal-preview" style="display:none;">
+    <div class="modal-box" style="max-width: 900px; width: 90%;">
+      <div class="modal-header">
+        <span class="modal-title">Preview: <span id="preview-scene-title"></span></span>
+        <button class="modal-close" onclick="closePreviewModal()">&times;</button>
+      </div>
+      <div style="padding: 20px;">
+        <div id="preview-pano" style="height: 500px; border-radius: 8px; overflow: hidden; margin-bottom: 20px;"></div>
+        <div style="display: flex; justify-content: flex-end;">
+          <button class="property-btn-outline" style="width: auto; padding: 7px 18px; margin: 0;" onclick="closePreviewModal()">Close Preview</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
+
+
+  <!-- BULK TAG MODAL -->
+  <div class="modal-overlay" id="modal-bulk-tag" style="display:none;">
+    <div class="modal-box" style="width: 400px;">
+      <div class="modal-header">
+        <span class="modal-title">Add Tag to Selected</span>
+        <button class="modal-close" onclick="closeBulkTagModal()">&times;</button>
+      </div>
+      <div style="padding: 20px;">
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; color: var(--text-muted); font-size: 13px; margin-bottom: 8px; font-weight: 600;">Tag Name</label>
+          <input type="text" id="bulk-tag-input" placeholder="e.g. Exterior, Bedroom" style="width: 100%; background: #2a2a2e; border: 1px solid var(--border-color); color: #fff; padding: 12px 14px; border-radius: 8px; font-family: inherit; font-size: 14px; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='var(--accent-green)'" onblur="this.style.borderColor='var(--border-color)'" />
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 12px;">
+          <button class="property-btn-outline" style="width: auto; padding: 7px 18px; margin: 0;" onclick="closeBulkTagModal()">Cancel</button>
+          <button class="btn-upload-center" style="margin: 0; padding: 7px 24px; font-size: 13px;" onclick="applyBulkTag()">Apply Tag</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Upload Custom Hotspot Icon Modal -->
+  <div class="modal-overlay" id="modal-upload-icon">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span class="modal-title">Upload Hotspot Icon</span>
+        <button class="modal-close" onclick="closeUploadIconModal()">×</button>
+      </div>
+      <div class="file-dropzone" onclick="document.getElementById('file-upload-icon').click()">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:12px;">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <circle cx="8.5" cy="8.5" r="1.5"></circle>
+          <polyline points="21 15 16 10 5 21"></polyline>
+        </svg>
+        <div style="font-weight:700; font-size:14px; color:#fff;">Select Custom Icon Image</div>
+        <div id="icon-file-label" style="font-size:12px; color:var(--text-muted); margin-top:6px;">Recommended size:
+          64x64 or transparent SVG/PNG</div>
+      </div>
+      <input type="file" id="file-upload-icon" accept="image/*" style="display:none;"
+        onchange="onIconFileSelected(event)">
+
+      <div class="property-group">
+        <label class="property-label">Icon Name / Label</label>
+        <input type="text" id="upload-icon-name" class="property-input" placeholder="e.g. Custom Exit Arrow">
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:8px;">
+        <button class="property-btn-outline" style="width:auto; padding:10px 18px;"
+          onclick="closeUploadIconModal()">Cancel</button>
+        <button class="btn-upload-center" style="margin:0; padding:10px 24px;" onclick="submitIconUpload()">Save
+          Icon</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Icon Library Modal (Select an Item from Library) -->
+  <div class="modal-overlay" id="modal-icon-library" style="display: none; z-index: 10000;">
+    <div class="modal-box"
+      style="width: 820px; max-width: 95vw; height: 560px; display: flex; flex-direction: column; padding: 0; overflow: hidden; background: #1e2128; border: 1px solid #334155; border-radius: 10px;">
+      <!-- Header -->
+      <div
+        style="display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; background: #242832; border-bottom: 2px solid #10b981;">
+        <span style="font-size: 15px; font-weight: 700; color: #fff;">Select an Item from Library</span>
+        <button class="modal-close"
+          style="font-size: 20px; color: #94a3b8; background: none; border: none; cursor: pointer;"
+          onclick="closeIconLibraryModal()">×</button>
+      </div>
+
+      <!-- Main Content (Left Sidebar + Grid) -->
+      <div style="display: flex; flex: 1; overflow: hidden; background: #1c2027;">
+        <!-- Left Sidebar -->
+        <div
+          style="width: 180px; background: #16181d; border-right: 1px solid #282c35; padding: 16px 14px; display: flex; flex-direction: column; gap: 4px; overflow-y: auto;">
+          <!-- Top upload custom icon button -->
+          <div style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #282c35;">
+            <button class="property-btn-outline" onclick="openUploadIconModal()"
+              style="width: 100%; padding: 8px 10px; font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 6px; margin: 0; border-color: #10b981; color: #60a5fa;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              <span>Upload Custom</span>
+            </button>
+          </div>
+          <div
+            style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-top: 4px; margin-bottom: 6px;">
+            Family:</div>
+          <div class="lib-filter-btn active" data-filter="All" onclick="filterIconLibrary('All', this)">All</div>
+          <div class="lib-filter-btn" data-filter="Arrow" onclick="filterIconLibrary('Arrow', this)">Arrow</div>
+          <div class="lib-filter-btn" data-filter="Pin" onclick="filterIconLibrary('Pin', this)">Pin</div>
+          <div class="lib-filter-btn" data-filter="Dot" onclick="filterIconLibrary('Dot', this)">Dot</div>
+          <div class="lib-filter-btn" data-filter="Custom" onclick="filterIconLibrary('Custom', this)">Custom</div>
+        </div>
+
+        <!-- Icons Grid Area -->
+        <div style="flex: 1; padding: 20px; overflow-y: auto; background: #20242d;">
+          <div id="icon-library-grid"
+            style="display: grid; grid-template-columns: repeat(auto-fill, minmax(115px, 1fr)); gap: 16px;">
+            <!-- Dynamically populated by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer (Search + Select button) -->
+      <div
+        style="display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; background: #1a1d24; border-top: 1px solid #282c35;">
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <input type="text" id="lib-search-input" placeholder="Search..."
+            style="background: #282e38; border: 1px solid #3b4252; color: #fff; padding: 7px 12px; border-radius: 6px; font-size: 13px; width: 220px; outline: none;"
+            oninput="onIconLibrarySearch(this.value)">
+          <label id="lib-return-hotspot-container"
+            style="display: none; align-items: center; gap: 8px; color: #fff; font-size: 13px; cursor: pointer; user-select: none;">
+            <input type="checkbox" id="lib-return-hotspot-cb" checked
+              style="cursor: pointer; width: 16px; height: 16px; accent-color: #10b981;">
+            <span>Create Return Hotspot in Target Scene</span>
+          </label>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <button class="property-btn-outline" style="width: auto; padding: 7px 18px; margin: 0;"
+            onclick="closeIconLibraryModal()">Cancel</button>
+          <button class="btn-upload-center" style="margin: 0; padding: 7px 24px; font-size: 13px;"
+            onclick="confirmIconLibrarySelection()">Select</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Create Return Hotspot Modal (Pic 3) -->
+
+
+  <div class="modal-overlay" id="modal-return-hotspot" style="display: none; z-index: 10001;">
+    <div class="modal-box"
+      style="width: 900px; max-width: 95vw; height: 600px; display: flex; flex-direction: column; padding: 0; overflow: hidden; background: #1e2128; border: 1px solid #334155; border-radius: 10px;">
+      <!-- Header -->
+      <div
+        style="display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; background: #242832; border-bottom: 2px solid #10b981;">
+        <span style="font-size: 15px; font-weight: 700; color: #fff;">Create Return Hotspot</span>
+        <button class="modal-close"
+          style="font-size: 20px; color: #94a3b8; background: none; border: none; cursor: pointer;"
+          onclick="closeReturnHotspotModal()">×</button>
+      </div>
+
+      <!-- 360 Viewer Body -->
+      <div style="flex: 1; position: relative; background: #000; overflow: hidden;">
+        <div id="return-pano-viewer" style="width: 100%; height: 100%;"></div>
+        <!-- Center Horizontal Dashed Guideline -->
+        <div id="return-guideline-h"
+          style="position: absolute; top: 50%; left: 0; width: 100%; height: 0; border-top: 1px dashed rgba(255, 255, 255, 0.75); pointer-events: none; z-index: 10;">
+        </div>
+        <!-- Draggable Blue Circle Target -->
+        <div id="return-target-dot"
+          style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 24px; height: 24px; border-radius: 50%; background: #10b981; border: 3px solid #fff; box-shadow: 0 0 12px rgba(0,0,0,0.7); cursor: grab; z-index: 11; display: flex; align-items: center; justify-content: center; transition: transform 0.1s ease, box-shadow 0.1s ease;"
+          title="Drag me to set position">
+          <div style="width: 6px; height: 6px; border-radius: 50%; background: #fff; pointer-events: none;"></div>
+        </div>
+        <!-- Target Scene Title Overlay -->
+        <div id="return-scene-title-tag"
+          style="position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(4px); border: 1px solid rgba(255, 255, 255, 0.15); color: #fff; font-size: 12px; font-weight: 600; padding: 5px 14px; border-radius: 14px; pointer-events: none; z-index: 12;">
+          Target Scene</div>
+      </div>
+
+      <!-- Footer -->
+      <div
+        style="display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; background: #1a1d24; border-top: 1px solid #282c35;">
+        <span style="font-size: 12px; color: #94a3b8;">Drag the blue dot to set the return hotspot position</span>
+        <button class="btn-upload-center"
+          style="margin: 0; padding: 7px 24px; font-size: 13px; background: #10b981; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;"
+          onclick="confirmReturnHotspotPosition()">Add</button>
+      </div>
+    </div>
+  </div>
+
+
+
+  <!-- 5. Select Target Panorama Modal -->
+  <div class="modal-overlay" id="modal-select-panorama" style="display: none; z-index: 10002;">
+    <div class="modal-box" id="modal-select-panorama-box"
+      style="width: 820px; max-width: 95vw; height: 560px; display: flex; flex-direction: column; padding: 0; overflow: hidden; background: #1e2128; border: 1px solid #334155; border-radius: 10px; transition: height 0.3s ease;">
+      
+      <!-- Header -->
+      <div
+        style="display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; background: #242832; border-bottom: 2px solid #10b981;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <button id="modal-select-panorama-back-btn" style="display: none; background: none; border: none; color: #10b981; cursor: pointer; padding: 0; font-size: 16px;" onclick="showSelectPanoramaGrid()">
+            ← Back
+          </button>
+          <span id="modal-select-panorama-title" style="font-size: 15px; font-weight: 700; color: #fff;">Select Target Panorama</span>
+        </div>
+        <button class="modal-close"
+          style="font-size: 20px; color: #94a3b8; background: none; border: none; cursor: pointer;"
+          onclick="closeSelectTargetSceneModal()">×</button>
+      </div>
+
+      <!-- Main Content (Grid) -->
+      <div id="modal-select-panorama-step1" style="flex: 1; overflow-y: auto; background: #1c2027; padding: 20px; display: block;">
+        <div id="select-panorama-grid"
+          style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px;">
+          <!-- Dynamically populated by JS -->
+        </div>
+      </div>
+      
+      <!-- Initial View Mode Options (Step 2) -->
+      <div id="modal-select-panorama-step2" style="flex: 1; overflow-y: auto; background: #1c2027; padding: 15px; display: none; align-items: center; justify-content: center;">
+        <style>
+          .view-mode-option-row {
+            display: flex; align-items: center; gap: 16px; padding: 12px 16px; 
+            cursor: pointer; transition: all 0.2s ease;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            background: #1e2128;
+            border: 1px solid transparent;
+          }
+          .view-mode-option-row:hover {
+            background: #242832;
+            border-color: #334155;
+          }
+          .view-mode-option-row:has(input:checked) {
+            background: rgba(16, 185, 129, 0.05);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+          }
+          .custom-radio {
+            width: 20px; height: 20px; border-radius: 50%; border: 2px solid #64748b;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+          }
+          .view-mode-option-row:has(input:checked) .custom-radio {
+            border-color: #10b981;
+          }
+          .view-mode-option-row:has(input:checked) .custom-radio::after {
+            content: ''; width: 10px; height: 10px; border-radius: 50%; background: #10b981;
+          }
+        </style>
+        
+        <div id="modal-select-panorama-step2-inner" style="width: 100%; max-width: 900px; margin: 0 auto; background: #242832; padding: 20px; border-radius: 12px; border: 1px solid #334155; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; gap: 30px;">
+          
+          <!-- LEFT SIDE: Krpano Viewer -->
+          <div style="flex: 1; min-width: 450px; display: flex; flex-direction: column;">
+            <div id="custom-view-placeholder" style="flex: 1; display: flex; align-items: center; justify-content: center; background: #16181d; border: 1px dashed #475569; border-radius: 8px; min-height: 400px; color: #94a3b8; font-size: 14px; text-align: center; padding: 20px;">
+              <div>
+                <div style="margin-bottom: 10px;">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #64748b;"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle></svg>
+                </div>
+                Choose the "Custom (fix)" option to manually select the custom view
+              </div>
+            </div>
+            
+            <div id="modal-select-panorama-custom-controls" style="display: none; flex: 1; flex-direction: column;">
+              <div id="custom-view-pano" style="flex: 1; min-height: 400px; width: 100%; border-radius: 8px; overflow: hidden; border: 1px solid #334155;"></div>
+              <div style="text-align: center; margin-top: 15px;">
+                <div id="modal-select-panorama-custom-status" style="font-size: 13px; color: #10b981; margin-top: 8px; font-weight: 600; display: none;">Custom view configured.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT SIDE: Options -->
+          <div style="width: 320px; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div style="margin-bottom: 30px;">
+                <div style="font-size: 22px; font-weight: 700; color: #fff; margin-bottom: 6px;">Configure Initial View</div>
+                <div style="font-size: 13px; color: #94a3b8;">Target: <span id="modal-select-panorama-target-name" style="color: #10b981; font-weight: 700;"></span></div>
+              </div>
+              
+              <div style="display: flex; flex-direction: column;">
+                <label class="view-mode-option-row">
+                  <input type="radio" name="targetViewModeRadio" value="start_point" checked onchange="updateCustomViewBtnVisibility()" style="position: absolute; opacity: 0; width: 0; height: 0;">
+                  <div class="custom-radio"></div>
+                  <div>
+                    <div style="font-weight: 600; color: #fff; font-size: 14px;">Start Point (fix)</div>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 2px;">Default view of target panorama</div>
+                  </div>
+                </label>
+                
+                <label class="view-mode-option-row">
+                  <input type="radio" name="targetViewModeRadio" value="same_spot" onchange="updateCustomViewBtnVisibility()" style="position: absolute; opacity: 0; width: 0; height: 0;">
+                  <div class="custom-radio"></div>
+                  <div>
+                    <div style="font-weight: 600; color: #fff; font-size: 14px;">Same Spot (dynamic)</div>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 2px;">Carries over current viewing angle</div>
+                  </div>
+                </label>
+
+                <label class="view-mode-option-row">
+                  <input type="radio" name="targetViewModeRadio" value="smart" onchange="updateCustomViewBtnVisibility()" style="position: absolute; opacity: 0; width: 0; height: 0;">
+                  <div class="custom-radio"></div>
+                  <div>
+                    <div style="font-weight: 600; color: #fff; font-size: 14px;">Smart Entry View</div>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 2px;">Faces backwards towards entry point</div>
+                  </div>
+                </label>
+
+                <label class="view-mode-option-row">
+                  <input type="radio" name="targetViewModeRadio" value="custom" onchange="updateCustomViewBtnVisibility()" style="position: absolute; opacity: 0; width: 0; height: 0;">
+                  <div class="custom-radio"></div>
+                  <div>
+                    <div style="font-weight: 600; color: #fff; font-size: 14px;">Custom (fix)</div>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 2px;">Manually select a custom view angle</div>
+                  </div>
+                </label>
+              </div>
+            </div>
+            
+            <div style="margin-top: 30px;">
+              <button class="btn-upload-center" style="margin: 0; width: 100%; padding: 14px 20px; font-size: 15px; font-weight: 700; background: #10b981; color: #fff; border: none;" onclick="confirmTargetSceneAndViewMode()">
+                Save Configuration
+              </button>
+            </div>
+          </div>
+          
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container"></div>
+
+  <div id="bulk-action-bar" class="bulk-action-bar">
+    <span id="bulk-action-text" class="bulk-action-text">0 Selected</span>
+    <button id="bulk-open-editor-btn" class="btn-upload-center" style="margin: 0; padding: 7px 24px; font-size: 13px; background: #0ea5e9; border: none; display: none;" onclick="openSelectedSceneInEditor()">Open in Editor</button>
+    <button class="btn-upload-center" style="margin: 0; padding: 7px 24px; font-size: 13px;" onclick="openBulkTagModal()">Add Tag</button>
+    <button class="property-btn-outline" style="width: auto; padding: 7px 18px; margin: 0;" onclick="clearSelection()">Cancel</button>
+  </div>
+
+  <script src="editor-panel.js"></script>
+</body>
+
+</html>

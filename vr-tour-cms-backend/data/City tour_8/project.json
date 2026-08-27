@@ -1,0 +1,128 @@
+{
+  "scenes": [
+    {
+      "_id": "msyf9d69l48lr0",
+      "tourId": "C:\\Users\\Yashvi Chulawala\\Downloads\\City tour",
+      "title": "Vesu 1",
+      "slug": "vesu_1_1",
+      "tilesFolder": "vesu_1_1.tiles",
+      "order": 0,
+      "lat": 21.146001333333334,
+      "lng": 72.76514441666667,
+      "createdAt": "2026-08-18T08:49:56.721Z"
+    },
+    {
+      "_id": "msyf9t0o2stnis",
+      "tourId": "C:\\Users\\Yashvi Chulawala\\Downloads\\City tour",
+      "title": "Vesu 16",
+      "slug": "vesu_16_1",
+      "tilesFolder": "vesu_16_1.tiles",
+      "order": 1,
+      "lat": 21.146476166666666,
+      "lng": 72.76053958333334,
+      "createdAt": "2026-08-18T08:50:17.256Z"
+    },
+    {
+      "_id": "msyfa86tf6450s",
+      "tourId": "C:\\Users\\Yashvi Chulawala\\Downloads\\City tour",
+      "title": "Vesu 5",
+      "slug": "vesu_5_1",
+      "tilesFolder": "vesu_5_1.tiles",
+      "order": 2,
+      "lat": 21.130257055,
+      "lng": 72.77455075,
+      "createdAt": "2026-08-18T08:50:36.917Z"
+    },
+    {
+      "_id": "msyfan51fbhh4i",
+      "tourId": "C:\\Users\\Yashvi Chulawala\\Downloads\\City tour",
+      "title": "Vesu 7",
+      "slug": "vesu_7_1",
+      "tilesFolder": "vesu_7_1.tiles",
+      "order": 3,
+      "lat": 21.125837445,
+      "lng": 72.77528163833334,
+      "createdAt": "2026-08-18T08:50:56.293Z"
+    },
+    {
+      "_id": "msyfb2xrwrypbc",
+      "tourId": "C:\\Users\\Yashvi Chulawala\\Downloads\\City tour",
+      "title": "Vesu 2",
+      "slug": "vesu_2_1",
+      "tilesFolder": "vesu_2_1.tiles",
+      "order": 4,
+      "lat": 21.147721971666666,
+      "lng": 72.772278,
+      "createdAt": "2026-08-18T08:51:16.767Z"
+    }
+  ],
+  "hotspots": [
+    {
+      "_id": "mszs29u7q3ulg3",
+      "sceneId": "msyf9d69l48lr0",
+      "title": "Back",
+      "kind": "info",
+      "targetSceneId": null,
+      "info": "Back",
+      "ath": 76.51,
+      "atv": -25.37,
+      "style": "Text",
+      "color": "#ffffff",
+      "transition": "BLEND(0.5)",
+      "action": "scene",
+      "textProps": {
+        "sticker": true,
+        "rollover": false,
+        "opacity": 1,
+        "bgColor": "#000000",
+        "bgOpacity": 0,
+        "borderColor": "#000000",
+        "borderOpacity": 0,
+        "borderSize": 0,
+        "borderRadius": 0,
+        "font": "Georgia",
+        "fontSize": 70,
+        "color": "#f5ee24",
+        "shadowColor": "#ff0000",
+        "shadowOpacity": 0
+      },
+      "width": null,
+      "height": null,
+      "createdAt": "2026-08-19T07:36:06.991Z"
+    },
+    {
+      "_id": "mszt5otm7kk5sh",
+      "sceneId": "msyf9d69l48lr0",
+      "title": "view",
+      "kind": "info",
+      "targetSceneId": null,
+      "info": "view",
+      "ath": 77.08,
+      "atv": -41.62,
+      "style": "Text",
+      "color": "#ffffff",
+      "transition": "BLEND(0.5)",
+      "action": "scene",
+      "textProps": {
+        "sticker": true,
+        "rollover": false,
+        "opacity": 1,
+        "bgColor": "#000000",
+        "bgOpacity": 0,
+        "borderColor": "#000000",
+        "borderOpacity": 0,
+        "borderSize": 0,
+        "borderRadius": 0,
+        "font": "Georgia",
+        "fontSize": 70,
+        "color": "#f5ee24",
+        "shadowColor": "#ff0000",
+        "shadowOpacity": 0
+      },
+      "width": null,
+      "height": null,
+      "createdAt": "2026-08-19T08:06:45.994Z"
+    }
+  ],
+  "assets": []
+}
