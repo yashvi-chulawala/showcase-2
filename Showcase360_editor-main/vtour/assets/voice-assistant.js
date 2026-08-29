@@ -1,677 +1,398 @@
-/**
- * "Hey 360" Voice Assistant Engine & Lifecycle Manager
- * Handles Wake-Word Detection, Speech Synthesis, State Machine, and Command Resolution.
- * Modified to fetch image/pano names directly from window.scenes
- */
-(function(window) {
-  'use strict';
-
-  // Prevent running duplicate voice assistants inside iframes (e.g. tour.html inside editor-panel.html)
-  if (window.top !== window.self) {
-    console.log('[VoiceAssistant] Skipping iframe initialization to prevent duplicate mic instances.');
+(function() {
+  // Prevent running in editor or inside iframes
+  if (window.location.pathname.includes('editor-panel') || (window.top !== window.self)) {
     return;
   }
-
-  // Assistant States
-  const STATE = {
-    IDLE: 'IDLE',
-    WAITING_FOR_WAKE_WORD: 'WAITING_FOR_WAKE_WORD',
-    WAKE_WORD_DETECTED: 'WAKE_WORD_DETECTED',
-    LISTENING: 'LISTENING',
-    PROCESSING: 'PROCESSING',
-    SPEAKING: 'SPEAKING',
-    UNAVAILABLE: 'UNAVAILABLE'
+  let ws = null;
+  let inputAudioContext = null;
+  let outputAudioContext = null;
+  let mediaStream = null;
+  let workletNode = null;
+  
+  let playbackQueue = [];
+  let nextPlayTime = 0;
+  
+  let state = 'Idle'; // Idle, Connecting..., Listening..., Speaking..., Error
+  
+  const DESTINATION_REGISTRY = {
+    left_view: { sceneId: "scene_DJI_20251222160517_0128_D_equi", name: "Left View" },
+    back_view: { sceneId: "scene_DJI_20251222160749_0129_D_equi", name: "Back View" },
+    right_view: { sceneId: "scene_DJI_20251222162034_0135_D_equi", name: "Right View" },
+    kitchen: { sceneId: "scene_kitchen_360_vr_copy", name: "Kitchen" },
+    living_room_1: { sceneId: "scene_living_room_360_vr_1_copy", name: "Living Room 1" },
+    living_room_2: { sceneId: "scene_living_room_360_vr_2_copy", name: "Living Room 2" },
+    bedroom: { sceneId: "scene_bedroom_3_360_vr_copy", name: "Bedroom 3" }
   };
 
-  class VoiceAssistantManager {
-    constructor() {
-      this.state = STATE.IDLE;
-      this.recognition = null;
-      this.audioCtx = null;
-      this.retryCount = 0;
-      this.maxRetries = 15;
-      this.retryResetTimer = null;
-      this.permissionGranted = localStorage.getItem('voice_perm_granted') === 'true';
-      this.listeningTimer = null;
-      this.isRecognizing = false;
+  const INSTRUCTION = `You are Hey 360, a friendly voice assistant for a 360-degree virtual tour website.
+When the user activates you and says "Hey 360", acknowledge them naturally and ask how you can help.
+You can navigate the user to different areas of the tour. The available destinations are:
+- "Left View" (ID: left_view)
+- "Back View" (ID: back_view)
+- "Right View" (ID: right_view)
+- "Kitchen" (ID: kitchen)
+- "Living Room 1" (ID: living_room_1)
+- "Living Room 2" (ID: living_room_2)
+- "Bedroom 3" (ID: bedroom)
 
-      // Pre-load voices for TTS
-      this.availableVoices = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
-      if (window.speechSynthesis) {
-        window.speechSynthesis.onvoiceschanged = () => {
-          this.availableVoices = window.speechSynthesis.getVoices();
-        };
-      }
+When the user asks to go somewhere, USE THE navigate_scene TOOL to transport them there, and verbally confirm that you are taking them there.
+If they ask for a room generically (e.g. "living room" but there are two), ask them which one they mean.
+If they ask for a location that does not exist, tell them it isn't available and list some options.
+Keep responses concise and natural because the interaction is voice-based.`;
 
-      // Check speech API support
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      this.isSupported = !!SpeechRecognition;
-      this.browserMode = this.isSupported ? 'SUPPORTED' : 'UNSUPPORTED';
-
-      this.initUI();
-      if (this.isSupported) {
-        this.setupRecognition(SpeechRecognition);
-      } else {
-        this.setState(STATE.UNAVAILABLE, 'Speech Recognition not supported on this browser');
-      }
+  // UI Setup
+  const btn = document.createElement('div');
+  btn.id = 'hey-360-btn';
+  btn.className = 'hey-360-btn state-idle';
+  
+  btn.innerHTML = `
+    <div class="va-logo-wrapper">
+      <img src="assets/360 Eye Logo.png" class="va-logo" alt="360 Eye">
+    </div>
+    <div class="va-orbital">
+      <div class="va-ring"></div>
+      <div class="va-center">360&deg;</div>
+    </div>
+    <div class="va-text" id="va-status-text">Explore with me</div>
+  `;
+  document.body.appendChild(btn);
+  
+  function updateState(newState) {
+    state = newState;
+    const textEl = document.getElementById('va-status-text');
+    if (textEl) {
+      textEl.innerText = getStateText(state);
     }
-
-    /**
-     * Initializes Web Speech Recognition
-     */
-    setupRecognition(SpeechRecognitionClass) {
-      try {
-        this.recognition = new SpeechRecognitionClass();
-        // Use non-continuous mode for ultra-clean, per-utterance speech isolation
-        this.recognition.continuous = false;
-        this.recognition.interimResults = true;
-        this.recognition.lang = 'en-US';
-
-        this.recognition.onstart = () => {
-          console.log('[VoiceAssistant] Speech recognition active.');
-          this.isRecognizing = true;
-          this.retryCount = 0;
-          if (this.state === STATE.IDLE || this.state === STATE.UNAVAILABLE) {
-            this.setState(STATE.WAITING_FOR_WAKE_WORD);
-          }
-        };
-
-        this.recognition.onresult = (event) => {
-          this.handleSpeechResult(event);
-        };
-
-        this.recognition.onerror = (event) => {
-          console.warn('[VoiceAssistant] Recognition error:', event.error);
-          this.isRecognizing = false;
-          if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-            this.permissionGranted = false;
-            localStorage.setItem('voice_perm_granted', 'false');
-            this.setState(STATE.UNAVAILABLE, 'Microphone permission denied');
-          }
-        };
-
-        this.recognition.onend = () => {
-          console.log('[VoiceAssistant] Recognition session ended. Current state:', this.state);
-          this.isRecognizing = false;
-          // Restart listening seamlessly if in an active listening state
-          if ((this.state === STATE.WAITING_FOR_WAKE_WORD || this.state === STATE.LISTENING) && this.permissionGranted) {
-            this.scheduleRestart();
-          }
-        };
-
-        if (this.permissionGranted) {
-          this.startWakeWordListening();
-        } else {
-          this.setState(STATE.IDLE, 'Click microphone to enable "Hey 360"');
-        }
-      } catch (err) {
-        console.error('[VoiceAssistant] Setup error:', err);
-        this.setState(STATE.UNAVAILABLE, 'Failed to initialize speech system');
-      }
+    btn.className = `hey-360-btn state-${state.toLowerCase().replace(/[^a-z]/g, '')}`;
+  }
+  
+  function getStateText(s) {
+    if (s === 'Idle') return 'Explore with me';
+    if (s === 'Connecting...') return 'Getting ready...';
+    if (s === 'Listening...') return "I'm listening";
+    if (s === 'Speaking...') return 'Let me guide you';
+    return 'Try again';
+  }
+  
+  // Initialization
+  updateState('Idle');
+  
+  btn.addEventListener('click', async () => {
+    if (state === 'Idle' || state === 'Error') {
+      await startAgent();
+    } else {
+      stopAgent();
     }
-
-    /**
-     * Safely starts speech recognition
-     */
-    safeStartRecognition() {
-      if (!this.recognition || !this.permissionGranted || this.isRecognizing) return;
-      try {
-        this.recognition.start();
-      } catch (e) {
-        console.log('[VoiceAssistant] Recognition start info:', e.message);
-      }
-    }
-
-    /**
-     * Safely stops speech recognition
-     */
-    safeStopRecognition() {
-      if (!this.recognition || !this.isRecognizing) return;
-      try {
-        this.recognition.stop();
-        this.isRecognizing = false;
-      } catch (e) {}
-    }
-
-    /**
-     * Schedules auto-restart for single-utterance speech loop
-     */
-    scheduleRestart() {
-      if (this.retryCount >= this.maxRetries) {
-        console.warn('[VoiceAssistant] Max restart attempts reached. Falling back to manual mode.');
-        this.setState(STATE.IDLE, 'Microphone paused. Click to activate.');
-        return;
-      }
-
-      this.retryCount++;
-      clearTimeout(this.retryResetTimer);
-      this.retryResetTimer = setTimeout(() => { this.retryCount = 0; }, 10000);
-
-      setTimeout(() => {
-        if ((this.state === STATE.WAITING_FOR_WAKE_WORD || this.state === STATE.LISTENING) && this.permissionGranted) {
-          this.safeStartRecognition();
-        }
-      }, 100);
-    }
-
-    /**
-     * Starts background wake-word listening loop
-     */
-    startWakeWordListening() {
-      clearTimeout(this.listeningTimer);
-      if (!this.isSupported) return;
-      if (!this.permissionGranted) {
-        this.showPermissionModal();
-        return;
-      }
-
-      this.setState(STATE.WAITING_FOR_WAKE_WORD);
-      this.safeStartRecognition();
-    }
-
-    /**
-     * Core Speech Parser — Handles Single-Stage and Two-Stage Wake-Word Utterances
-     */
-    handleSpeechResult(event) {
-      if (this.state === STATE.SPEAKING || this.state === STATE.PROCESSING) return;
-
-      let interimTranscript = '';
-      let finalTranscript = '';
-
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          finalTranscript += transcript;
-        } else {
-          interimTranscript += transcript;
-        }
-      }
-
-      const currentText = (finalTranscript || interimTranscript).trim();
-      if (!currentText) return;
-
-      console.log(`[VoiceAssistant] Speech stream: "${currentText}" (State: ${this.state})`);
-
-      // 1. STATE: WAITING_FOR_WAKE_WORD
-      if (this.state === STATE.WAITING_FOR_WAKE_WORD) {
-        // Ultra-flexible wake word regex matching all speech-to-text variations of "Hey 360"
-        const wakeWordRegex = /(hey|hi|a|okay|hello)?\s*(360|3\s*6\s*0|three\s*[-_\s]*sixty|three\s*hundred\s*(and\s*)?sixty)/i;
-        const match = currentText.match(wakeWordRegex);
-
-        if (match) {
-          const wakeWordEndIdx = match.index + match[0].length;
-          const remainderCommand = currentText.substring(wakeWordEndIdx).replace(/^[\s,.:]+/, '').trim();
-
-          console.log(`[VoiceAssistant] Wake word matched! Remainder command: "${remainderCommand}"`);
-          this.playActivationChime();
-
-          if (remainderCommand.length > 1) {
-            // SINGLE-STAGE UTTERANCE: "Hey 360, take me to reception"
-            this.setState(STATE.WAKE_WORD_DETECTED, 'Wake word detected!');
-            setTimeout(() => {
-              this.processCommand(remainderCommand);
-            }, 150);
-          } else {
-            // TWO-STAGE UTTERANCE: "Hey 360" -> Switch to LISTENING mode
-            this.safeStopRecognition();
-            this.setState(STATE.WAKE_WORD_DETECTED, 'Hey 360 detected!');
-            
-            this.speakText("Hey three sixty here, how can I help you today? I can help you walk through the tour.", () => {
-              this.setState(STATE.LISTENING, 'Listening... Say a destination');
-              this.safeStartRecognition();
-              this.startListeningTimeout();
-            });
-          }
-        } else {
-          // Direct navigation command fallback without requiring explicit wake phrase
-          const cleanCommand = currentText.toLowerCase();
-          let directMatchTitle = null;
-          let directMatchName = null;
-
-          if (window.scenes) {
-            const match = window.scenes.find(s => s.title && cleanCommand.includes(s.title.toLowerCase()));
-            if (match) directMatchTitle = match.title;
-          } else if (window.krpano && typeof window.krpano.get === 'function') {
-            const count = window.krpano.get('scene.count') || 0;
-            for (let i = 0; i < count; i++) {
-              const sTitle = window.krpano.get(`scene[${i}].title`);
-              if (sTitle && cleanCommand.includes(String(sTitle).toLowerCase())) {
-                directMatchTitle = String(sTitle);
-                break;
-              }
-            }
-          }
-
-          if (directMatchTitle) {
-            console.log(`[VoiceAssistant] Direct navigation command recognized: "${currentText}"`);
-            this.playActivationChime();
-            this.processCommand(currentText);
-          } else if (/^(hey|hi|hello|ok|okay)\b/i.test(currentText)) {
-            // User said a greeting but not "360" and not a valid scene
-            this.safeStopRecognition();
-            this.setState(STATE.WAKE_WORD_DETECTED, 'Correcting wake word');
-            this.speakText("Hey, it's Hey three sixty. How can I help you today? I can help you walk through the tour.", () => {
-              this.setState(STATE.LISTENING, 'Listening... Say a destination');
-              this.safeStartRecognition();
-              this.startListeningTimeout();
-            });
-          }
-        }
-      }
-      // 2. STATE: LISTENING (Waiting for destination command)
-      else if (this.state === STATE.LISTENING) {
-        // Strip punctuation for cleaner matching
-        const normalizedText = currentText.replace(/[.,!?]/g, '').trim();
-        const wakeWordRegex = /(hey|hi|a|okay|hello)?\s*(360|3\s*6\s*0|three\s*[-_\s]*sixty|three\s*hundred\s*(and\s*)?sixty)/i;
-        
-        // If the user *only* says the wake word while we are already listening, respond with the greeting
-        if (wakeWordRegex.test(normalizedText) && normalizedText.replace(wakeWordRegex, '').trim().length === 0) {
-          this.safeStopRecognition();
-          this.setState(STATE.WAKE_WORD_DETECTED, 'Hey 360 detected!');
-          
-          this.speakText("Hey three sixty here, how can I help you today? I can help you walk through the tour.", () => {
-            this.setState(STATE.LISTENING, 'Listening... Say a destination');
-            this.safeStartRecognition();
-            this.startListeningTimeout();
-          });
-          return;
-        }
-
-        // Otherwise, strip the wake word if they included it in their command
-        let cleanText = normalizedText.replace(wakeWordRegex, '').trim();
-        this.updateSubtext(`"${cleanText || currentText}"`);
-
-        if (cleanText.length > 0) {
-          const cleanCommand = cleanText.toLowerCase();
-          let matchFound = false;
-
-          if (window.scenes) {
-            matchFound = !!window.scenes.find(s => s.title && cleanCommand.includes(s.title.toLowerCase()));
-          } else if (window.krpano && typeof window.krpano.get === 'function') {
-            const count = window.krpano.get('scene.count') || 0;
-            for (let i = 0; i < count; i++) {
-              const sTitle = window.krpano.get(`scene[${i}].title`);
-              if (sTitle && cleanCommand.includes(String(sTitle).toLowerCase())) {
-                matchFound = true;
-                break;
-              }
-            }
-          }
-
-          if (matchFound || finalTranscript.trim().length > 0) {
-            clearTimeout(this.listeningTimer);
-            this.processCommand(cleanText);
-          }
-        }
-      }
-    }
-
-    /**
-     * Timeout guard for listening mode
-     */
-    startListeningTimeout() {
-      clearTimeout(this.listeningTimer);
-      this.listeningTimer = setTimeout(() => {
-        if (this.state === STATE.LISTENING) {
-          console.log('[VoiceAssistant] Listening timeout reached.');
-          this.speakText("I didn't hear a command.", () => {
-            this.startWakeWordListening();
-          });
-        }
-      }, 9000);
-    }
-
-    /**
-     * Processes command intent using application Scenes
-     */
-    processCommand(commandText) {
-      if (this.state === STATE.PROCESSING || this.state === STATE.SPEAKING) return;
-      clearTimeout(this.listeningTimer);
-      this.setState(STATE.PROCESSING, `Processing: "${commandText}"`);
-
-      setTimeout(() => {
-        const cleanCommand = commandText.toLowerCase().replace(/take me to|go to|show me/g, '').trim();
-        
-        let targetSceneTitle = null;
-        let targetSceneKrpanoName = null;
-
-        if (window.scenes) {
-          let match = window.scenes.find(s => s.title && s.title.toLowerCase().includes(cleanCommand)) || 
-                      window.scenes.find(s => s.title && cleanCommand.includes(s.title.toLowerCase()));
-          if (match) {
-            targetSceneTitle = match.title;
-            targetSceneKrpanoName = 'scene_' + (match.tilesFolder ? match.tilesFolder.replace('.tiles', '') : match.title);
-            if (typeof window.selectScene === 'function') {
-              // Special case for editor panel
-              window.selectScene(match);
-              this.speakText(`Taking you to ${targetSceneTitle}.`, () => {
-                this.startWakeWordListening();
-              });
-              return;
-            }
-          }
-        } else if (window.krpano && typeof window.krpano.get === 'function') {
-          const count = window.krpano.get('scene.count') || 0;
-          for (let i = 0; i < count; i++) {
-            const sTitle = window.krpano.get(`scene[${i}].title`);
-            if (sTitle) {
-              const safeTitle = String(sTitle).toLowerCase();
-              if (safeTitle.includes(cleanCommand) || cleanCommand.includes(safeTitle)) {
-                targetSceneTitle = String(sTitle);
-                targetSceneKrpanoName = window.krpano.get(`scene[${i}].name`);
-                break;
-              }
-            }
-          }
-        }
-
-        console.log('[VoiceAssistant] Intent resolution result:', targetSceneTitle);
-
-        if (targetSceneTitle && targetSceneKrpanoName && window.krpano && typeof window.krpano.call === 'function') {
-          const spokenMsg = `Taking you to ${targetSceneTitle}.`;
-
-          // Execute 360 panorama navigation IMMEDIATELY so view changes instantly
-          window.krpano.call(`loadscene('${targetSceneKrpanoName}', null, MERGE, BLEND(0.5))`);
-
-          // Speak spoken response confirmation
-          this.speakText(spokenMsg, () => {
-            this.startWakeWordListening();
-          });
-        } else {
-          let available = '';
-          if (window.scenes) available = window.scenes.slice(0, 3).map(s => s.title).join(', ');
-          else if (window.krpano) available = [0,1,2].map(i => window.krpano.get(`scene[${i}].title`)).filter(Boolean).join(', ');
-
-          const notFoundMsg = available
-            ? `Sorry, I couldn't find a scene matching ${commandText}. Available scenes: ${available}.`
-            : `Sorry, I couldn't find a scene matching ${commandText}.`;
-
-          this.speakText(notFoundMsg, () => {
-            this.startWakeWordListening();
-          });
-        }
-      }, 150);
-    }
-
-    /**
-     * Web Audio API Synthesizer — Plays a clean two-tone activation chime
-     */
-    playActivationChime() {
-      try {
-        if (!this.audioCtx) {
-          this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-        if (this.audioCtx.state === 'suspended') {
-          this.audioCtx.resume();
-        }
-
-        const now = this.audioCtx.currentTime;
-        const osc = this.audioCtx.createOscillator();
-        const gain = this.audioCtx.createGain();
-
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(587.33, now); // D5
-        osc.frequency.setValueAtTime(880.00, now + 0.08); // A5
-
-        gain.gain.setValueAtTime(0.15, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-
-        osc.connect(gain);
-        gain.connect(this.audioCtx.destination);
-
-        osc.start(now);
-        osc.stop(now + 0.35);
-      } catch (e) {
-        console.warn('[VoiceAssistant] Audio chime error:', e.message);
-      }
-    }
-
-    /**
-     * Text-To-Speech Synthesizer with Chrome Safety Safeguard Callback
-     */
-    speakText(text, callback) {
-      clearTimeout(this.listeningTimer);
-      this.setState(STATE.SPEAKING, text);
-      this.safeStopRecognition(); // Temporarily pause mic to avoid picking up TTS audio from speakers
-
-      if (!('speechSynthesis' in window)) {
-        if (callback) callback();
-        return;
-      }
-
-      window.speechSynthesis.cancel(); // Stop any pending speech
-
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 1.0;
-      utterance.pitch = 1.1; // Slightly higher pitch for a friendlier tone
-      utterance.lang = 'en-US';
-
-      // Attempt to select a female voice
-      const voices = this.availableVoices.length > 0 ? this.availableVoices : window.speechSynthesis.getVoices();
+  });
+  
+  async function startAgent() {
+    try {
+      updateState('Connecting...');
       
-      // Look for known female voices (Google, Microsoft Zira, etc.)
-      let femaleVoice = voices.find(v => 
-        /female|zira|samantha|victoria|susan|hazel|catherine|google us english/i.test(v.name)
-      );
-
-      // If no explicit female match, try any English voice that isn't a known male (David/Mark)
-      if (!femaleVoice) {
-        femaleVoice = voices.find(v => v.lang.includes('en') && !/david|mark|george/i.test(v.name));
-      }
-
-      if (femaleVoice) {
-        try {
-          utterance.voice = femaleVoice;
-        } catch (e) {
-          console.warn('[VoiceAssistant] Failed to set female voice', e);
-        }
-      }
-
-      let hasRunCallback = false;
-      const safeDone = () => {
-        if (!hasRunCallback) {
-          hasRunCallback = true;
-          clearTimeout(fallbackTimer);
-          if (callback) callback();
-        }
-      };
-
-      // Safeguard timeout: Ensures callback runs even if Chrome SpeechSynthesis fails to emit onend
-      const estimatedMs = Math.max(1800, text.length * 90);
-      const fallbackTimer = setTimeout(safeDone, estimatedMs);
-
-      utterance.onend = safeDone;
-      utterance.onerror = (e) => {
-        console.warn('[VoiceAssistant] TTS error:', e);
-        safeDone();
-      };
-
+      // 1. Get Microphone permission
       try {
-        window.speechSynthesis.speak(utterance);
+        mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       } catch (e) {
-        console.warn('[VoiceAssistant] SpeechSynthesis.speak error:', e.message);
-        safeDone();
-      }
-    }
-
-    /**
-     * Updates internal state and UI styling
-     */
-    setState(newState, subtext = '') {
-      this.state = newState;
-      console.log(`[VoiceAssistant] State ➔ ${newState} (${subtext})`);
-
-      const badge = document.getElementById('voice-status-badge');
-      const label = document.getElementById('voice-status-label');
-      const sub = document.getElementById('voice-status-subtext');
-      const micBtn = document.getElementById('voice-mic-toggle-btn');
-
-      if (!badge || !label || !sub) return;
-
-      badge.className = 'voice-status-badge';
-      if (micBtn) micBtn.classList.remove('active');
-
-      switch (newState) {
-        case STATE.WAITING_FOR_WAKE_WORD:
-          badge.classList.add('state-waiting');
-          label.textContent = '● Voice ready';
-          sub.textContent = subtext || 'Say "Hey 360"';
-          break;
-
-        case STATE.WAKE_WORD_DETECTED:
-          badge.classList.add('state-listening');
-          label.textContent = '⚡ Hey 360 detected!';
-          sub.textContent = subtext || 'Activating...';
-          break;
-
-        case STATE.LISTENING:
-          badge.classList.add('state-listening');
-          if (micBtn) micBtn.classList.add('active');
-          label.textContent = '🎤 Listening...';
-          sub.textContent = subtext || 'Say a destination';
-          break;
-
-        case STATE.PROCESSING:
-          badge.classList.add('state-processing');
-          label.textContent = '⚡ Understanding...';
-          sub.textContent = subtext || 'Finding scene...';
-          break;
-
-        case STATE.SPEAKING:
-          badge.classList.add('state-speaking');
-          label.textContent = '🔊 Speaking...';
-          sub.textContent = subtext;
-          break;
-
-        case STATE.UNAVAILABLE:
-          badge.classList.add('state-unavailable');
-          label.textContent = 'Voice Assistant Unavailable';
-          sub.textContent = subtext || 'Allow microphone access';
-          break;
-
-        case STATE.IDLE:
-        default:
-          label.textContent = 'Voice Assistant Paused';
-          sub.textContent = subtext || 'Click microphone to start';
-          break;
-      }
-    }
-
-    updateSubtext(subtext) {
-      const sub = document.getElementById('voice-status-subtext');
-      if (sub) sub.textContent = subtext;
-    }
-
-    /**
-     * Manual Microphone Button Toggle Callback
-     */
-    toggleManualMic() {
-      if (!this.isSupported) {
-        alert('Web Speech Recognition is not supported on this browser. Please use Google Chrome or Microsoft Edge.');
+        alert("Microphone access is required to use Hey 360.\nPlease allow microphone access and try again.");
+        updateState('Error');
         return;
       }
-
-      if (!this.permissionGranted) {
-        this.showPermissionModal();
-        return;
-      }
-
-      if (this.state === STATE.LISTENING) {
-        this.startWakeWordListening();
-      } else {
-        this.safeStopRecognition();
-        this.setState(STATE.LISTENING, 'Listening... Say a destination');
-        setTimeout(() => {
-          this.safeStartRecognition();
-          this.startListeningTimeout();
-        }, 100);
-      }
-    }
-
-    /**
-     * Permission Disclosure Modal Component
-     */
-    showPermissionModal() {
-      if (document.getElementById('voice-perm-modal')) return;
-
-      const modalHtml = `
-        <div id="voice-perm-modal" class="voice-modal-overlay">
-          <div class="voice-modal-card">
-            <div class="voice-modal-title">
-              <span>🎤 Enable "Hey 360" Voice Assistant</span>
-            </div>
-            <div class="voice-modal-body">
-              This website uses a voice activation system allowing you to say <strong>"Hey 360"</strong> to navigate between panorama scenes hands-free.
-            </div>
-            <div class="voice-privacy-note">
-              <strong>🔒 Privacy Note:</strong> Microphone audio is processed via your browser's Speech Recognition engine (e.g. Google Speech Services / Apple Web API). Speech data is used strictly for local navigation commands.
-            </div>
-            <div class="voice-modal-actions">
-              <button class="voice-btn-secondary" id="voice-modal-deny">Manual Button Only</button>
-              <button class="voice-btn-primary" id="voice-modal-allow">Allow Microphone</button>
-            </div>
-          </div>
-        </div>
-      `;
-
-      document.body.insertAdjacentHTML('beforeend', modalHtml);
-
-      document.getElementById('voice-modal-allow').onclick = () => {
-        this.permissionGranted = true;
-        localStorage.setItem('voice_perm_granted', 'true');
-        document.getElementById('voice-perm-modal').remove();
-        this.startWakeWordListening();
+      
+      // 2. Fetch Ephemeral Token
+      const tokenRes = await fetch('/api/gemini-live-token');
+      if (!tokenRes.ok) throw new Error("Gemini token failure");
+      const { token } = await tokenRes.json();
+      
+      if (!token) throw new Error("Missing token");
+      
+      // 3. Initialize WebSockets
+      const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${token}`;
+      ws = new WebSocket(wsUrl);
+      
+      ws.onopen = () => {
+        // Send initial setup
+        ws.send(JSON.stringify({
+          setup: {
+            model: "models/gemini-2.5-flash-native-audio-latest",
+            systemInstruction: {
+              parts: [{ text: INSTRUCTION }]
+            },
+            tools: [
+              {
+                functionDeclarations: [
+                  {
+                    name: "navigate_scene",
+                    description: "Navigate the user to one of the available destinations in the virtual tour. Only use destination IDs from the provided list.",
+                    parameters: {
+                      type: "OBJECT",
+                      properties: {
+                        destination: {
+                          type: "STRING",
+                          description: "The exact ID of the destination",
+                          enum: ["left_view", "back_view", "right_view", "kitchen", "living_room_1", "living_room_2", "bedroom"]
+                        }
+                      },
+                      required: ["destination"]
+                    }
+                  }
+                ]
+              }
+            ],
+            generationConfig: {
+              responseModalities: ["AUDIO"],
+              speechConfig: {
+                voiceConfig: {
+                  prebuiltVoiceConfig: {
+                    voiceName: "Aoede"
+                  }
+                }
+              }
+            }
+          }
+        }));
       };
-
-      document.getElementById('voice-modal-deny').onclick = () => {
-        this.permissionGranted = false;
-        localStorage.setItem('voice_perm_granted', 'false');
-        document.getElementById('voice-perm-modal').remove();
-        this.setState(STATE.IDLE, 'Manual mic button mode active');
+      
+      ws.onmessage = async (evt) => {
+        let msg;
+        if (evt.data instanceof Blob) {
+            const text = await evt.data.text();
+            msg = JSON.parse(text);
+        } else {
+            msg = JSON.parse(evt.data);
+        }
+        
+        handleGeminiMessage(msg);
       };
-    }
-
-    /**
-     * Renders Floating HUD Container to DOM
-     */
-    initUI() {
-      if (document.getElementById('voice-assistant-hud')) return;
-
-      const hudHtml = `
-        <div id="voice-assistant-hud">
-          <div id="voice-status-badge" class="voice-status-badge state-waiting" title="Click mic button to toggle listening">
-            <div class="voice-dot"></div>
-            <div class="voice-text-container">
-              <span id="voice-status-label" class="voice-label">● Voice ready</span>
-              <span id="voice-status-subtext" class="voice-subtext">Say "Hey 360"</span>
-            </div>
-          </div>
-          <button id="voice-mic-toggle-btn" class="voice-mic-btn" title="Toggle Voice Control">
-            <svg viewBox="0 0 24 24">
-              <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
-              <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
-            </svg>
-          </button>
-        </div>
-      `;
-
-      document.body.insertAdjacentHTML('beforeend', hudHtml);
-
-      document.getElementById('voice-mic-toggle-btn').onclick = () => {
-        this.toggleManualMic();
+      
+      ws.onerror = (e) => {
+        console.error("Voice connection lost", e);
+        alert("Voice connection lost.\nPlease try again.");
+        stopAgent();
       };
-
-      document.getElementById('voice-status-badge').onclick = () => {
-        if (!this.permissionGranted) {
-          this.showPermissionModal();
+      
+      ws.onclose = () => {
+        stopAgent();
+      };
+      
+      // 4. Initialize Audio Input (16kHz)
+      inputAudioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+      await inputAudioContext.audioWorklet.addModule('assets/pcm-processor.js');
+      
+      const source = inputAudioContext.createMediaStreamSource(mediaStream);
+      workletNode = new AudioWorkletNode(inputAudioContext, 'pcm-processor');
+      
+      workletNode.port.onmessage = (e) => {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          const pcmData = new Int16Array(e.data);
+          const base64Audio = arrayBufferToBase64(pcmData.buffer);
+          
+          ws.send(JSON.stringify({
+            realtimeInput: {
+              mediaChunks: [{
+                mimeType: "audio/pcm;rate=16000",
+                data: base64Audio
+              }]
+            }
+          }));
         }
       };
+      
+      source.connect(workletNode);
+      workletNode.connect(inputAudioContext.destination);
+      
+      // 5. Initialize Audio Output (24kHz Native Playback)
+      outputAudioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+      
+    } catch (e) {
+      console.error(e);
+      alert("Unable to connect to Hey 360.\nPlease try again.");
+      updateState('Error');
+    }
+  }
+  
+  function handleGeminiMessage(msg) {
+    console.log("Hey 360 WebSocket Msg:", msg);
+    
+    if (msg.error) {
+      console.error("Gemini Error:", msg.error);
+      alert("Hey 360 Error: " + (msg.error.message || JSON.stringify(msg.error)));
+      return;
+    }
+    
+    if (msg.setupComplete) {
+      updateState('Listening...');
+    }
+    
+    if (msg.serverContent) {
+      if (msg.serverContent.interrupted) {
+        stopPlayback();
+        updateState('Listening...');
+      }
+      
+      if (msg.serverContent.modelTurn) {
+        const parts = msg.serverContent.modelTurn.parts;
+        for (const part of parts) {
+          if (part.inlineData && part.inlineData.mimeType.startsWith('audio/pcm')) {
+            updateState('Speaking...');
+            playAudioChunk(part.inlineData.data);
+          }
+        }
+      }
+    }
+
+    if (msg.toolCall) {
+      const functionCalls = msg.toolCall.functionCalls;
+      if (functionCalls && functionCalls.length > 0) {
+        for (const funcCall of functionCalls) {
+          handleFunctionCall(funcCall);
+        }
+      }
+    }
+  }
+  
+  function handleFunctionCall(funcCall) {
+    console.log("Hey 360 Function Call Received:", funcCall);
+    
+    if (funcCall.name === "navigate_scene") {
+      let destinationId = funcCall.args ? funcCall.args.destination : null;
+      console.log("Destination requested:", destinationId);
+      
+      // Fuzzy matching to handle potential model errors
+      if (destinationId && !DESTINATION_REGISTRY[destinationId]) {
+        destinationId = destinationId.toLowerCase().replace(/\s+/g, '_');
+      }
+      
+      let success = false;
+      let errorMessage = "Destination unavailable";
+      
+      const dest = DESTINATION_REGISTRY[destinationId];
+      if (dest) {
+        if (window.krpano) {
+          try {
+            console.log("Calling krpano loadscene:", dest.sceneId);
+            window.krpano.call(`loadscene('${dest.sceneId}', null, MERGE, BLEND(0.5))`);
+            success = true;
+          } catch (e) {
+            console.error("Krpano navigation error:", e);
+            errorMessage = e.message;
+          }
+        } else {
+          console.error("window.krpano is undefined");
+          errorMessage = "Krpano engine not found";
+        }
+      } else {
+        console.error("Destination ID not found in registry:", destinationId);
+      }
+      
+      // Send response back
+      const functionResponseMsg = {
+        toolResponse: {
+          functionResponses: [
+            {
+              id: funcCall.id,
+              name: "navigate_scene",
+              response: {
+                success: success,
+                destination: destinationId,
+                ...(success ? {} : { error: errorMessage })
+              }
+            }
+          ]
+        }
+      };
+      
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify(functionResponseMsg));
+      }
     }
   }
 
-  // Instantiate Voice Assistant global singleton once DOM is ready
-  window.addEventListener('DOMContentLoaded', () => {
-    window.voiceAssistant = new VoiceAssistantManager();
-  });
-
-})(window);
+  function playAudioChunk(base64Audio) {
+    if (!outputAudioContext) return;
+    
+    const binaryString = atob(base64Audio);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    const int16Array = new Int16Array(bytes.buffer);
+    const float32Array = new Float32Array(int16Array.length);
+    for (let i = 0; i < int16Array.length; i++) {
+      float32Array[i] = int16Array[i] / 32768.0;
+    }
+    
+    const buffer = outputAudioContext.createBuffer(1, float32Array.length, 24000);
+    buffer.getChannelData(0).set(float32Array);
+    
+    const source = outputAudioContext.createBufferSource();
+    source.buffer = buffer;
+    source.connect(outputAudioContext.destination);
+    
+    const currentTime = outputAudioContext.currentTime;
+    if (nextPlayTime < currentTime) {
+      nextPlayTime = currentTime;
+    }
+    
+    source.start(nextPlayTime);
+    nextPlayTime += buffer.duration;
+    
+    playbackQueue.push(source);
+    
+    source.onended = () => {
+      const idx = playbackQueue.indexOf(source);
+      if (idx > -1) playbackQueue.splice(idx, 1);
+      if (playbackQueue.length === 0 && state === 'Speaking...') {
+        updateState('Listening...');
+      }
+    };
+  }
+  
+  function stopPlayback() {
+    playbackQueue.forEach(source => {
+      try { source.stop(); } catch(e) {}
+    });
+    playbackQueue = [];
+    nextPlayTime = 0;
+  }
+  
+  function stopAgent() {
+    if (ws) {
+      ws.close();
+      ws = null;
+    }
+    if (workletNode) {
+      workletNode.disconnect();
+      workletNode = null;
+    }
+    if (inputAudioContext) {
+      inputAudioContext.close();
+      inputAudioContext = null;
+    }
+    if (outputAudioContext) {
+      outputAudioContext.close();
+      outputAudioContext = null;
+    }
+    if (mediaStream) {
+      mediaStream.getTracks().forEach(t => t.stop());
+      mediaStream = null;
+    }
+    
+    stopPlayback();
+    
+    if (state !== 'Error') {
+      updateState('Idle');
+    }
+  }
+  
+  // Helper to base64 encode ArrayBuffer safely
+  function arrayBufferToBase64(buffer) {
+    let binary = '';
+    const bytes = new Uint8Array(buffer);
+    const len = bytes.byteLength;
+    for (let i = 0; i < len; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return window.btoa(binary);
+  }
+  
+})();

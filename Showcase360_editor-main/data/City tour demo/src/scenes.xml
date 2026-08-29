@@ -69,18 +69,20 @@
 			<cube url="../panos/vesu_1_1.tiles/%s/l%l/%v/l%l_%s_%v_%h.jpg" multires="512,1024,2048,3840" />
 		</image>
 
-		<hotspot name="hs_mta2vnkaam9ye5" ath="-1.68" atv="-8.63" width="150" height="150" scale="1" visible="true" zorder="100" enabled="true" capture="false" url="../assets/ChatGPT Image Aug 26, 2026, 06_00_08 PM.png" alpha="1.0"
+		<hotspot name="hs_mta2vnkaam9ye5" ath="-123.2" atv="-5.75" width="150" height="150" scale="1" visible="true" zorder="100" enabled="true" capture="false" url="../assets/ChatGPT Image Aug 26, 2026, 06_00_08 PM.png" alpha="1.0"
 		         onclick="js(alert('Pin'));" />
-		<hotspot name="hs_mta30lxdb3o71v" ath="-52.51" atv="-13.01" width="60" height="60" scale="1" visible="true" zorder="100" enabled="true" capture="false" url="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4Ij48cGF0aCBkPSJNMjAgMTQgTDQ0IDMyIEwyMCA1MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjgiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjwvc3ZnPg==" alpha="1.0"
+		<hotspot name="hs_mta30lxdb3o71v" ath="-54.16" atv="-12.74" width="60" height="60" scale="1" visible="true" zorder="100" enabled="true" capture="false" url="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4Ij48cGF0aCBkPSJNMjAgMTQgTDQ0IDMyIEwyMCA1MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjgiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjwvc3ZnPg==" alpha="1.0"
 		         onclick="loadscene('scene_dumas_2', null, MERGE, BLEND(0.5));" />
-		<hotspot name="hs_mta31de55o6e24" ath="-53.09" atv="-6.58"   scale="0.85" visible="true" zorder="100" enabled="true" capture="false" type="text" html="Airport" distorted="true" alpha="1" bgcolor="0x000000" bgalpha="0" bgborder="0 0x000000 0" bgroundedge="0" txtshadow="2 2 4 0xff0000 0" css="font-family:Arial; font-size:30px; color:#ffffff; font-weight:normal; font-style:normal; text-decoration:none; text-align:center;" padding="4 8"
+		<hotspot name="hs_mta31de55o6e24" ath="-54.72" atv="-8.13"   scale="0.85" visible="true" zorder="100" enabled="true" capture="false" type="text" html="Airport" distorted="true" alpha="1" bgcolor="0x000000" bgalpha="0" bgborder="0 0x000000 0" bgroundedge="0" txtshadow="2 2 4 0xff0000 0" css="font-family:Arial; font-size:30px; color:#ffffff; font-weight:normal; font-style:normal; text-decoration:none; text-align:center;" padding="4 8"
 		         onclick="js(alert('Airport'));" />
-		<hotspot name="hs_mta4a0nw7lcz2f" ath="62.03" atv="-2.59"   scale="0.85" visible="true" zorder="100" enabled="true" capture="false" url="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4Ij48cGF0aCBkPSJNMTQgNDQgTDMyIDIwIEw1MCA0NCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjgiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjwvc3ZnPg==" alpha="1.0"
+		<hotspot name="hs_mta4a0nw7lcz2f" ath="25.35" atv="-33.58"   scale="0.85" visible="true" zorder="100" enabled="true" capture="false" url="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4Ij48cGF0aCBkPSJNMTQgNDQgTDMyIDIwIEw1MCA0NCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjgiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjwvc3ZnPg==" alpha="1.0"
 		         onclick="loadscene('scene_vesu_5_1', null, MERGE, BLEND(0.5));" />
-		<hotspot name="hs_mta4auhrd4bp3g" ath="76.18" atv="-6.35"   scale="0.85" visible="true" zorder="100" enabled="true" capture="false" type="text" html="yhju" distorted="true" alpha="1" bgcolor="0x000000" bgalpha="0.27" bgborder="0 0x000000 0" bgroundedge="0" bgshadow="2 2 4 0xff0000 0" css="font-family:Arial; font-size:30px; color:#ffffff; font-weight:normal; font-style:normal; text-decoration:none; text-align:center;" padding="4 8"
-		         onclick="js(alert('yhju'));" />
-		<hotspot name="hs_mta4bjlg6wmvpv" ath="26.81" atv="-7.19" width="150" height="150" scale="1" visible="true" zorder="100" enabled="true" capture="false" url="../assets/ChatGPT Image Aug 26, 2026, 06_00_08 PM.png" alpha="1.0"
+		<hotspot name="hs_mta4auhrd4bp3g" ath="61.48" atv="-24.55"   scale="0.85" visible="true" zorder="100" enabled="true" capture="false" type="text" html="TEXT" distorted="true" alpha="1" bgcolor="0x000000" bgalpha="0.27" bgborder="0 0x000000 0" bgroundedge="0" bgshadow="2 2 4 0xff0000 0" css="font-family:Arial; font-size:30px; color:#ffffff; font-weight:normal; font-style:normal; text-decoration:none; text-align:center;" padding="4 8"
+		         onclick="js(alert('TEXT'));" />
+		<hotspot name="hs_mta4bjlg6wmvpv" ath="-7.03" atv="-2.56" width="150" height="150" scale="1" visible="true" zorder="100" enabled="true" capture="false" url="../assets/ChatGPT Image Aug 26, 2026, 06_00_08 PM.png" alpha="1.0"
 		         onclick="js(alert('Pin'));" />
+		<hotspot name="hs_mte3d1q99dv0nk" ath="-28.96" atv="-17.35"   scale="0.85" visible="true" zorder="100" enabled="true" capture="false" url="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4Ij48cGF0aCBkPSJNNDggMTYgTDE2IDE2IEwxNiAyNiBMMzYgMjYgTDM2IDQ4IEw0OCA0OCBaIiBmaWxsPSIjZmZmZmZmIi8+PC9zdmc+" alpha="1.0"
+		         onclick="loadscene('scene_vesu_2_1', null, MERGE, BLEND(0.5));" />
 
 
 	</scene>
@@ -98,6 +100,8 @@
 		</image>
 
 		<hotspot name="hs_mta494hr8sfxni" ath="112.99" atv="8.43"   scale="0.85" visible="true" zorder="100" enabled="true" capture="false" url="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4Ij48cGF0aCBkPSJNMTQgNDQgTDMyIDIwIEw1MCA0NCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjgiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjwvc3ZnPg==" alpha="1.0"
+		         onclick="loadscene('scene_vesu_1_1', null, MERGE, BLEND(0.5));" />
+		<hotspot name="hs_mte3d53a6xckw2" ath="48.87" atv="-8.52"   scale="0.85" visible="true" zorder="100" enabled="true" capture="false" url="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4Ij48cGF0aCBkPSJNNDggMTYgTDE2IDE2IEwxNiAyNiBMMzYgMjYgTDM2IDQ4IEw0OCA0OCBaIiBmaWxsPSIjZmZmZmZmIi8+PC9zdmc+" alpha="1.0"
 		         onclick="loadscene('scene_vesu_1_1', null, MERGE, BLEND(0.5));" />
 
 

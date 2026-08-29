@@ -1,271 +1,174 @@
 /* ============================================================
-   Voice Assistant "Hey 360" HUD & UI Stylesheet
+   Voice Assistant "Hey 360" Widget Stylesheet
    ============================================================ */
 
-/* Main Floating Container */
-#voice-assistant-hud {
+.hey-360-btn {
   position: fixed;
-  bottom: 24px;
-  right: 24px;
-  z-index: 99999;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(25, 25, 35, 0.88);
+  color: #ffffff;
+  padding: 8px 18px 8px 12px;
+  border-radius: 40px;
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  z-index: 2147483647;
   display: flex;
   align-items: center;
   gap: 12px;
-  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  user-select: none;
-  pointer-events: auto;
-}
-
-/* Status Pill Badge */
-.voice-status-badge {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 16px;
-  background: rgba(20, 20, 29, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 30px;
-  color: #ffffff;
-  font-size: 13px;
-  font-weight: 600;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  max-width: 340px;
+  user-select: none;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
 }
 
-/* Status Dot Indicator */
-.voice-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
+.hey-360-btn:hover {
+  transform: translateX(-50%) translateY(-2px) scale(1.02);
+  border-color: rgba(116, 184, 67, 0.6);
+  box-shadow: 0 10px 32px rgba(116, 184, 67, 0.25);
+}
+
+.hey-360-btn:active {
+  transform: translateX(-50%) scale(0.98);
+}
+
+/* Logo */
+.va-logo-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-right: 10px;
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.va-logo {
+  height: 22px;
+  width: auto;
+  max-width: 60px;
+  object-fit: contain;
+  display: block;
+}
+
+/* Orbital Concept */
+.va-orbital {
+  position: relative;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
-  transition: all 0.3s ease;
 }
 
-/* State: WAITING_FOR_WAKE_WORD */
-.voice-status-badge.state-waiting {
-  border-color: rgba(16, 185, 129, 0.4);
-}
-.voice-status-badge.state-waiting .voice-dot {
-  background-color: #10b981;
-  box-shadow: 0 0 10px #10b981;
-  animation: voice-pulse-green 2s infinite ease-in-out;
-}
-
-/* State: LISTENING */
-.voice-status-badge.state-listening {
-  background: rgba(14, 165, 233, 0.25);
-  border-color: #0ea5e9;
-  box-shadow: 0 0 20px rgba(14, 165, 233, 0.5);
-}
-.voice-status-badge.state-listening .voice-dot {
-  background-color: #0ea5e9;
-  box-shadow: 0 0 12px #0ea5e9;
-  animation: voice-pulse-cyan 1s infinite ease-in-out;
-}
-
-/* State: PROCESSING */
-.voice-status-badge.state-processing {
-  background: rgba(245, 158, 11, 0.2);
-  border-color: #f59e0b;
-}
-.voice-status-badge.state-processing .voice-dot {
-  background-color: #f59e0b;
-  box-shadow: 0 0 10px #f59e0b;
-  animation: voice-spin 1s linear infinite;
-}
-
-/* State: SPEAKING */
-.voice-status-badge.state-speaking {
-  background: rgba(16, 185, 129, 0.25);
-  border-color: #10b981;
-}
-.voice-status-badge.state-speaking .voice-dot {
-  background-color: #10b981;
-  box-shadow: 0 0 14px #10b981;
-  animation: voice-pulse-green 0.8s infinite ease-in-out;
-}
-
-/* State: UNAVAILABLE / DENIED */
-.voice-status-badge.state-unavailable {
-  background: rgba(239, 68, 68, 0.2);
-  border-color: rgba(239, 68, 68, 0.5);
-  color: #fca5a5;
-}
-.voice-status-badge.state-unavailable .voice-dot {
-  background-color: #ef4444;
-}
-
-/* Text Content & Transcript Display */
-.voice-text-container {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.25;
-}
-
-.voice-label {
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.voice-subtext {
-  font-size: 11px;
-  color: #94a3b8;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 220px;
-}
-
-/* Floating Microphone Toggle Button */
-.voice-mic-btn {
-  width: 44px;
-  height: 44px;
+.va-ring {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
-  background: #1e1e2d;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  color: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
-  transition: all 0.2s ease;
-  outline: none;
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
 }
 
-.voice-mic-btn:hover {
-  transform: translateY(-2px) scale(1.05);
-  background: #28283d;
-  border-color: #0ea5e9;
-  box-shadow: 0 8px 25px rgba(14, 165, 233, 0.3);
-}
-
-.voice-mic-btn.active {
-  background: #0ea5e9;
-  border-color: #38bdf8;
-  box-shadow: 0 0 20px rgba(14, 165, 233, 0.6);
-  animation: voice-pulse-cyan 1.5s infinite ease-in-out;
-}
-
-.voice-mic-btn svg {
-  width: 20px;
-  height: 20px;
-  fill: currentColor;
-}
-
-/* Permission Modal Overlay */
-.voice-modal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 999999;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  animation: voice-fade-in 0.25s ease-out;
-}
-
-.voice-modal-card {
-  width: 440px;
-  max-width: 90vw;
-  background: #181824;
-  border: 1px solid #2e2e42;
-  border-radius: 16px;
-  padding: 28px;
-  color: #ffffff;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
-  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-}
-
-.voice-modal-title {
-  font-size: 20px;
+.va-center {
+  font-size: 8px;
   font-weight: 800;
-  margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  color: #ffffff;
+  z-index: 2;
+  letter-spacing: -0.5px;
+}
+
+/* Text */
+.va-text {
+  min-width: 100px;
+  text-align: left;
+  white-space: nowrap;
+  letter-spacing: 0.2px;
   color: #ffffff;
 }
 
-.voice-modal-body {
-  font-size: 14px;
-  color: #cbd5e1;
-  line-height: 1.6;
-  margin-bottom: 20px;
+/* --- STATES --- */
+
+/* Idle */
+.hey-360-btn.state-idle .va-ring {
+  border-color: #74b843;
 }
 
-.voice-privacy-note {
-  font-size: 12px;
-  color: #94a3b8;
-  background: rgba(255, 255, 255, 0.05);
-  border-left: 3px solid #0ea5e9;
-  padding: 10px 14px;
-  border-radius: 4px;
-  margin-bottom: 20px;
+/* Connecting */
+.hey-360-btn.state-connecting .va-ring {
+  border-color: #f0573e;
+  border-top-color: transparent;
+  animation: va-spin 1s linear infinite;
 }
 
-.voice-modal-actions {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
+/* Listening */
+.hey-360-btn.state-listening {
+  border-color: rgba(14, 165, 233, 0.6);
+  box-shadow: 0 6px 24px rgba(14, 165, 233, 0.35);
+}
+.hey-360-btn.state-listening .va-ring {
+  border-color: #0ea5e9;
+  animation: va-pulse 1.5s ease-in-out infinite;
+}
+.hey-360-btn.state-listening .va-center {
+  color: #0ea5e9;
 }
 
-.voice-btn-primary {
-  padding: 10px 20px;
-  background: #0ea5e9;
-  color: #ffffff;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s ease;
+/* Speaking */
+.hey-360-btn.state-speaking {
+  border-color: rgba(116, 184, 67, 0.6);
+  box-shadow: 0 6px 24px rgba(116, 184, 67, 0.35);
+}
+.hey-360-btn.state-speaking .va-ring {
+  border-color: #74b843;
+  animation: va-wave 1s ease-in-out infinite alternate;
+}
+.hey-360-btn.state-speaking .va-center {
+  color: #74b843;
 }
 
-.voice-btn-primary:hover {
-  background: #0284c7;
-  box-shadow: 0 4px 14px rgba(14, 165, 233, 0.4);
+/* Error */
+.hey-360-btn.state-error .va-ring {
+  border-color: #ef4444;
+}
+.hey-360-btn.state-error .va-center {
+  color: #ef4444;
 }
 
-.voice-btn-secondary {
-  padding: 10px 18px;
-  background: transparent;
-  color: #94a3b8;
-  border: 1px solid #334155;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
+/* --- ANIMATIONS --- */
 
-.voice-btn-secondary:hover {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.05);
-}
-
-/* Animations */
-@keyframes voice-pulse-green {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.3); opacity: 0.6; }
-}
-
-@keyframes voice-pulse-cyan {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.4); opacity: 0.5; }
-}
-
-@keyframes voice-spin {
+@keyframes va-spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
 
-@keyframes voice-fade-in {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
+@keyframes va-pulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.3); opacity: 0.5; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes va-wave {
+  0% { transform: scale(0.85); border-width: 2px; }
+  100% { transform: scale(1.15); border-width: 3px; }
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .hey-360-btn {
+    top: auto;
+    bottom: 20px;
+    padding: 6px 12px 6px 10px;
+    gap: 10px;
+  }
+  .va-logo {
+    height: 18px;
+  }
 }

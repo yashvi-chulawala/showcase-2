@@ -152,7 +152,21 @@ function getSceneKrpanoName(scene) {
 function isImageHotspot(hs) {
   if (!hs) return false;
   const s = String(hs.style || '');
-  return s.startsWith('assets/') || s.startsWith('http') || s.startsWith('data:image/') ;
+  return s.startsWith('assets/') || s.startsWith('http') || s.startsWith('data:image/');
+}
+
+// Returns true if a hotspot should be treated as a text label
+function isTextHotspot(hs) {
+  if (!hs) return false;
+  if (isImageHotspot(hs)) return false;
+  const s = String(hs.style || '').toLowerCase();
+  return s === 'text' || hs.kind === 'text';
+}
+
+// Returns true if a hotspot should be treated as a navigation / icon hotspot
+function isNavHotspot(hs) {
+  if (!hs) return false;
+  return !isImageHotspot(hs) && !isTextHotspot(hs);
 }
 
 // Generate inline Base64 data URI for SVG icons or standalone Text style
@@ -2127,7 +2141,7 @@ function addHotspotToKrpano(hotspot, targetScene) {
     return;
   }
 
-  if (styleName === 'Text' || hotspot.kind === 'info') {
+  if (isTextHotspot(hotspot)) {
     krpano.set(`hotspot[${name}].type`, 'text');
     krpano.set(`hotspot[${name}].html`, hotspot.title || 'TEXT');
     
@@ -2257,6 +2271,7 @@ function showTabOnly(panel) {
   const panelHotspot = document.getElementById('panel-hotspot-properties');
   const panelText = document.getElementById('panel-text-properties');
   const hsListGroup = document.getElementById('prop-hs-list-group');
+  const quickAddBar = document.getElementById('prop-quick-add-bar');
 
   if (btnPano) btnPano.classList.remove('active');
   if (btnHotspot) btnHotspot.classList.remove('active');
@@ -2265,6 +2280,7 @@ function showTabOnly(panel) {
   if (panelHotspot) panelHotspot.style.display = 'none';
   if (panelText) panelText.style.display = 'none';
   if (hsListGroup) hsListGroup.style.display = 'none';
+  if (quickAddBar) quickAddBar.style.display = 'none';
 
   if (panel === 'pano') {
     if (btnPano) btnPano.classList.add('active');
@@ -2273,35 +2289,70 @@ function showTabOnly(panel) {
     if (btnHotspot) btnHotspot.classList.add('active');
     if (panelHotspot) panelHotspot.style.display = 'flex';
     if (hsListGroup) hsListGroup.style.display = 'flex';
+    if (quickAddBar) quickAddBar.style.display = 'flex';
   } else if (panel === 'text') {
     if (btnHotspot) btnHotspot.classList.add('active');
     if (panelText) panelText.style.display = 'flex';
     if (hsListGroup) hsListGroup.style.display = 'flex';
+    if (quickAddBar) quickAddBar.style.display = 'flex';
   }
 }
+
+let currentHotspotFilter = 'hotspot'; // 'hotspot' | 'text' | 'image'
+
+window.setHotspotFilter = function(type) {
+  currentHotspotFilter = type;
+  
+  const btnHs = document.getElementById('prop-quick-hotspot');
+  const btnTxt = document.getElementById('prop-quick-text');
+  const btnImg = document.getElementById('prop-quick-image');
+  
+  if (btnHs) btnHs.classList.toggle('active', type === 'hotspot');
+  if (btnTxt) btnTxt.classList.toggle('active', type === 'text');
+  if (btnImg) btnImg.classList.toggle('active', type === 'image');
+
+  const sceneHs = hotspots.filter(h => String(h.sceneId) === String(activeSceneId));
+  let filtered = [];
+  if (type === 'text') {
+    filtered = sceneHs.filter(h => isTextHotspot(h));
+  } else if (type === 'image') {
+    filtered = sceneHs.filter(h => isImageHotspot(h));
+  } else {
+    filtered = sceneHs.filter(h => isNavHotspot(h));
+  }
+
+  const matchingSelected = selectedHotspotId && filtered.find(h => String(h._id) === String(selectedHotspotId));
+  if (matchingSelected) {
+    if (type === 'image') selectImageHotspot(matchingSelected._id);
+    else if (type === 'text') selectTextHotspot(matchingSelected._id);
+    else selectHotspot(matchingSelected._id);
+  } else if (filtered.length > 0) {
+    const first = filtered[0];
+    if (type === 'image') selectImageHotspot(first._id);
+    else if (type === 'text') selectTextHotspot(first._id);
+    else selectHotspot(first._id);
+  } else {
+    selectedHotspotId = null;
+    if (type === 'text') {
+      showTabOnly('text');
+      renderEmptyTextPanel();
+    } else {
+      showTabOnly('hotspot');
+      renderEmptyHotspotPanel();
+    }
+  }
+
+  renderHotspotList();
+};
 
 // Switch Property Editor between Panorama, Hotspot, and Text tabs
 function switchPropertyPanel(panel) {
   showTabOnly(panel);
 
   if (panel === 'hotspot') {
-    if (selectedHotspotId && hotspots.some(h => String(h._id) === String(selectedHotspotId) && (h.style === 'Text' || h.kind === 'info'))) {
-      showTabOnly('text');
-      selectTextHotspot(selectedHotspotId);
-      return;
-    }
-    const currentSceneHotspots = hotspots.filter(h => String(h.sceneId) === String(activeSceneId) && h.style !== 'Text' && h.kind !== 'info');
-    if (selectedHotspotId && hotspots.some(h => String(h._id) === String(selectedHotspotId) && h.style !== 'Text' && h.kind !== 'info')) {
-      selectHotspot(selectedHotspotId);
-    } else {
-      renderEmptyHotspotPanel();
-    }
+    setHotspotFilter(currentHotspotFilter || 'hotspot');
   } else if (panel === 'text') {
-    if (selectedHotspotId && hotspots.some(h => String(h._id) === String(selectedHotspotId) && (h.style === 'Text' || h.kind === 'info'))) {
-      selectTextHotspot(selectedHotspotId);
-    } else {
-      renderEmptyTextPanel();
-    }
+    setHotspotFilter('text');
   }
 }
 
@@ -2340,7 +2391,7 @@ async function toggleHotspotLock(hotspotId) {
       if (String(selectedHotspotId) === String(hotspotId)) {
         const hs2 = hotspots.find(h => String(h._id) === String(hotspotId));
         if (isImageHotspot(hs2)) selectImageHotspot(hotspotId);
-        else if (hs.style === 'Text' || hs.kind === 'info') selectTextHotspot(hotspotId);
+        else if (isTextHotspot(hs2)) selectTextHotspot(hotspotId);
         else selectHotspot(hotspotId);
       }
       if (krpano && typeof krpano.set === 'function') {
@@ -2354,7 +2405,7 @@ async function toggleHotspotLock(hotspotId) {
   }
 }
 
-// Render the hotspot list panel
+// Render the hotspot list panel filtered by category (Hotspot, Text, Image)
 function renderHotspotList() {
   const container = document.getElementById('prop-hs-list-container');
   const countEl = document.getElementById('hs-list-count');
@@ -2366,23 +2417,35 @@ function renderHotspotList() {
     return;
   }
   
-  const currentHs = hotspots.filter(h => String(h.sceneId) === String(activeSceneId));
-  countEl.textContent = currentHs.length;
-  
-  // Hide the list container entirely when there are no hotspots (avoids empty bar in UI)
-  const listContainer = document.getElementById('prop-hs-list-container');
-  if (listContainer) {
-    listContainer.style.display = currentHs.length > 0 ? '' : 'none';
+  const sceneHs = hotspots.filter(h => String(h.sceneId) === String(activeSceneId));
+  let currentHs = [];
+  if (currentHotspotFilter === 'text') {
+    currentHs = sceneHs.filter(h => isTextHotspot(h));
+  } else if (currentHotspotFilter === 'image') {
+    currentHs = sceneHs.filter(h => isImageHotspot(h));
+  } else {
+    currentHs = sceneHs.filter(h => isNavHotspot(h));
   }
 
+  countEl.textContent = currentHs.length;
+  container.style.display = 'flex';
   container.innerHTML = '';
   
+  if (currentHs.length === 0) {
+    const emptyMsg = document.createElement('div');
+    emptyMsg.style.cssText = 'padding: 12px 10px; font-size: 12px; color: #64748b; text-align: center; font-style: italic;';
+    const typeName = currentHotspotFilter === 'text' ? 'text' : currentHotspotFilter === 'image' ? 'image' : 'navigation';
+    emptyMsg.textContent = `No ${typeName} hotspots in this scene`;
+    container.appendChild(emptyMsg);
+    return;
+  }
+
   currentHs.forEach(h => {
     const item = document.createElement('div');
     item.className = 'hs-layer-item' + (String(h._id) === String(selectedHotspotId) ? ' active' : '');
     item.onclick = () => {
       if (isImageHotspot(h)) selectImageHotspot(h._id);
-      else if (h.style === 'Text' || h.kind === 'info') selectTextHotspot(h._id);
+      else if (isTextHotspot(h)) selectTextHotspot(h._id);
       else selectHotspot(h._id);
     };
     
@@ -2391,19 +2454,19 @@ function renderHotspotList() {
     const isLocked = h.locked;
     const lockColor = isLocked ? '#ef4444' : 'currentColor';
     const lockOpacity = isLocked ? '1' : '0.5';
-    // When locked: closed padlock (red). When unlocked: open padlock (dimmed gray/white)
     const lockPath = isLocked 
       ? '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path>'
-      : '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path>'; // The right side of the shackle is open
+      : '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path>';
       
     const lockIcon = `<svg onclick="event.stopPropagation(); toggleHotspotLock('${h._id}')" title="${isLocked ? 'Unlock' : 'Lock'}" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="${lockColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hs-layer-icon-action" style="opacity: ${lockOpacity}; cursor: pointer; transition: all 0.2s;">${lockPath}</svg>`;
     
-    let typeIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hs-layer-icon-type"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>';
+    let typeIcon = '';
     if (isImageHotspot(h)) {
-      // Image/photo icon
       typeIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hs-layer-icon-type"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>';
-    } else if (h.style === 'Text' || h.kind === 'info') {
+    } else if (isTextHotspot(h)) {
       typeIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hs-layer-icon-type"><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg>';
+    } else {
+      typeIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hs-layer-icon-type"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>';
     }
     
     const name = h.title || h.name || 'Untitled';
@@ -2453,6 +2516,14 @@ function selectImageHotspot(hotspotId) {
   if (!hs) return;
 
   showTabOnly('hotspot');
+
+  currentHotspotFilter = 'image';
+  const btnHs = document.getElementById('prop-quick-hotspot');
+  const btnTxt = document.getElementById('prop-quick-text');
+  const btnImg = document.getElementById('prop-quick-image');
+  if (btnHs) btnHs.classList.remove('active');
+  if (btnTxt) btnTxt.classList.remove('active');
+  if (btnImg) btnImg.classList.add('active');
 
   const emptyEl = document.getElementById('prop-hs-empty-state');
   const contentEl = document.getElementById('prop-hs-content-state');
@@ -2538,14 +2609,20 @@ function selectHotspot(hotspotId) {
     return;
   }
 
-  if (hs.style === 'Text' || hs.kind === 'info') {
+  if (isTextHotspot(hs)) {
     selectTextHotspot(hotspotId);
     return;
   }
 
-  console.log("Selecting hotspot for property editing:", hs);
-
   showTabOnly('hotspot');
+
+  currentHotspotFilter = 'hotspot';
+  const btnHs = document.getElementById('prop-quick-hotspot');
+  const btnTxt = document.getElementById('prop-quick-text');
+  const btnImg = document.getElementById('prop-quick-image');
+  if (btnHs) btnHs.classList.add('active');
+  if (btnTxt) btnTxt.classList.remove('active');
+  if (btnImg) btnImg.classList.remove('active');
 
   const emptyEl = document.getElementById('prop-hs-empty-state');
   const contentEl = document.getElementById('prop-hs-content-state');
@@ -2630,8 +2707,15 @@ function selectTextHotspot(hotspotId) {
   const hs = hotspots.find(h => String(h._id) === String(hotspotId));
   if (!hs) return;
 
-  console.log("Selecting text hotspot for property editing:", hs);
   showTabOnly('text');
+
+  currentHotspotFilter = 'text';
+  const btnHs = document.getElementById('prop-quick-hotspot');
+  const btnTxt = document.getElementById('prop-quick-text');
+  const btnImg = document.getElementById('prop-quick-image');
+  if (btnHs) btnHs.classList.remove('active');
+  if (btnTxt) btnTxt.classList.add('active');
+  if (btnImg) btnImg.classList.remove('active');
 
   const emptyEl = document.getElementById('prop-text-empty-state');
   const contentEl = document.getElementById('prop-text-content-state');
