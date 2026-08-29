@@ -174,6 +174,11 @@ app.use(express.static(vtourDir, {
   }
 }));
 
+// Auto-redirect root to editor-panel.html
+app.get('/', (req, res) => {
+  res.redirect('/editor-panel.html');
+});
+
 const PORT = process.env.PORT || 5050;
 app.listen(PORT, () => {
   console.log(`vr-tour-cms-backend listening on :${PORT}`);
