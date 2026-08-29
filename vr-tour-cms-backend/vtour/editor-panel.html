@@ -921,6 +921,50 @@
       box-shadow: 0 0 12px rgba(16, 185, 129, 0.25);
     }
 
+    .prop-quick-add-group {
+      display: flex;
+      gap: 8px;
+      padding: 10px 16px;
+      background: #14141d;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .prop-quick-btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 6px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #cbd5e1;
+      background: #1c1c28;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    .prop-quick-btn:hover {
+      color: #fff;
+      background: #252536;
+      border-color: var(--accent-green);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+    }
+
+    .prop-quick-btn:active {
+      transform: translateY(0) scale(0.97);
+    }
+
+    .prop-quick-btn svg {
+      flex-shrink: 0;
+      stroke: currentColor;
+    }
+
     .property-select {
       width: 100%;
       padding: 12px 14px;
@@ -2134,6 +2178,33 @@
             Setting</button>
           <button class="prop-tab-btn" id="prop-tab-hotspot" onclick="switchPropertyPanel('hotspot')">Hotspot
             Setting</button>
+        </div>
+
+        <!-- 3 Quick Filter / Category Buttons (Hotspot, Text, Image) -->
+        <div class="prop-quick-add-group" id="prop-quick-add-bar" style="display: none;">
+          <button class="prop-quick-btn active" id="prop-quick-hotspot" onclick="setHotspotFilter('hotspot')" title="Filter Navigation Hotspots">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="7" y1="17" x2="17" y2="7"></line>
+              <polyline points="7 7 17 7 17 17"></polyline>
+            </svg>
+            <span>Hotspot</span>
+          </button>
+          <button class="prop-quick-btn" id="prop-quick-text" onclick="setHotspotFilter('text')" title="Filter Text Hotspots">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="4 7 4 4 20 4 20 7"></polyline>
+              <line x1="9" y1="20" x2="15" y2="20"></line>
+              <line x1="12" y1="4" x2="12" y2="20"></line>
+            </svg>
+            <span>Text</span>
+          </button>
+          <button class="prop-quick-btn" id="prop-quick-image" onclick="setHotspotFilter('image')" title="Filter Image Hotspots">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <circle cx="8.5" cy="8.5" r="1.5"></circle>
+              <polyline points="21 15 16 10 5 21"></polyline>
+            </svg>
+            <span>Image</span>
+          </button>
         </div>
 
         <!-- SHARED HOTSPOTS LIST PANEL -->

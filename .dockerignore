@@ -1,0 +1,5 @@
+node_modules
+**/node_modules
+.git
+temp_uploads
+tmp_uploads
