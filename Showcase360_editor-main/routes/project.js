@@ -6,7 +6,15 @@ const multer = require('multer');
 const AdmZip = require('adm-zip');
 const db = require('../lib/db');
 
-const upload = multer({ dest: path.join(__dirname, '../temp_uploads/') });
+const tempUploadsDir = path.join(__dirname, '../temp_uploads');
+if (!fs.existsSync(tempUploadsDir)) {
+  fs.mkdirSync(tempUploadsDir, { recursive: true });
+}
+
+const upload = multer({
+  dest: tempUploadsDir,
+  limits: { fileSize: 2000 * 1024 * 1024 } // Support large project files up to 2GB
+});
 
 // GET /api/project/export — download active tour as a .s360 zip archive
 router.get('/export', (req, res) => {

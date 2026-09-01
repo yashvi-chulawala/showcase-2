@@ -461,25 +461,86 @@ async function importProjectAction(event) {
   const file = event.target.files[0];
   if (!file) return;
 
+  const modal = document.getElementById('import-progress-modal');
+  const titleEl = document.getElementById('import-progress-title');
+  const fileNameEl = document.getElementById('import-file-name');
+  const barEl = document.getElementById('import-progress-bar');
+  const statusEl = document.getElementById('import-progress-status');
+  const percentEl = document.getElementById('import-progress-percent');
+  const closeBtn = document.getElementById('import-progress-close');
+
+  const fileSizeMB = (file.size / (1024 * 1024)).toFixed(1);
+  if (fileNameEl) fileNameEl.textContent = `${file.name} (${fileSizeMB} MB)`;
+  if (barEl) barEl.style.width = '0%';
+  if (percentEl) percentEl.textContent = '0%';
+  if (statusEl) {
+    statusEl.textContent = 'Preparing upload...';
+    statusEl.style.color = '#71717a';
+  }
+  if (titleEl) titleEl.textContent = 'Importing Project';
+  if (closeBtn) closeBtn.style.display = 'none';
+  if (modal) modal.style.display = 'flex';
+
   const formData = new FormData();
   formData.append('projectFile', file);
 
-  try {
-    showToast("Importing project...");
-    const res = await fetch('/api/project/import', {
-      method: 'POST',
-      body: formData
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Failed to import project');
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/project/import', true);
 
-    showToast("Project imported successfully! Reloading...");
-    setTimeout(() => {
-      window.location.href = `?tour=${encodeURIComponent(data.newTourId)}`;
-    }, 1000);
-  } catch (err) {
-    showToast("Error importing project: " + err.message);
-  }
+  xhr.upload.onprogress = (e) => {
+    if (e.lengthComputable) {
+      const pct = Math.round((e.loaded / e.total) * 100);
+      const loadedMB = (e.loaded / (1024 * 1024)).toFixed(1);
+      const totalMB = (e.total / (1024 * 1024)).toFixed(1);
+      if (barEl) barEl.style.width = `${pct}%`;
+      if (percentEl) percentEl.textContent = `${pct}%`;
+      if (statusEl) {
+        if (pct < 100) {
+          statusEl.textContent = `Uploading: ${loadedMB} MB / ${totalMB} MB`;
+        } else {
+          statusEl.textContent = `Upload complete. Extracting project on server...`;
+        }
+      }
+    }
+  };
+
+  xhr.onload = () => {
+    try {
+      const data = JSON.parse(xhr.responseText);
+      if (xhr.status >= 200 && xhr.status < 300 && data.success) {
+        if (barEl) barEl.style.width = '100%';
+        if (percentEl) percentEl.textContent = '100%';
+        if (statusEl) statusEl.textContent = 'Project imported successfully! Loading...';
+        showToast("Project imported successfully!");
+        sessionStorage.setItem('welcomeModalSkipped', 'true');
+        setTimeout(() => {
+          window.location.href = `?tour=${encodeURIComponent(data.newTourId)}`;
+        }, 1000);
+      } else {
+        throw new Error(data.error || `Server error (${xhr.status})`);
+      }
+    } catch (err) {
+      if (statusEl) {
+        statusEl.textContent = 'Import failed: ' + err.message;
+        statusEl.style.color = '#ef4444';
+      }
+      if (titleEl) titleEl.textContent = 'Import Error';
+      if (closeBtn) closeBtn.style.display = 'block';
+      showToast("Error importing project: " + err.message);
+    }
+  };
+
+  xhr.onerror = () => {
+    if (statusEl) {
+      statusEl.textContent = 'Network or server connection error.';
+      statusEl.style.color = '#ef4444';
+    }
+    if (titleEl) titleEl.textContent = 'Import Error';
+    if (closeBtn) closeBtn.style.display = 'block';
+    showToast("Network error importing project");
+  };
+
+  xhr.send(formData);
 }
 window.importProjectAction = importProjectAction;
 

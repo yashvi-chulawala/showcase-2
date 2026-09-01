@@ -8,8 +8,13 @@ const db = require('../lib/db');
 const exifr = require('exifr');
 
 const router = express.Router();
+const tmpUploadsDir = path.join(__dirname, '../tmp_uploads');
+if (!fs.existsSync(tmpUploadsDir)) {
+  fs.mkdirSync(tmpUploadsDir, { recursive: true });
+}
+
 const storage = multer.diskStorage({
-  destination: path.join(__dirname, '../tmp_uploads'),
+  destination: tmpUploadsDir,
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
