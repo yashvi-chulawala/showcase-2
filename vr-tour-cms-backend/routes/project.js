@@ -81,13 +81,39 @@ router.post('/create', (req, res) => {
   }
 });
 
+function extractZipArchive(zipFilePath, targetDir) {
+  const { execSync } = require('child_process');
+  
+  // On Linux/Render/Docker, use native unzip (streaming, zero RAM usage, very fast)
+  if (process.platform !== 'win32') {
+    try {
+      execSync(`unzip -q -o "${zipFilePath}" -d "${targetDir}"`);
+      return true;
+    } catch (e) {
+      console.warn('Native unzip command failed, trying AdmZip fallback:', e.message);
+    }
+  } else {
+    // On Windows, try PowerShell Expand-Archive for memory-safe extraction
+    try {
+      execSync(`powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -LiteralPath '${zipFilePath}' -DestinationPath '${targetDir}' -Force"`);
+      return true;
+    } catch (e) {
+      console.warn('PowerShell Expand-Archive failed, trying AdmZip fallback:', e.message);
+    }
+  }
+
+  // AdmZip fallback
+  const zip = new AdmZip(zipFilePath);
+  zip.extractAllTo(targetDir, true);
+  return true;
+}
+
 // POST /api/project/import — upload a .s360 zip and extract it as a new tour
 router.post('/import', upload.single('projectFile'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
   const tempPath = req.file.path;
   try {
-    const zip = new AdmZip(tempPath);
     const originalName = path.basename(req.file.originalname, '.s360').replace(/[^a-zA-Z0-9 \-_]/g, '').trim() || 'Imported_Project';
     const dataDir = path.join(__dirname, '../data');
     fs.mkdirSync(dataDir, { recursive: true });
@@ -100,7 +126,7 @@ router.post('/import', upload.single('projectFile'), (req, res) => {
     }
 
     fs.mkdirSync(targetDir, { recursive: true });
-    zip.extractAllTo(targetDir, true);
+    extractZipArchive(tempPath, targetDir);
 
     // Set as active tour and publish
     db.setActiveTour(targetDir);

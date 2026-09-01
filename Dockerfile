@@ -1,7 +1,7 @@
 FROM node:18-bullseye
 
-# 1. Install system utilities, SSL certificates, and Linux krpanotools
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl tar && \
+# 1. Install system utilities, SSL certificates, unzip, zip and Linux krpanotools
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl tar unzip zip && \
     mkdir -p /opt/krpano && \
     (curl -fsSL "https://krpano.com/download/files/krpano-1.20.12-linux64.tar.gz" | tar -xz -C /opt/krpano --strip-components=1 || \
      curl -fsSL "https://krpano.com/download/12012/krpano-1.20.12-linux64.tar.gz" | tar -xz -C /opt/krpano --strip-components=1 || true) && \
