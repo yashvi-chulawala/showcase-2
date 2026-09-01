@@ -59,9 +59,9 @@ function readDB(tourId = activeTourId) {
 }
 
 function writeDB(data, tourId = activeTourId) {
-  if (tourId === activeTourId) {
-    inMemoryDB = data;
-  }
+  const dbPath = getDbPath(tourId);
+  ensureFile(dbPath);
+  fs.writeFileSync(dbPath, JSON.stringify(data, null, 2));
   
   // Fire and forget upload to Drive
   driveStorage.writeProjectJson(tourId, data).catch(err => {
@@ -78,6 +78,9 @@ function generateId() {
 function listScenes(tourId = activeTourId) {
   let db = readDB(tourId);
   let scenes = db.scenes || [];
+  if (getDbPath(tourId) === LEGACY_DB_FILE) {
+    scenes = scenes.filter(s => (s.tourId || 'default') === tourId);
+  }
   return scenes.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 }
 
@@ -102,32 +105,39 @@ function updateScene(sceneId, patch) {
 
 function getSceneById(sceneId) {
   const db = readDB();
-  return db.scenes.find(s => s._id === sceneId);
+  return db.scenes.find(s => s._id === sceneId) || null;
 }
 
 function deleteScene(sceneId) {
   const db = readDB();
   db.scenes = db.scenes.filter(s => s._id !== sceneId);
   db.hotspots = db.hotspots.filter(h => h.sceneId !== sceneId && h.targetSceneId !== sceneId);
-  db.scenes.sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).forEach((s, idx) => {
-    s.order = idx;
-  });
   writeDB(db);
 }
 
-function reorderScenes(tourId, orderedSceneIds) {
-  tourId = tourId || activeTourId;
+function reorderScenes(orderedSceneIds, tourId = activeTourId) {
   const db = readDB(tourId);
-  orderedSceneIds.forEach((id, index) => {
-    const scene = db.scenes.find(s => s._id === id);
-    if (scene) scene.order = index;
+  const map = new Map(db.scenes.map(s => [s._id, s]));
+  const reordered = [];
+  orderedSceneIds.forEach((id, idx) => {
+    const s = map.get(id);
+    if (s) {
+      s.order = idx;
+      reordered.push(s);
+      map.delete(id);
+    }
   });
+  // Keep any scenes not mentioned at the end
+  map.forEach(s => {
+    s.order = reordered.length;
+    reordered.push(s);
+  });
+  db.scenes = reordered;
   writeDB(db, tourId);
-  return db.scenes.sort((a, b) => a.order - b.order);
+  return db.scenes;
 }
 
-function setStartScene(tourId, sceneId) {
-  tourId = tourId || activeTourId;
+function setStartScene(sceneId, tourId = activeTourId) {
   const db = readDB(tourId);
   let found = null;
   db.scenes.forEach(s => {

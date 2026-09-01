@@ -142,7 +142,7 @@ router.patch('/scenes/:sceneId', (req, res) => {
   // If a custom 3D canvas screenshot is provided, save it over thumb.jpg
     if (thumbBase64 && typeof thumbBase64 === 'string' && thumbBase64.startsWith('data:image/')) {
       try {
-        const tourDir = (scene.tourId && path.isAbsolute(scene.tourId)) ? scene.tourId : path.resolve(__dirname, '../../vtour');
+        const tourDir = db.resolveTourPath(scene.tourId) || path.resolve(__dirname, '../vtour');
         const PANOS_DIR = path.join(tourDir, 'panos');
         const tilesFolder = scene.tilesFolder || `${scene.slug || scene.title}.tiles`;
         let thumbPath = path.join(PANOS_DIR, tilesFolder, 'thumb.jpg');

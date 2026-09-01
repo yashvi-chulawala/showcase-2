@@ -42,11 +42,33 @@ function setActiveTour(tourId) {
   }
 }
 
+function resolveTourPath(tourId) {
+  if (!tourId || tourId === 'default') return null;
+  if (path.isAbsolute(tourId) && fs.existsSync(tourId)) return tourId;
+
+  // Check in data folder by basename
+  const name = path.basename(tourId);
+  const inData = path.join(__dirname, '../data', name);
+  if (fs.existsSync(inData)) return inData;
+
+  const rel = path.resolve(__dirname, '..', tourId);
+  if (fs.existsSync(rel)) return rel;
+
+  return null;
+}
+
 function getDbPath(tourId = activeTourId) {
-  if (!tourId || tourId === 'default' || !path.isAbsolute(tourId)) {
+  if (!tourId || tourId === 'default') {
     return LEGACY_DB_FILE;
   }
-  return path.join(tourId, 'project.json');
+  const resolved = resolveTourPath(tourId);
+  if (resolved) {
+    return path.join(resolved, 'project.json');
+  }
+  if (path.isAbsolute(tourId)) {
+    return path.join(tourId, 'project.json');
+  }
+  return LEGACY_DB_FILE;
 }
 
 function ensureFile(dbPath) {
@@ -102,23 +124,11 @@ function createScene({ tourId, title, slug, tilesFolder, lat, lng }) {
   return scene;
 }
 
-function getSceneById(sceneId) {
-  const db = readDB(); // uses activeTourId
-  return db.scenes.find(s => String(s._id) === String(sceneId)) || null;
-}
-
 function updateScene(sceneId, patch) {
   const db = readDB();
   const scene = db.scenes.find(s => s._id === sceneId);
   if (!scene) return null;
   Object.assign(scene, patch);
-  if (patch.title) {
-    db.hotspots.forEach(h => {
-      if (h.targetSceneId === sceneId && h.kind === 'scene') {
-        h.title = patch.title;
-      }
-    });
-  }
   writeDB(db);
   return scene;
 }
@@ -127,25 +137,37 @@ function deleteScene(sceneId) {
   const db = readDB();
   db.scenes = db.scenes.filter(s => s._id !== sceneId);
   db.hotspots = db.hotspots.filter(h => h.sceneId !== sceneId && h.targetSceneId !== sceneId);
-  db.scenes.sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).forEach((s, idx) => {
-    s.order = idx;
-  });
   writeDB(db);
 }
 
-function reorderScenes(tourId, orderedSceneIds) {
-  tourId = tourId || activeTourId;
+function reorderScenes(orderedSceneIds, tourId = activeTourId) {
   const db = readDB(tourId);
-  orderedSceneIds.forEach((id, index) => {
-    const scene = db.scenes.find(s => s._id === id);
-    if (scene) scene.order = index;
+  const map = new Map(db.scenes.map(s => [s._id, s]));
+  const reordered = [];
+  orderedSceneIds.forEach((id, idx) => {
+    const s = map.get(id);
+    if (s) {
+      s.order = idx;
+      reordered.push(s);
+      map.delete(id);
+    }
   });
+  // Keep any scenes not mentioned at the end
+  map.forEach(s => {
+    s.order = reordered.length;
+    reordered.push(s);
+  });
+  db.scenes = reordered;
   writeDB(db, tourId);
-  return db.scenes.sort((a, b) => a.order - b.order);
+  return db.scenes;
 }
 
-function setStartScene(tourId, sceneId) {
-  tourId = tourId || activeTourId;
+function getSceneById(sceneId) {
+  const db = readDB();
+  return db.scenes.find(s => s._id === sceneId) || null;
+}
+
+function setStartScene(sceneId, tourId = activeTourId) {
   const db = readDB(tourId);
   let found = null;
   db.scenes.forEach(s => {
@@ -167,10 +189,69 @@ function resetTour(tourId = activeTourId) {
 
 function listToursWithDetails() {
   const toursMap = new Map();
+  const dataDir = path.join(__dirname, '../data');
 
-  // Add default legacy tour if legacy DB has scenes
+  // 1. Scan data directory directly for projects
+  if (fs.existsSync(dataDir)) {
+    try {
+      const entries = fs.readdirSync(dataDir, { withFileTypes: true });
+      entries.forEach(entry => {
+        if (entry.isDirectory()) {
+          const tourPath = path.join(dataDir, entry.name);
+          const pJsonPath = path.join(tourPath, 'project.json');
+          let projDb = { scenes: [] };
+          let mtime = new Date().toISOString();
+          if (fs.existsSync(pJsonPath)) {
+            try {
+              projDb = JSON.parse(fs.readFileSync(pJsonPath, 'utf8'));
+              mtime = fs.statSync(pJsonPath).mtime.toISOString();
+            } catch(e) {}
+          }
+          const latestScene = projDb.scenes && projDb.scenes.length > 0 ? 
+            projDb.scenes.sort((a,b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())[0] : null;
+
+          toursMap.set(tourPath, {
+            id: tourPath,
+            title: entry.name,
+            date: latestScene ? latestScene.createdAt : mtime,
+            thumbnail: latestScene ? `panos/${latestScene.tilesFolder}/thumb.jpg` : null
+          });
+        }
+      });
+    } catch (err) {
+      console.error("Error scanning data dir for projects:", err);
+    }
+  }
+
+  // 2. Scan recent projects
+  const recent = getRecentProjects();
+  recent.forEach(tourPath => {
+    const resolved = resolveTourPath(tourPath);
+    if (resolved && !toursMap.has(resolved)) {
+      const pJsonPath = path.join(resolved, 'project.json');
+      if (fs.existsSync(pJsonPath)) {
+        try {
+          const projDb = JSON.parse(fs.readFileSync(pJsonPath, 'utf8'));
+          const title = path.basename(resolved);
+          const latestScene = projDb.scenes && projDb.scenes.length > 0 ? 
+            projDb.scenes.sort((a,b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())[0] : null;
+          
+          toursMap.set(resolved, {
+            id: resolved,
+            title: title,
+            date: latestScene ? latestScene.createdAt : fs.statSync(pJsonPath).mtime.toISOString(),
+            thumbnail: latestScene ? `panos/${latestScene.tilesFolder}/thumb.jpg` : null
+          });
+        } catch (e) {
+          console.error("Error reading project.json in listToursWithDetails for", resolved, e);
+        }
+      }
+    }
+  });
+
+  // 3. Add default legacy tour if legacy DB has scenes
   const legacyDb = readDB('default');
-  if (legacyDb.scenes && legacyDb.scenes.length > 0) {
+  if (legacyDb.scenes && legacyDb.scenes.length > 0 && !toursMap.has('default')) {
     const latestScene = legacyDb.scenes.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
     toursMap.set('default', {
       id: 'default',
@@ -179,29 +260,6 @@ function listToursWithDetails() {
       thumbnail: latestScene ? `panos/${latestScene.tilesFolder}/thumb.jpg` : null
     });
   }
-
-  // Iterate recent projects
-  const recent = getRecentProjects();
-  recent.forEach(tourPath => {
-    const pJsonPath = path.join(tourPath, 'project.json');
-    if (fs.existsSync(pJsonPath)) {
-      try {
-        const projDb = JSON.parse(fs.readFileSync(pJsonPath, 'utf8'));
-        const title = path.basename(tourPath);
-        const latestScene = projDb.scenes && projDb.scenes.length > 0 ? 
-          projDb.scenes.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0] : null;
-        
-        toursMap.set(tourPath, {
-          id: tourPath,
-          title: title,
-          date: latestScene ? latestScene.createdAt : fs.statSync(pJsonPath).mtime.toISOString(),
-          thumbnail: latestScene ? `panos/${latestScene.tilesFolder}/thumb.jpg` : null
-        });
-      } catch (e) {
-        console.error("Error reading project.json in listToursWithDetails for", tourPath, e);
-      }
-    }
-  });
 
   return Array.from(toursMap.values()).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 }
@@ -238,11 +296,14 @@ function cloneTour(oldTourId, newTourId) {
   writeDB(newDb, newTourId);
   
   // Physical copying logic
-  const oldPanosPath = (!oldTourId || oldTourId === 'default' || !path.isAbsolute(oldTourId)) ? path.join(__dirname, '../../vtour/panos') : path.join(oldTourId, 'panos');
-  const oldAssetsPath = (!oldTourId || oldTourId === 'default' || !path.isAbsolute(oldTourId)) ? path.join(__dirname, '../../vtour/assets') : path.join(oldTourId, 'assets');
+  const oldResolved = resolveTourPath(oldTourId);
+  const newResolved = resolveTourPath(newTourId) || newTourId;
+
+  const oldPanosPath = oldResolved ? path.join(oldResolved, 'panos') : path.join(__dirname, '../vtour/panos');
+  const oldAssetsPath = oldResolved ? path.join(oldResolved, 'assets') : path.join(__dirname, '../vtour/assets');
   
-  const newPanosPath = (!newTourId || newTourId === 'default' || !path.isAbsolute(newTourId)) ? path.join(__dirname, '../../vtour/panos') : path.join(newTourId, 'panos');
-  const newAssetsPath = (!newTourId || newTourId === 'default' || !path.isAbsolute(newTourId)) ? path.join(__dirname, '../../vtour/assets') : path.join(newTourId, 'assets');
+  const newPanosPath = path.isAbsolute(newResolved) ? path.join(newResolved, 'panos') : path.join(__dirname, '../vtour/panos');
+  const newAssetsPath = path.isAbsolute(newResolved) ? path.join(newResolved, 'assets') : path.join(__dirname, '../vtour/assets');
 
   if (oldTourId !== newTourId) {
     if (fs.existsSync(oldPanosPath)) {

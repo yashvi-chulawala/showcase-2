@@ -298,7 +298,8 @@ ${dynamicStylesXml}
 
     const fs = require('fs');
     const path = require('path');
-    const tourDir = (scene.tourId && path.isAbsolute(scene.tourId)) ? scene.tourId : path.resolve(__dirname, '../../vtour');
+    const db = require('./db');
+    const tourDir = db.resolveTourPath(scene.tourId) || path.resolve(__dirname, '../vtour');
     const PANOS_DIR = path.join(tourDir, 'panos');
     const isSimulated = !fs.existsSync(path.join(PANOS_DIR, tiles, 'f'));
 

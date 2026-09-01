@@ -146,24 +146,27 @@ const noCacheOpts = {
 // Dynamic serving for panos, src, and assets based on active tour
 app.use('/panos', (req, res, next) => {
   const activeTourId = db.getActiveTour();
-  if (activeTourId && activeTourId !== 'default' && path.isAbsolute(activeTourId)) {
-    return express.static(path.join(activeTourId, 'panos'), noCacheOpts)(req, res, next);
+  const tourDir = db.resolveTourPath(activeTourId);
+  if (tourDir) {
+    return express.static(path.join(tourDir, 'panos'), noCacheOpts)(req, res, next);
   }
   return express.static(path.join(__dirname, './vtour/panos'), noCacheOpts)(req, res, next);
 });
 
 app.use('/src', (req, res, next) => {
   const activeTourId = db.getActiveTour();
-  if (activeTourId && activeTourId !== 'default' && path.isAbsolute(activeTourId)) {
-    return express.static(path.join(activeTourId, 'src'), noCacheOpts)(req, res, next);
+  const tourDir = db.resolveTourPath(activeTourId);
+  if (tourDir) {
+    return express.static(path.join(tourDir, 'src'), noCacheOpts)(req, res, next);
   }
   return express.static(path.join(__dirname, './vtour/src'), noCacheOpts)(req, res, next);
 });
 
 app.use('/assets', (req, res, next) => {
   const activeTourId = db.getActiveTour();
-  if (activeTourId && activeTourId !== 'default' && path.isAbsolute(activeTourId)) {
-    return express.static(path.join(activeTourId, 'assets'), noCacheOpts)(req, res, next);
+  const tourDir = db.resolveTourPath(activeTourId);
+  if (tourDir) {
+    return express.static(path.join(tourDir, 'assets'), noCacheOpts)(req, res, next);
   }
   return express.static(path.join(__dirname, './vtour/assets'), noCacheOpts)(req, res, next);
 });

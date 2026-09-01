@@ -4,6 +4,8 @@ const db = require('./db');
 const { generateScenesXML } = require('./xmlGenerator');
 const driveStorage = require('./driveStorage');
 
+const TOUR_SRC_DIR = process.env.VR_TOUR_SRC_DIR || path.resolve(__dirname, '../vtour/src');
+
 function timestamp() {
   const d = new Date();
   const pad = n => String(n).padStart(2, '0');
@@ -18,6 +20,15 @@ async function publishTour(tourId) {
 
   const xml = generateScenesXML(scenes, hotspots);
   
+  const tourDir = db.resolveTourPath(tourId) || path.resolve(__dirname, '../vtour');
+  const targetDir = path.join(tourDir, 'src');
+
+  if (!fs.existsSync(targetDir)) {
+    fs.mkdirSync(targetDir, { recursive: true });
+  }
+
+  fs.writeFileSync(path.join(targetDir, 'scenes.xml'), xml);
+
   if (tourId && tourId !== 'default') {
     try {
       await driveStorage.writeTourXml(tourId, xml);

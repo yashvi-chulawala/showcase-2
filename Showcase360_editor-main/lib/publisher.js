@@ -3,7 +3,7 @@ const path = require('path');
 const db = require('./db');
 const { generateScenesXML } = require('./xmlGenerator');
 
-const TOUR_SRC_DIR = process.env.VR_TOUR_SRC_DIR || path.resolve(__dirname, '../../vtour/src');
+const TOUR_SRC_DIR = process.env.VR_TOUR_SRC_DIR || path.resolve(__dirname, '../vtour/src');
 
 function timestamp() {
   const d = new Date();
@@ -20,7 +20,7 @@ function publishTour(tourId) {
 
   const xml = generateScenesXML(scenes, hotspots);
   
-  const tourDir = (tourId && path.isAbsolute(tourId)) ? tourId : path.resolve(__dirname, '../../vtour');
+  const tourDir = db.resolveTourPath(tourId) || path.resolve(__dirname, '../vtour');
   const TOUR_SRC_DIR = path.join(tourDir, 'src');
   
   if (!fs.existsSync(TOUR_SRC_DIR)) {

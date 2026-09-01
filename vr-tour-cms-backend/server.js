@@ -124,48 +124,31 @@ const noCacheOpts = {
 };
 
 // Dynamic serving for panos, src, and assets based on active tour
-const driveStorage = require('./lib/driveStorage');
-
-async function serveFromDrive(req, res, next, folderPrefix, fallbackLocalPath) {
+app.use('/panos', (req, res, next) => {
   const activeTourId = db.getActiveTour();
-  if (!activeTourId || activeTourId === 'default') {
-    return express.static(fallbackLocalPath, noCacheOpts)(req, res, next);
+  const tourDir = db.resolveTourPath(activeTourId);
+  if (tourDir) {
+    return express.static(path.join(tourDir, 'panos'), noCacheOpts)(req, res, next);
   }
-  
-  const relativePath = req.params[0];
-  const localFilePath = require('path').join(fallbackLocalPath, relativePath);
-
-  // HYBRID CACHE: Always serve local files instantly if they exist on disk!
-  if (require('fs').existsSync(localFilePath)) {
-    return res.sendFile(localFilePath);
-  }
-
-  try {
-    const stream = await driveStorage.resolveFileStream(activeTourId + '/' + folderPrefix + '/' + relativePath);
-    if (!stream) {
-      console.warn(`Drive file not found: ${folderPrefix}/${relativePath}`);
-      return res.status(404).send('Not found in Drive');
-    }
-    
-    if (relativePath.endsWith('.jpg')) res.setHeader('Content-Type', 'image/jpeg');
-    else if (relativePath.endsWith('.png')) res.setHeader('Content-Type', 'image/png');
-    else if (relativePath.endsWith('.xml')) res.setHeader('Content-Type', 'text/xml');
-    
-    stream.pipe(res);
-  } catch (err) {
-    console.error(`Error serving ${folderPrefix}/${relativePath} from drive:`, err);
-    res.status(500).send('Error loading from Drive');
-  }
-}
-
-app.get('/panos/*', (req, res, next) => {
-  serveFromDrive(req, res, next, 'panos', path.join(__dirname, '../vtour/panos'));
+  return express.static(path.join(__dirname, './vtour/panos'), noCacheOpts)(req, res, next);
 });
 
+app.use('/src', (req, res, next) => {
+  const activeTourId = db.getActiveTour();
+  const tourDir = db.resolveTourPath(activeTourId);
+  if (tourDir) {
+    return express.static(path.join(tourDir, 'src'), noCacheOpts)(req, res, next);
+  }
+  return express.static(path.join(__dirname, './vtour/src'), noCacheOpts)(req, res, next);
+});
 
-
-app.get('/assets/*', (req, res, next) => {
-  serveFromDrive(req, res, next, 'assets', path.join(__dirname, '../vtour/assets'));
+app.use('/assets', (req, res, next) => {
+  const activeTourId = db.getActiveTour();
+  const tourDir = db.resolveTourPath(activeTourId);
+  if (tourDir) {
+    return express.static(path.join(tourDir, 'assets'), noCacheOpts)(req, res, next);
+  }
+  return express.static(path.join(__dirname, './vtour/assets'), noCacheOpts)(req, res, next);
 });
 
 // Serve static vtour directory with no-cache headers for instant dev updates
