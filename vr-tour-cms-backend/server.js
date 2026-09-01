@@ -57,6 +57,9 @@ app.get('/api/health', (req, res) => res.json({ ok: true, dbFile: db.DB_FILE }))
 app.get('/api/system/pick-folder', (req, res) => {
   const { execSync } = require('child_process');
   const path = require('path');
+  if (process.platform !== 'win32') {
+    return res.json({ path: null, error: 'Native OS folder picker is only available in local desktop mode' });
+  }
   try {
     const scriptPath = path.join(__dirname, 'pick-folder.ps1');
     const title = req.query.title || 'Select Project Folder';
@@ -64,13 +67,16 @@ app.get('/api/system/pick-folder', (req, res) => {
     if (!result) return res.json({ path: null });
     res.json({ path: result });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    res.json({ path: null, error: e.message });
   }
 });
 
 app.get('/api/system/pick-save', (req, res) => {
   const { execSync } = require('child_process');
   const path = require('path');
+  if (process.platform !== 'win32') {
+    return res.json({ path: null, error: 'Native OS save picker is only available in local desktop mode' });
+  }
   try {
     const scriptPath = path.join(__dirname, 'pick-save.ps1');
     const title = req.query.title || 'Save Project As';
@@ -78,7 +84,7 @@ app.get('/api/system/pick-save', (req, res) => {
     if (!result) return res.json({ path: null });
     res.json({ path: result });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    res.json({ path: null, error: e.message });
   }
 });
 

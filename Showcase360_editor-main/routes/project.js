@@ -36,6 +36,43 @@ router.get('/export', (req, res) => {
   }
 });
 
+// POST /api/project/create — create a new project directory on the server
+router.post('/create', (req, res) => {
+  const { name } = req.body || {};
+  const originalName = (name || 'New_Project').replace(/[^a-zA-Z0-9 \-_]/g, '').trim() || 'New_Project';
+  const dataDir = path.join(__dirname, '../data');
+  fs.mkdirSync(dataDir, { recursive: true });
+
+  let targetDir = path.join(dataDir, originalName);
+  let counter = 1;
+  while (fs.existsSync(targetDir)) {
+    targetDir = path.join(dataDir, `${originalName}_${counter}`);
+    counter++;
+  }
+
+  try {
+    fs.mkdirSync(targetDir, { recursive: true });
+    fs.mkdirSync(path.join(targetDir, 'panos'), { recursive: true });
+    fs.mkdirSync(path.join(targetDir, 'assets'), { recursive: true });
+
+    // Initialize clean project.json
+    fs.writeFileSync(path.join(targetDir, 'project.json'), JSON.stringify({ scenes: [], hotspots: [], assets: [] }, null, 2));
+
+    db.setActiveTour(targetDir);
+    try {
+      const { publishTour } = require('../lib/publisher');
+      publishTour(targetDir);
+    } catch (e) {
+      console.warn('Auto-publish after project create failed:', e.message);
+    }
+
+    res.json({ success: true, newTourId: targetDir, name: path.basename(targetDir) });
+  } catch (err) {
+    console.error('Create project error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // POST /api/project/import — upload a .s360 zip and extract it as a new tour
 router.post('/import', upload.single('projectFile'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });

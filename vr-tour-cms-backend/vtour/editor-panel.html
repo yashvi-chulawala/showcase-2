@@ -1823,6 +1823,24 @@
   </div>
   <!-- ==================== END RENAME MODAL ==================== -->
 
+  <!-- ==================== NEW PROJECT MODAL ==================== -->
+  <div id="new-project-modal" class="rename-overlay" style="display: none;">
+    <div class="rename-box">
+      <div class="rename-header">
+        <h3>Create New Project</h3>
+        <button onclick="document.getElementById('new-project-modal').style.display='none'">×</button>
+      </div>
+      <div class="rename-body">
+        <input type="text" id="new-project-name-input" class="rename-input-styled" placeholder="Enter project name (e.g. My Virtual Tour)" onkeydown="if(event.key==='Enter') submitCreateNewProject()">
+        <div class="rename-footer">
+          <button class="btn-rename-cancel" onclick="document.getElementById('new-project-modal').style.display='none'">Cancel</button>
+          <button class="btn-rename-confirm" onclick="submitCreateNewProject()">Create Project</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- ==================== END NEW PROJECT MODAL ==================== -->
+
   <!-- ==================== 1st BAR (TOP BAR) ==================== -->
   <header class="top-bar">
     <div class="top-bar-left">
@@ -1857,6 +1875,13 @@
 
         <!-- File Dropdown Menu -->
         <div class="file-dropdown" id="file-dropdown">
+          <div class="file-dropdown-item" onclick="openProjectsModalAction()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-6l-2-2H5a2 2 0 0 0-2 2z"></path>
+            </svg>
+            <span>Open Project...</span>
+          </div>
           <div class="file-dropdown-item" onclick="openProjectAction()">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
               stroke-linecap="round" stroke-linejoin="round">
@@ -1865,13 +1890,6 @@
               <line x1="12" y1="15" x2="12" y2="3"></line>
             </svg>
             <span>Import Project (.s360)</span>
-          </div>
-          <div class="file-dropdown-item" onclick="openWorkspaceFolderAction()">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-6l-2-2H5a2 2 0 0 0-2 2z"></path>
-            </svg>
-            <span>Open Workspace Folder...</span>
           </div>
           <div class="file-dropdown-item" onclick="newProjectAction()">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -1891,7 +1909,7 @@
             <span>Save Project (.s360)</span>
           </div>
         </div>
-        <input type="file" id="import-project-input" accept=".s360" style="display:none;" onchange="importProjectAction(event)">
+        <input type="file" id="import-project-input" accept=".s360,.zip" style="display:none;" onchange="importProjectAction(event)">
       </div>
     </div>
 

@@ -433,6 +433,13 @@ function toggleFileDropdown(e) {
   dropdown.style.display = current === 'flex' ? 'none' : 'flex';
 }
 
+async function openProjectsModalAction() {
+  const dropdown = document.getElementById('file-dropdown');
+  if (dropdown) dropdown.style.display = 'none';
+  openWelcomeModal();
+}
+window.openProjectsModalAction = openProjectsModalAction;
+
 async function openProjectAction() {
   const dropdown = document.getElementById('file-dropdown');
   if (dropdown) dropdown.style.display = 'none';
@@ -442,21 +449,13 @@ async function openProjectAction() {
     input.click();
   }
 }
+window.openProjectAction = openProjectAction;
 
 async function openWorkspaceFolderAction() {
-  const dropdown = document.getElementById('file-dropdown');
-  if (dropdown) dropdown.style.display = 'none';
-
-  try {
-    const res = await fetch('/api/system/pick-folder');
-    const data = await res.json();
-    if (!data.path) return;
-
-    window.location.href = `?tour=${encodeURIComponent(data.path)}`;
-  } catch (err) {
-    showToast("Error picking folder: " + err.message);
-  }
+  // Cloud/web fallback
+  openProjectsModalAction();
 }
+window.openWorkspaceFolderAction = openWorkspaceFolderAction;
 
 async function importProjectAction(event) {
   const file = event.target.files[0];
@@ -482,6 +481,7 @@ async function importProjectAction(event) {
     showToast("Error importing project: " + err.message);
   }
 }
+window.importProjectAction = importProjectAction;
 
 async function exportProjectAction() {
   const dropdown = document.getElementById('file-dropdown');
@@ -490,54 +490,61 @@ async function exportProjectAction() {
   // Trigger file download
   window.location.href = '/api/project/export';
 }
+window.exportProjectAction = exportProjectAction;
 
 async function newProjectAction() {
   const dropdown = document.getElementById('file-dropdown');
   if (dropdown) dropdown.style.display = 'none';
 
-  try {
-    const res = await fetch('/api/system/pick-save?title=' + encodeURIComponent('Save New Project'));
-    const data = await res.json();
-    if (!data.path) return;
-
-    const finalName = data.path;
-    if (confirm(`Are you sure you want to start/reset project in "${finalName}"? This will clear its database entries.`)) {
-      const resetRes = await fetch(`/api/tours/${encodeURIComponent(finalName)}/reset`, { method: 'POST' });
-      if (!resetRes.ok) throw new Error('Failed to reset project');
-      await fetch(`/api/tours/${encodeURIComponent(finalName)}/publish`, { method: 'POST' });
-      showToast("Project created successfully! Reloading...");
-      sessionStorage.setItem('welcomeModalSkipped', 'true');
-      setTimeout(() => window.location.href = `?tour=${encodeURIComponent(finalName)}`, 1000);
-    }
-  } catch (err) {
-    console.error(err);
-    showToast("Error starting new project: " + err.message);
+  const modal = document.getElementById('new-project-modal');
+  const input = document.getElementById('new-project-name-input');
+  if (modal && input) {
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, '_');
+    input.value = 'Project_' + today;
+    modal.style.display = 'flex';
+    setTimeout(() => { input.focus(); input.select(); }, 80);
   }
 }
+window.newProjectAction = newProjectAction;
 
-async function saveAsAction() {
-  const dropdown = document.getElementById('file-dropdown');
-  if (dropdown) dropdown.style.display = 'none';
+async function submitCreateNewProject() {
+  const modal = document.getElementById('new-project-modal');
+  const input = document.getElementById('new-project-name-input');
+  const name = (input ? input.value : '').trim();
+
+  if (!name) {
+    showToast("Please enter a valid project name");
+    return;
+  }
+
+  if (modal) modal.style.display = 'none';
+  showToast("Creating project...");
 
   try {
-    const res = await fetch('/api/system/pick-save?title=' + encodeURIComponent('Save Project As'));
-    const data = await res.json();
-    if (!data.path) return;
-
-    const newProjectName = data.path;
-    const cloneRes = await fetch(`/api/tours/${encodeURIComponent(currentTourId)}/clone`, {
+    const res = await fetch('/api/project/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ newTourId: newProjectName })
+      body: JSON.stringify({ name })
     });
-    if (!cloneRes.ok) throw new Error('Failed to clone project');
-    showToast("Project exported! Redirecting...");
-    setTimeout(() => window.location.href = `?tour=${encodeURIComponent(newProjectName)}`, 1000);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to create project');
+
+    showToast("Project created successfully! Loading...");
+    sessionStorage.setItem('welcomeModalSkipped', 'true');
+    setTimeout(() => {
+      window.location.href = `?tour=${encodeURIComponent(data.newTourId)}`;
+    }, 800);
   } catch (err) {
     console.error(err);
-    showToast("Error saving project: " + err.message);
+    showToast("Error creating project: " + err.message);
   }
 }
+window.submitCreateNewProject = submitCreateNewProject;
+
+async function saveAsAction() {
+  exportProjectAction();
+}
+window.saveAsAction = saveAsAction;
 
 // ==================== PROJECT ACTIONS ====================
 
