@@ -6,7 +6,7 @@
 	<skin_settings maps="false"
 	               maps_type="google"
 	               maps_bing_api_key=""
-	               maps_google_api_key=""
+	               maps_google_api_key="AIzaSyADj8Ydma7BpqC7-wbggzXRTP1ZZ0j7osA"
 	               maps_zoombuttons="false"
 	               maps_loadonfirstuse="true"
 	               gyro="true"
