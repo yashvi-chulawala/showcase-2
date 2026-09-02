@@ -135,13 +135,12 @@ app.get('/api/tours/:tourId/thumbnail', (req, res) => {
   }
 });
 
-const noCacheOpts = {
-  setHeaders: (res) => {
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
-  }
-};
+function sendStaticFile(res, filePath) {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  return res.sendFile(path.resolve(filePath));
+}
 
 // Dynamic serving for panos, src, and assets with smart fallback across all data/ projects
 app.use('/panos', (req, res, next) => {
@@ -152,13 +151,13 @@ app.use('/panos', (req, res, next) => {
   if (tourDir) {
     const activeFile = path.join(tourDir, 'panos', relPath);
     if (fs.existsSync(activeFile) && fs.statSync(activeFile).isFile()) {
-      return res.sendFile(activeFile, noCacheOpts);
+      return sendStaticFile(res, activeFile);
     }
   }
 
   const vtourFile = path.join(__dirname, 'vtour', 'panos', relPath);
   if (fs.existsSync(vtourFile) && fs.statSync(vtourFile).isFile()) {
-    return res.sendFile(vtourFile, noCacheOpts);
+    return sendStaticFile(res, vtourFile);
   }
 
   const dataDir = path.join(__dirname, 'data');
@@ -169,7 +168,7 @@ app.use('/panos', (req, res, next) => {
         if (p.isDirectory()) {
           const candidate = path.join(dataDir, p.name, 'panos', relPath);
           if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
-            return res.sendFile(candidate, noCacheOpts);
+            return sendStaticFile(res, candidate);
           }
         }
       }
@@ -187,13 +186,13 @@ app.use('/src', (req, res, next) => {
   if (tourDir) {
     const activeFile = path.join(tourDir, 'src', relPath);
     if (fs.existsSync(activeFile) && fs.statSync(activeFile).isFile()) {
-      return res.sendFile(activeFile, noCacheOpts);
+      return sendStaticFile(res, activeFile);
     }
   }
 
   const vtourFile = path.join(__dirname, 'vtour', 'src', relPath);
   if (fs.existsSync(vtourFile) && fs.statSync(vtourFile).isFile()) {
-    return res.sendFile(vtourFile, noCacheOpts);
+    return sendStaticFile(res, vtourFile);
   }
 
   const dataDir = path.join(__dirname, 'data');
@@ -204,7 +203,7 @@ app.use('/src', (req, res, next) => {
         if (p.isDirectory()) {
           const candidate = path.join(dataDir, p.name, 'src', relPath);
           if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
-            return res.sendFile(candidate, noCacheOpts);
+            return sendStaticFile(res, candidate);
           }
         }
       }
@@ -222,13 +221,13 @@ app.use('/assets', (req, res, next) => {
   if (tourDir) {
     const activeFile = path.join(tourDir, 'assets', relPath);
     if (fs.existsSync(activeFile) && fs.statSync(activeFile).isFile()) {
-      return res.sendFile(activeFile, noCacheOpts);
+      return sendStaticFile(res, activeFile);
     }
   }
 
   const vtourFile = path.join(__dirname, 'vtour', 'assets', relPath);
   if (fs.existsSync(vtourFile) && fs.statSync(vtourFile).isFile()) {
-    return res.sendFile(vtourFile, noCacheOpts);
+    return sendStaticFile(res, vtourFile);
   }
 
   const dataDir = path.join(__dirname, 'data');
@@ -239,7 +238,7 @@ app.use('/assets', (req, res, next) => {
         if (p.isDirectory()) {
           const candidate = path.join(dataDir, p.name, 'assets', relPath);
           if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
-            return res.sendFile(candidate, noCacheOpts);
+            return sendStaticFile(res, candidate);
           }
         }
       }
