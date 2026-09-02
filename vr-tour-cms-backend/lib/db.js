@@ -415,6 +415,7 @@ module.exports = {
   DB_FILE: LEGACY_DB_FILE,
   setActiveTour,
   getActiveTour,
+  resolveTourPath,
   getRecentProjects,
   listTours,
   listToursWithDetails,

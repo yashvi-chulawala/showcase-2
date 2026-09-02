@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 
 // Set default env paths for vtour integration if not provided
 if (!process.env.PANOS_DIR) {
