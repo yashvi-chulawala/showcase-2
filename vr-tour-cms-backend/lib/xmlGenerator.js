@@ -301,10 +301,31 @@ ${dynamicStylesXml}
     const db = require('./db');
     const tourDir = db.resolveTourPath(scene.tourId) || path.resolve(__dirname, '../vtour');
     const PANOS_DIR = path.join(tourDir, 'panos');
-    const isSimulated = !fs.existsSync(path.join(PANOS_DIR, tiles, 'f'));
+
+    // Check if cube faces exist in active tour, vtour, or anywhere in data/
+    let hasCubeFaces = fs.existsSync(path.join(PANOS_DIR, tiles, 'f')) || fs.existsSync(path.join(__dirname, '../vtour/panos', tiles, 'f'));
+    if (!hasCubeFaces) {
+      const dataDir = path.join(__dirname, '../data');
+      if (fs.existsSync(dataDir)) {
+        try {
+          const projs = fs.readdirSync(dataDir, { withFileTypes: true });
+          for (const p of projs) {
+            if (p.isDirectory() && fs.existsSync(path.join(dataDir, p.name, 'panos', tiles, 'f'))) {
+              hasCubeFaces = true;
+              break;
+            }
+          }
+        } catch(e) {}
+      }
+    }
+
+    // Standard krpano generated multires folders are cube panoramas
+    if (!hasCubeFaces && tiles && tiles.endsWith('.tiles')) {
+      hasCubeFaces = true;
+    }
 
     let imageXML = '';
-    if (isSimulated) {
+    if (!hasCubeFaces) {
       imageXML = `\t\t<image>\n\t\t\t<sphere url="../panos/${tiles}/preview.jpg" />\n\t\t</image>`;
     } else {
       let multiresStr = "512,1024,2048,3840";
