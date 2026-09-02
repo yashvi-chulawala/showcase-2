@@ -24,17 +24,6 @@ app.use(express.json({ limit: '15mb' }));
 
 const { seedInitialScenesIfEmpty } = require('./lib/seeder');
 seedInitialScenesIfEmpty();
-
-// Initialize active project to City tour if present
-const defaultCityTour = path.join(__dirname, 'data', 'City tour');
-if (fs.existsSync(defaultCityTour)) {
-  db.setActiveTour(defaultCityTour);
-  try {
-    const { publishTour } = require('./lib/publisher');
-    publishTour(defaultCityTour);
-  } catch (e) {}
-}
-
 app.post('/api/system/set-active-tour', (req, res) => {
   let tourId = req.body.tourId || null;
   const fs = require('fs');

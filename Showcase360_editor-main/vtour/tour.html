@@ -276,15 +276,16 @@
 
 				// Add listener for scene changes to update map pin and title
 				krpano.set("events[map_events].keep", true);
-				krpano.set("events[map_events].onxmlcomplete", "js(window.plotKrpanoScenes ? window.plotKrpanoScenes() : null)");
-				krpano.set("events[map_events].onnewscene", "js(window.updateActiveSceneInfo ? window.updateActiveSceneInfo() : null)");
+				krpano.set("events[map_events].onxmlcomplete", "js(plotKrpanoScenes())");
+				krpano.set("events[map_events].onnewscene", "js(updateActiveSceneInfo())");
 
-				setTimeout(() => {
-					if (window.plotKrpanoScenes) window.plotKrpanoScenes();
-				}, 500);
+				// Try to plot pins if map is already initialized
+				if (typeof google !== 'undefined' && mapInitialized) {
+					plotKrpanoScenes();
+				}
 			}
 
-			embedpano({ xml: "tour.xml?v=" + Date.now(), target: "pano", html5: "only", mobilescale: 1.0, passQueryParameters: "startscene,startlookat", onready: krpanoReady });
+			embedpano({ xml: "tour.xml", target: "pano", html5: "only", mobilescale: 1.0, passQueryParameters: "startscene,startlookat", onready: krpanoReady });
 		</script>
 	</div>
 
@@ -300,20 +301,6 @@
 		let markers = {};
 		let mapInitialized = false;
 		let useLeaflet = false;
-
-		window.plotKrpanoScenes = function() {
-			if (useLeaflet) {
-				plotLeafletScenes();
-				return;
-			}
-			if (map && mapInitialized) {
-				plotGoogleScenes();
-			}
-		};
-
-		window.updateActiveSceneInfo = function() {
-			updateActiveSceneInfo();
-		};
 
 		function createTeardropPin(color, isActive = false) {
 			const pinSvg = `
