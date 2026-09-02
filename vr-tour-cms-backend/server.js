@@ -143,32 +143,110 @@ const noCacheOpts = {
   }
 };
 
-// Dynamic serving for panos, src, and assets based on active tour
+// Dynamic serving for panos, src, and assets with smart fallback across all data/ projects
 app.use('/panos', (req, res, next) => {
+  const relPath = decodeURIComponent(req.path.replace(/^\//, ''));
   const activeTourId = db.getActiveTour();
   const tourDir = db.resolveTourPath(activeTourId);
+
   if (tourDir) {
-    return express.static(path.join(tourDir, 'panos'), noCacheOpts)(req, res, next);
+    const activeFile = path.join(tourDir, 'panos', relPath);
+    if (fs.existsSync(activeFile) && fs.statSync(activeFile).isFile()) {
+      return res.sendFile(activeFile, noCacheOpts);
+    }
   }
-  return express.static(path.join(__dirname, './vtour/panos'), noCacheOpts)(req, res, next);
+
+  const vtourFile = path.join(__dirname, 'vtour', 'panos', relPath);
+  if (fs.existsSync(vtourFile) && fs.statSync(vtourFile).isFile()) {
+    return res.sendFile(vtourFile, noCacheOpts);
+  }
+
+  const dataDir = path.join(__dirname, 'data');
+  if (fs.existsSync(dataDir)) {
+    try {
+      const projects = fs.readdirSync(dataDir, { withFileTypes: true });
+      for (const p of projects) {
+        if (p.isDirectory()) {
+          const candidate = path.join(dataDir, p.name, 'panos', relPath);
+          if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
+            return res.sendFile(candidate, noCacheOpts);
+          }
+        }
+      }
+    } catch (e) {}
+  }
+
+  next();
 });
 
 app.use('/src', (req, res, next) => {
+  const relPath = decodeURIComponent(req.path.replace(/^\//, ''));
   const activeTourId = db.getActiveTour();
   const tourDir = db.resolveTourPath(activeTourId);
+
   if (tourDir) {
-    return express.static(path.join(tourDir, 'src'), noCacheOpts)(req, res, next);
+    const activeFile = path.join(tourDir, 'src', relPath);
+    if (fs.existsSync(activeFile) && fs.statSync(activeFile).isFile()) {
+      return res.sendFile(activeFile, noCacheOpts);
+    }
   }
-  return express.static(path.join(__dirname, './vtour/src'), noCacheOpts)(req, res, next);
+
+  const vtourFile = path.join(__dirname, 'vtour', 'src', relPath);
+  if (fs.existsSync(vtourFile) && fs.statSync(vtourFile).isFile()) {
+    return res.sendFile(vtourFile, noCacheOpts);
+  }
+
+  const dataDir = path.join(__dirname, 'data');
+  if (fs.existsSync(dataDir)) {
+    try {
+      const projects = fs.readdirSync(dataDir, { withFileTypes: true });
+      for (const p of projects) {
+        if (p.isDirectory()) {
+          const candidate = path.join(dataDir, p.name, 'src', relPath);
+          if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
+            return res.sendFile(candidate, noCacheOpts);
+          }
+        }
+      }
+    } catch (e) {}
+  }
+
+  next();
 });
 
 app.use('/assets', (req, res, next) => {
+  const relPath = decodeURIComponent(req.path.replace(/^\//, ''));
   const activeTourId = db.getActiveTour();
   const tourDir = db.resolveTourPath(activeTourId);
+
   if (tourDir) {
-    return express.static(path.join(tourDir, 'assets'), noCacheOpts)(req, res, next);
+    const activeFile = path.join(tourDir, 'assets', relPath);
+    if (fs.existsSync(activeFile) && fs.statSync(activeFile).isFile()) {
+      return res.sendFile(activeFile, noCacheOpts);
+    }
   }
-  return express.static(path.join(__dirname, './vtour/assets'), noCacheOpts)(req, res, next);
+
+  const vtourFile = path.join(__dirname, 'vtour', 'assets', relPath);
+  if (fs.existsSync(vtourFile) && fs.statSync(vtourFile).isFile()) {
+    return res.sendFile(vtourFile, noCacheOpts);
+  }
+
+  const dataDir = path.join(__dirname, 'data');
+  if (fs.existsSync(dataDir)) {
+    try {
+      const projects = fs.readdirSync(dataDir, { withFileTypes: true });
+      for (const p of projects) {
+        if (p.isDirectory()) {
+          const candidate = path.join(dataDir, p.name, 'assets', relPath);
+          if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
+            return res.sendFile(candidate, noCacheOpts);
+          }
+        }
+      }
+    } catch (e) {}
+  }
+
+  next();
 });
 
 // Serve static vtour directory with no-cache headers for instant dev updates
