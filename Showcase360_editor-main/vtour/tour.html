@@ -171,6 +171,20 @@
 			background: #ef4444;
 		}
 
+		/* Completely hide and remove default krpano control bar and skin */
+		#krpanoSWFObject div[style*="skin_control_bar"],
+		#krpanoSWFObject div[style*="skin_scroll_window"],
+		#krpanoSWFObject div[style*="skin_layer"],
+		.skin_control_bar,
+		div[id^="skin_control_bar"],
+		div[id^="skin_layer"],
+		div[id^="skin_btn"] {
+			display: none !important;
+			visibility: hidden !important;
+			opacity: 0 !important;
+			pointer-events: none !important;
+		}
+
 		.leaflet-pin-wrapper {
 			background: transparent !important;
 			border: none !important;
@@ -271,18 +285,35 @@
 			function krpanoReady(krpanoInterface) {
 				krpano = krpanoInterface;
 				window.krpano = krpanoInterface; // Attach to window for voice-assistant.js
-				// Hide default skin immediately
+				
+				// Hide default skin immediately and keep hidden
 				krpano.set("layer[skin_layer].visible", false);
+				krpano.set("layer[skin_control_bar].visible", false);
+				krpano.set("layer[skin_splitter_bottom].visible", false);
+				krpano.set("events[skin_events].onnewscene", "set(layer[skin_layer].visible, false); set(layer[skin_control_bar].visible, false);");
 
 				// Add listener for scene changes to update map pin and title
 				krpano.set("events[map_events].keep", true);
-				krpano.set("events[map_events].onxmlcomplete", "js(plotKrpanoScenes())");
-				krpano.set("events[map_events].onnewscene", "js(updateActiveSceneInfo())");
+				krpano.set("events[map_events].onxmlcomplete", "js(onKrpanoXmlReady())");
+				krpano.set("events[map_events].onnewscene", "js(onKrpanoNewScene())");
+			}
 
-				// Try to plot pins if map is already initialized
-				if (typeof google !== 'undefined' && mapInitialized) {
-					plotKrpanoScenes();
+			function onKrpanoXmlReady() {
+				if (krpano) {
+					krpano.set("layer[skin_layer].visible", false);
+					krpano.set("layer[skin_control_bar].visible", false);
 				}
+				if (leafletMap) {
+					plotLeafletScenes();
+				}
+			}
+
+			function onKrpanoNewScene() {
+				if (krpano) {
+					krpano.set("layer[skin_layer].visible", false);
+					krpano.set("layer[skin_control_bar].visible", false);
+				}
+				updateActiveSceneInfo();
 			}
 
 			embedpano({ xml: "tour.xml", target: "pano", html5: "only", mobilescale: 1.0, passQueryParameters: "startscene,startlookat", onready: krpanoReady });
@@ -293,14 +324,10 @@
 	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 	<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-	<!-- Google Maps & Leaflet Smart Map JS -->
+	<!-- Google Satellite Map JS -->
 	<script>
-		let map;
 		let leafletMap = null;
 		let leafletMarkers = {};
-		let markers = {};
-		let mapInitialized = false;
-		let useLeaflet = false;
 
 		function createTeardropPin(color, isActive = false) {
 			const pinSvg = `
@@ -334,13 +361,6 @@
 			});
 		}
 
-		// Catch Google Maps authorization failures (e.g. RefererNotAllowedMapError) and automatically switch to Leaflet
-		window.gm_authFailure = function() {
-			console.warn("Google Maps auth failed or restricted. Automatically falling back to Satellite Map...");
-			useLeaflet = true;
-			initLeafletMap();
-		};
-
 		function toggleMap() {
 			const modal = document.getElementById('map-modal');
 			const btnText = document.getElementById('map-toggle-text');
@@ -351,49 +371,21 @@
 			} else {
 				modal.classList.add('map-open');
 				if (btnText) btnText.textContent = 'Close';
+				if (!leafletMap) {
+					initLeafletMap();
+				}
 				setTimeout(() => {
 					if (leafletMap) {
 						leafletMap.invalidateSize();
+						plotLeafletScenes();
 						centerLeafletOnActiveScene();
-					} else if (map && typeof google !== 'undefined' && google.maps && google.maps.event) {
-						google.maps.event.trigger(map, 'resize');
-						centerMapOnActiveScene();
-					} else if (!mapInitialized) {
-						initLeafletMap();
 					}
 				}, 380);
 			}
 		}
 
-		async function initMap() {
-			if (useLeaflet) return;
-			try {
-				const { Map } = await google.maps.importLibrary("maps");
-				const { AdvancedMarkerElement, PinElement } = await google.maps.importLibrary("marker");
-
-				window.PinElement = PinElement;
-				window.AdvancedMarkerElement = AdvancedMarkerElement;
-
-				map = new Map(document.getElementById("map-container"), {
-					center: { lat: 21.146, lng: 72.765 },
-					zoom: 13,
-					mapTypeId: 'hybrid', // Satellite with labels
-					mapTypeControl: false,
-					mapId: 'DEMO_MAP_ID'
-				});
-
-				mapInitialized = true;
-				if (krpano) plotKrpanoScenes();
-			} catch (e) {
-				console.warn("Error initializing Google Maps, falling back to Satellite Map:", e);
-				initLeafletMap();
-			}
-		}
-
 		function initLeafletMap() {
 			if (leafletMap) return;
-			mapInitialized = true;
-			useLeaflet = true;
 			const container = document.getElementById('map-container');
 			if (container) container.innerHTML = '';
 
@@ -411,12 +403,18 @@
 			if (krpano) plotLeafletScenes();
 		}
 
-		let scenesPlotted = false;
-
 		function plotLeafletScenes() {
 			if (!krpano || !leafletMap) return;
 			const sceneCount = krpano.get("scene.count");
 			if (!sceneCount || sceneCount === 0) return;
+
+			// Clear previous markers before plotting fresh
+			for (const s in leafletMarkers) {
+				if (leafletMarkers[s] && leafletMarkers[s].marker) {
+					leafletMap.removeLayer(leafletMarkers[s].marker);
+				}
+			}
+			leafletMarkers = {};
 
 			const latLngs = [];
 			for (let i = 0; i < sceneCount; i++) {
@@ -429,7 +427,11 @@
 					lng = parseFloat(lng);
 
 					if (!isNaN(lat) && !isNaN(lng)) {
-						const marker = L.marker([lat, lng], { icon: createTeardropPin('#3b82f6', false) }).addTo(leafletMap);
+						const marker = L.marker([lat, lng], { 
+							icon: createTeardropPin('#3b82f6', false),
+							riseOnHover: true 
+						}).addTo(leafletMap);
+						
 						marker.bindTooltip(krpano.get(`scene[${i}].title`) || sceneName, { permanent: false, direction: 'top' });
 
 						marker.on('click', () => {
@@ -443,68 +445,13 @@
 			}
 
 			if (latLngs.length > 0) {
-				leafletMap.fitBounds(latLngs, { padding: [30, 30] });
+				leafletMap.fitBounds(latLngs, { padding: [40, 40], maxZoom: 16 });
 			}
-			updateActiveSceneInfo();
-		}
-
-		function plotKrpanoScenes() {
-			if (useLeaflet) {
-				plotLeafletScenes();
-				return;
-			}
-			if (!krpano || !mapInitialized || scenesPlotted) return;
-
-			const sceneCount = krpano.get("scene.count");
-			if (!sceneCount || sceneCount === 0) return;
-
-			scenesPlotted = true;
-			const bounds = new google.maps.LatLngBounds();
-			let validPins = 0;
-
-			for (let i = 0; i < sceneCount; i++) {
-				const sceneName = krpano.get(`scene[${i}].name`);
-				let lat = krpano.get(`scene[${i}].lat`);
-				let lng = krpano.get(`scene[${i}].lng`);
-
-				if (lat !== null && lng !== null && lat !== "" && lng !== "") {
-					lat = parseFloat(lat);
-					lng = parseFloat(lng);
-
-					if (!isNaN(lat) && !isNaN(lng)) {
-						const pin = new window.PinElement({
-							background: "#4285F4",
-							borderColor: "#1967D2",
-							glyphColor: "white"
-						});
-
-						const marker = new window.AdvancedMarkerElement({
-							map: map,
-							position: { lat: lat, lng: lng },
-							title: krpano.get(`scene[${i}].title`) || sceneName,
-							content: pin.element
-						});
-
-						marker.addListener('click', () => {
-							krpano.call(`loadscene(${sceneName}, null, MERGE, BLEND(0.5))`);
-						});
-
-						markers[sceneName] = { marker, pin, lat, lng };
-						bounds.extend({ lat, lng });
-						validPins++;
-					}
-				}
-			}
-
-			if (validPins > 0) {
-				map.fitBounds(bounds);
-			}
-
 			updateActiveSceneInfo();
 		}
 
 		function updateActiveSceneInfo() {
-			if (!krpano || !mapInitialized) return;
+			if (!krpano) return;
 
 			const currentSceneName = krpano.get("xml.scene");
 			const currentSceneTitle = krpano.get(`scene[${currentSceneName}].title`) || currentSceneName;
@@ -515,8 +462,9 @@
 			}
 
 			krpano.set("layer[skin_layer].visible", false);
+			krpano.set("layer[skin_control_bar].visible", false);
 
-			if (useLeaflet && leafletMap) {
+			if (leafletMap) {
 				for (const sName in leafletMarkers) {
 					const m = leafletMarkers[sName];
 					const isActive = sName === currentSceneName;
@@ -524,43 +472,6 @@
 					if (isActive) m.marker.setZIndexOffset(1000);
 					else m.marker.setZIndexOffset(1);
 				}
-				return;
-			}
-
-			for (const sceneName in markers) {
-				const m = markers[sceneName];
-				const resetPin = new window.PinElement({
-					background: "#4285F4",
-					borderColor: "#1967D2",
-					glyphColor: "white"
-				});
-				m.marker.content = resetPin.element;
-				m.marker.zIndex = 1;
-			}
-
-			if (currentSceneName && markers[currentSceneName]) {
-				const activeM = markers[currentSceneName];
-				const activePin = new window.PinElement({
-					background: "#FFD700",
-					borderColor: "#F59E0B",
-					glyphColor: "white"
-				});
-
-				const contentWrapper = document.createElement('div');
-				contentWrapper.className = 'pin-active-wrapper';
-
-				const shadowGlow = document.createElement('div');
-				shadowGlow.className = 'pin-shadow-glow';
-
-				const pinContainer = document.createElement('div');
-				pinContainer.className = 'pin-bounce';
-				pinContainer.appendChild(activePin.element);
-
-				contentWrapper.appendChild(shadowGlow);
-				contentWrapper.appendChild(pinContainer);
-
-				activeM.marker.content = contentWrapper;
-				activeM.marker.zIndex = 100;
 			}
 		}
 
@@ -572,27 +483,13 @@
 			}
 		}
 
-		function centerMapOnActiveScene() {
-			if (useLeaflet) {
-				centerLeafletOnActiveScene();
-				return;
-			}
-			if (!krpano || !map) return;
-			const currentSceneName = krpano.get("xml.scene");
-			if (currentSceneName && markers[currentSceneName]) {
-				map.setCenter({ lat: markers[currentSceneName].lat, lng: markers[currentSceneName].lng });
-			}
-		}
-
-		// Auto fallback to Leaflet after 2.5s if Google Maps fails to initialize
+		// Initialize map on first load
 		setTimeout(() => {
-			if (!mapInitialized) {
+			if (!leafletMap) {
 				initLeafletMap();
 			}
-		}, 2500);
+		}, 1500);
 	</script>
-	<script async defer
-		src="https://maps.googleapis.com/maps/api/js?key=AIzaSyADj8Ydma7BpqC7-wbggzXRTP1ZZ0j7osA&callback=initMap&libraries=marker"></script>
 
 	<script src="assets/voice-assistant.js?v=7"></script>
 </body>
