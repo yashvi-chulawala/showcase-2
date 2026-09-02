@@ -5,10 +5,10 @@ const path = require('path');
 
 // Set default env paths for vtour integration if not provided
 if (!process.env.PANOS_DIR) {
-  process.env.PANOS_DIR = path.resolve(__dirname, '../vtour/panos');
+  process.env.PANOS_DIR = path.resolve(__dirname, './vtour/panos');
 }
 if (!process.env.VR_TOUR_SRC_DIR) {
-  process.env.VR_TOUR_SRC_DIR = path.resolve(__dirname, '../vtour/src');
+  process.env.VR_TOUR_SRC_DIR = path.resolve(__dirname, './vtour/src');
 }
 
 const scenesRouter = require('./routes/scenes');
@@ -23,14 +23,40 @@ app.use(express.json({ limit: '15mb' }));
 
 const { seedInitialScenesIfEmpty } = require('./lib/seeder');
 seedInitialScenesIfEmpty();
-app.post('/api/system/set-active-tour', async (req, res) => {
+app.post('/api/system/set-active-tour', (req, res) => {
   let tourId = req.body.tourId || null;
-  
-  if (!tourId) {
-    return res.status(400).json({ error: 'Missing tourId' });
+  const fs = require('fs');
+
+  if (tourId && fs.existsSync(tourId)) {
+    const stats = fs.statSync(tourId);
+    if (stats.isFile()) {
+      if (tourId.toLowerCase().endsWith('.s360')) {
+        // Auto extract zip file!
+        try {
+          const AdmZip = require('adm-zip');
+          const zip = new AdmZip(tourId);
+          const originalName = path.basename(tourId, '.s360').replace(/[^a-zA-Z0-9 -]/g, '').trim() || 'Imported_Project';
+          let targetDir = path.join(__dirname, 'data', originalName);
+          let counter = 1;
+          while (fs.existsSync(targetDir)) {
+            targetDir = path.join(__dirname, 'data', `${originalName}_${counter}`);
+            counter++;
+          }
+          fs.mkdirSync(targetDir, { recursive: true });
+          zip.extractAllTo(targetDir, true);
+          tourId = targetDir; // Switch to the newly extracted folder
+        } catch (err) {
+          console.error("Failed to auto-extract .s360 zip:", err);
+          return res.status(400).json({ error: "Failed to extract .s360 project archive." });
+        }
+      } else {
+        // They picked a random file (like project.json) inside a folder. Use its parent directory.
+        tourId = path.dirname(tourId);
+      }
+    }
   }
 
-  await db.setActiveTourAsync(tourId);
+  db.setActiveTour(tourId);
   try {
     const { publishTour } = require('./lib/publisher');
     publishTour(tourId);
@@ -40,16 +66,9 @@ app.post('/api/system/set-active-tour', async (req, res) => {
   res.json({ success: true, activeTourId: db.getActiveTour() });
 });
 
-app.get('/api/system/recent-projects', async (req, res) => {
-  try {
-    const dbModule = require('./lib/db');
-    const projectsDetails = await dbModule.listToursWithDetailsAsync();
-    // Frontend expects an array of strings (the tour IDs)
-    const projects = projectsDetails.map(p => p.id);
-    res.json({ projects });
-  } catch(e) {
-    res.status(500).json({ error: e.message });
-  }
+app.get('/api/system/recent-projects', (req, res) => {
+  const dbModule = require('./lib/db');
+  res.json({ projects: dbModule.getRecentProjects() });
 });
 
 app.get('/api/health', (req, res) => res.json({ ok: true, dbFile: db.DB_FILE }));
@@ -92,6 +111,7 @@ app.use('/api', scenesRouter);
 app.use('/api', hotspotsRouter);
 app.use('/api/project', projectRouter);
 app.use('/api', publishRouter);
+app.use('/api', require('./routes/gemini-voice'));
 
 app.get('/api/tours/:tourId/thumbnail', (req, res) => {
   const tourId = req.params.tourId;
@@ -100,14 +120,14 @@ app.get('/api/tours/:tourId/thumbnail', (req, res) => {
   if (!tour || !tour.thumbnail) {
     return res.status(404).send('Not found');
   }
-  
+
   let thumbPath;
   if (tourId && path.isAbsolute(tourId)) {
     thumbPath = path.join(tourId, tour.thumbnail);
   } else {
-    thumbPath = path.join(__dirname, '../vtour', tour.thumbnail);
+    thumbPath = path.join(__dirname, './vtour', tour.thumbnail);
   }
-  
+
   if (require('fs').existsSync(thumbPath)) {
     res.sendFile(thumbPath);
   } else {
@@ -152,7 +172,7 @@ app.use('/assets', (req, res, next) => {
 });
 
 // Serve static vtour directory with no-cache headers for instant dev updates
-const vtourDir = path.resolve(__dirname, '../vtour');
+const vtourDir = path.resolve(__dirname, './vtour');
 app.use(express.static(vtourDir, {
   setHeaders: (res, path) => {
     if (path.endsWith('.html') || path.endsWith('.js') || path.endsWith('.css') || path.endsWith('.xml')) {
@@ -184,7 +204,7 @@ app.post('/api/system/rename-tour', (req, res) => {
 
   const path = require('path');
   const dbModule = require('./lib/db');
-  
+
   const oldPath = activeTourId;
   let newPath = newName; // If it's a legacy virtual project, new ID is just the name
 

@@ -1,383 +1,466 @@
 <!DOCTYPE html>
 <html>
+
 <head>
 	<title>krpano - DJI_20251222162034_0135_D_equi</title>
 	<link rel="icon" type="image/png" href="logo.png">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
+	<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap"
+		rel="stylesheet">
+	<link rel="stylesheet" href="assets/voice-assistant.css">
+	<meta name="viewport"
+		content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
 	<meta name="apple-mobile-web-app-capable" content="yes" />
 	<meta name="apple-mobile-web-app-status-bar-style" content="black" />
 	<meta name="mobile-web-app-capable" content="yes" />
 	<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 	<meta http-equiv="x-ua-compatible" content="IE=edge" />
 	<style>
-		html { height:100%; }
-		body { height:100%; overflow:hidden; margin:0; padding:0; font-family:Arial, Helvetica, sans-serif; font-size:16px; color:#FFFFFF; background-color:#000000; }
+		html {
+			height: 100%;
+		}
+
+		body {
+			height: 100%;
+			overflow: hidden;
+			margin: 0;
+			padding: 0;
+			font-family: Arial, Helvetica, sans-serif;
+			font-size: 16px;
+			color: #FFFFFF;
+			background-color: #000000;
+		}
 	</style>
 </head>
+
 <body>
 
-<script src="tour.js"></script>
+	<script src="tour.js"></script>
 
-<!-- Google Maps Integration CSS -->
-<style>
-	/* Top Bar UI */
-	#top-bar {
-		position: absolute;
-		top: 15px;
-		left: 50%;
-		transform: translateX(-50%);
-		width: auto;
-		min-width: 300px;
-		max-width: 600px;
-		background: rgba(26, 31, 38, 0.9);
-		border: 1px solid #333;
-		border-radius: 24px;
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		padding: 6px 8px;
-		z-index: 1000;
-		box-sizing: border-box;
-		box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-	}
+	<!-- Google Maps Integration CSS -->
+	<style>
+		/* Top Bar UI */
+		#top-bar {
+			position: absolute;
+			top: 15px;
+			left: 50%;
+			transform: translateX(-50%);
+			width: auto;
+			min-width: 300px;
+			max-width: 600px;
+			background: rgba(26, 31, 38, 0.9);
+			border: 1px solid #333;
+			border-radius: 24px;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			padding: 6px 8px;
+			z-index: 1000;
+			box-sizing: border-box;
+			box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+		}
 
-	.top-bar-left {
-		display: flex;
-		align-items: center;
-	}
-	
-	.top-bar-center {
-		flex: 1;
-		text-align: center;
-		padding: 0 20px;
-	}
+		.top-bar-left {
+			display: flex;
+			align-items: center;
+		}
 
-	#top-bar-title {
-		color: #C6A061; /* Karma Gold */
-		font-size: 16px;
-		font-weight: 700;
-		font-family: 'Outfit', Arial, sans-serif;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
+		.top-bar-center {
+			flex: 1;
+			text-align: center;
+			padding: 0 20px;
+		}
 
-	.custom-btn {
-		background: transparent;
-		border: 1px solid rgba(198, 160, 97, 0.5); /* Karma Gold faint */
-		border-radius: 18px;
-		color: #C6A061; /* Karma Gold */
-		font-size: 14px;
-		font-weight: 600;
-		padding: 6px 14px;
-		cursor: pointer;
-		display: flex;
-		align-items: center;
-		gap: 6px;
-		transition: all 0.2s;
-	}
-	.custom-btn:hover {
-		background: rgba(198, 160, 97, 0.15);
-		border-color: #C6A061;
-	}
-	.custom-btn svg {
-		fill: currentColor;
-		width: 16px;
-		height: 16px;
-	}
+		#top-bar-title {
+			color: #C6A061;
+			/* Karma Gold */
+			font-size: 16px;
+			font-weight: 700;
+			font-family: 'Outfit', Arial, sans-serif;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
 
-	/* Map Modal Overlay */
-	#map-modal {
-		display: none;
-		position: absolute;
-		top: 80px;
-		left: 5%;
-		width: 35vw;
-		max-width: 500px;
-		min-width: 300px;
-		height: 70vh;
-		z-index: 2000;
-		background: #000;
-		border: 2px solid #333;
-		border-radius: 12px;
-		box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-		overflow: hidden;
-	}
-	#map-container {
-		width: 100%;
-		height: 100%;
-	}
-	#map-close-btn {
-		position: absolute;
-		top: 10px;
-		right: 10px;
-		width: 32px;
-		height: 32px;
-		background: #ef4444;
-		color: white;
-		border: 2px solid white;
-		border-radius: 50%;
-		font-weight: bold;
-		cursor: pointer;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		z-index: 2001;
-		box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-	}
+		.custom-btn {
+			background: transparent;
+			border: 1px solid rgba(198, 160, 97, 0.5);
+			/* Karma Gold faint */
+			border-radius: 18px;
+			color: #C6A061;
+			/* Karma Gold */
+			font-size: 14px;
+			font-weight: 600;
+			padding: 6px 14px;
+			cursor: pointer;
+			display: flex;
+			align-items: center;
+			gap: 6px;
+			transition: all 0.2s;
+		}
 
-	/* Bouncing Pin and Glow CSS */
-	.pin-active-wrapper {
-		position: relative;
-		width: 32px;
-		height: 50px;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: flex-end;
-	}
-	.pin-bounce {
-		animation: pin-jump 0.5s infinite alternate cubic-bezier(0.5, 0.05, 1, 0.5);
-		z-index: 2;
-	}
-	.pin-shadow-glow {
-		position: absolute;
-		bottom: -8px;
-		left: 50%;
-		width: 24px;
-		height: 10px;
-		background: rgba(255, 215, 0, 1); /* Bright Gold */
-		box-shadow: 0 0 20px 10px rgba(255, 215, 0, 0.6); /* Expanded bright glow */
-		border-radius: 50%;
-		filter: blur(3px);
-		animation: shadow-jump 0.5s infinite alternate cubic-bezier(0.5, 0.05, 1, 0.5);
-		z-index: 1;
-	}
-	@keyframes pin-jump {
-		0% { transform: translateY(0); }
-		100% { transform: translateY(-16px); }
-	}
-	@keyframes shadow-jump {
-		0% { transform: translateX(-50%) scale(1.5); opacity: 1; }
-		100% { transform: translateX(-50%) scale(0.5); opacity: 0.2; }
-	}
-</style>
+		.custom-btn:hover {
+			background: rgba(198, 160, 97, 0.15);
+			border-color: #C6A061;
+		}
 
-<div id="pano" style="width:100%;height:100%;">
-	<noscript><table style="width:100%;height:100%;"><tr style="vertical-align:middle;"><td><div style="text-align:center;">ERROR:<br/><br/>Javascript not activated<br/><br/></div></td></tr></table></noscript>
-	
-	<!-- Custom Top Bar -->
-	<div id="top-bar">
-		<div class="top-bar-left">
-			<button class="custom-btn" id="map-toggle-btn" onclick="toggleMap()">
-				<svg viewBox="0 0 24 24"><path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/></svg>
-				<span id="map-toggle-text">Map</span>
-			</button>
+		.custom-btn svg {
+			fill: currentColor;
+			width: 16px;
+			height: 16px;
+		}
+
+		/* Map PiP Overlay - left-middle, flush to left edge, slides in from left */
+		#map-modal {
+			position: absolute;
+			top: 50%;
+			left: 0;
+			transform: translateX(-100%) translateY(-50%);
+			width: 38vw;
+			max-width: 480px;
+			min-width: 280px;
+			height: 55vh;
+			max-height: 440px;
+			z-index: 2000;
+			background: #111;
+			border: 2px solid rgba(255, 255, 255, 0.12);
+			border-left: none;
+			border-radius: 0 16px 16px 0;
+			box-shadow: 8px 0 32px rgba(0, 0, 0, 0.6);
+			overflow: hidden;
+			opacity: 0;
+			transition: transform 0.38s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+			pointer-events: none;
+			visibility: hidden;
+		}
+
+		#map-modal.map-open {
+			transform: translateX(0) translateY(-50%);
+			opacity: 1;
+			pointer-events: auto;
+			visibility: visible;
+		}
+
+		#map-container {
+			width: 100%;
+			height: 100%;
+		}
+
+		#map-close-btn {
+			position: absolute;
+			top: 10px;
+			left: 10px;
+			width: 28px;
+			height: 28px;
+			background: rgba(239, 68, 68, 0.9);
+			color: white;
+			border: 1.5px solid rgba(255, 255, 255, 0.6);
+			border-radius: 50%;
+			font-size: 13px;
+			font-weight: bold;
+			cursor: pointer;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			z-index: 2001;
+			box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+			backdrop-filter: blur(4px);
+			transition: background 0.2s;
+		}
+
+		#map-close-btn:hover {
+			background: #ef4444;
+		}
+
+		/* Bouncing Pin and Glow CSS */
+		.pin-active-wrapper {
+			position: relative;
+			width: 32px;
+			height: 50px;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: flex-end;
+		}
+
+		.pin-bounce {
+			animation: pin-jump 0.5s infinite alternate cubic-bezier(0.5, 0.05, 1, 0.5);
+			z-index: 2;
+		}
+
+		.pin-shadow-glow {
+			position: absolute;
+			bottom: -8px;
+			left: 50%;
+			width: 24px;
+			height: 10px;
+			background: rgba(255, 215, 0, 1);
+			/* Bright Gold */
+			box-shadow: 0 0 20px 10px rgba(255, 215, 0, 0.6);
+			/* Expanded bright glow */
+			border-radius: 50%;
+			filter: blur(3px);
+			animation: shadow-jump 0.5s infinite alternate cubic-bezier(0.5, 0.05, 1, 0.5);
+			z-index: 1;
+		}
+
+		@keyframes pin-jump {
+			0% {
+				transform: translateY(0);
+			}
+
+			100% {
+				transform: translateY(-16px);
+			}
+		}
+
+		@keyframes shadow-jump {
+			0% {
+				transform: translateX(-50%) scale(1.5);
+				opacity: 1;
+			}
+
+			100% {
+				transform: translateX(-50%) scale(0.5);
+				opacity: 0.2;
+			}
+		}
+	</style>
+
+	<div id="pano" style="width:100%;height:100%;">
+		<noscript>
+			<table style="width:100%;height:100%;">
+				<tr style="vertical-align:middle;">
+					<td>
+						<div style="text-align:center;">ERROR:<br /><br />Javascript not activated<br /><br /></div>
+					</td>
+				</tr>
+			</table>
+		</noscript>
+
+		<!-- Custom Top Bar -->
+		<div id="top-bar">
+			<div class="top-bar-left">
+				<button class="custom-btn" id="map-toggle-btn" onclick="toggleMap()">
+					<svg viewBox="0 0 24 24">
+						<path
+							d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z" />
+					</svg>
+					<span id="map-toggle-text">Map</span>
+				</button>
+			</div>
+			<div class="top-bar-center">
+				<div id="top-bar-title">Loading...</div>
+			</div>
+			<div style="width: 82px;"></div>
+			<!-- Spacer to keep center perfectly aligned since map button takes space -->
 		</div>
-		<div class="top-bar-center">
-			<div id="top-bar-title">Loading...</div>
+
+		<!-- Map UI -->
+		<div id="map-modal">
+			<button id="map-close-btn" onclick="toggleMap()">X</button>
+			<div id="map-container"></div>
 		</div>
-		<div style="width: 82px;"></div> <!-- Spacer to keep center perfectly aligned since map button takes space -->
+
+		<script>
+			// Krpano object reference
+			let krpano = null;
+
+			function krpanoReady(krpanoInterface) {
+				krpano = krpanoInterface;
+				window.krpano = krpanoInterface; // Attach to window for voice-assistant.js
+				// Hide default skin immediately
+				krpano.set("layer[skin_layer].visible", false);
+
+				// Add listener for scene changes to update map pin and title
+				krpano.set("events[map_events].keep", true);
+				krpano.set("events[map_events].onxmlcomplete", "js(plotKrpanoScenes())");
+				krpano.set("events[map_events].onnewscene", "js(updateActiveSceneInfo())");
+
+				// Try to plot pins if map is already initialized
+				if (typeof google !== 'undefined' && mapInitialized) {
+					plotKrpanoScenes();
+				}
+			}
+
+			embedpano({ xml: "tour.xml", target: "pano", html5: "only", mobilescale: 1.0, passQueryParameters: "startscene,startlookat", onready: krpanoReady });
+		</script>
 	</div>
 
-	<!-- Map UI -->
-	<div id="map-modal">
-		<button id="map-close-btn" onclick="toggleMap()">X</button>
-		<div id="map-container"></div>
-	</div>
-
+	<!-- Google Maps Integration JS -->
 	<script>
-		// Krpano object reference
-		let krpano = null;
-		
-		function krpanoReady(krpanoInterface) {
-			krpano = krpanoInterface;
-			// Hide default skin immediately
-			krpano.set("layer[skin_layer].visible", false);
-			
-			// Add listener for scene changes to update map pin and title
-			krpano.set("events[map_events].keep", true);
-			krpano.set("events[map_events].onxmlcomplete", "js(plotKrpanoScenes())");
-			krpano.set("events[map_events].onnewscene", "js(updateActiveSceneInfo())");
-			
-			// Try to plot pins if map is already initialized
-			if (typeof google !== 'undefined' && mapInitialized) {
-				plotKrpanoScenes();
-			}
-		}
+		let map;
+		let markers = {};
+		let mapInitialized = false;
 
-		embedpano({xml:"tour.xml", target:"pano", html5:"only", mobilescale:1.0, passQueryParameters:"startscene,startlookat", onready: krpanoReady});
-	</script>
-</div>
-
-<!-- Google Maps Integration JS -->
-<script>
-	let map;
-	let markers = {};
-	let mapInitialized = false;
-
-	function toggleMap() {
-		const modal = document.getElementById('map-modal');
-		const btnText = document.getElementById('map-toggle-text');
-		if (modal.style.display === 'block') {
-			modal.style.display = 'none';
-			btnText.textContent = 'Map';
-		} else {
-			modal.style.display = 'block';
-			btnText.textContent = 'Close';
-			if (map) {
-				// Trigger resize so map renders correctly when unhidden
-				google.maps.event.trigger(map, 'resize');
-				centerMapOnActiveScene();
-			}
-		}
-	}
-
-	async function initMap() {
-		// Import AdvancedMarkerElement
-		const { Map } = await google.maps.importLibrary("maps");
-		const { AdvancedMarkerElement, PinElement } = await google.maps.importLibrary("marker");
-		
-		// Make PinElement globally available for later use
-		window.PinElement = PinElement;
-		window.AdvancedMarkerElement = AdvancedMarkerElement;
-
-		map = new Map(document.getElementById("map-container"), {
-			center: { lat: 0, lng: 0 },
-			zoom: 12,
-			mapTypeId: 'hybrid', // Satellite with labels
-			mapTypeControl: false, // Remove Map/Satellite toggle buttons
-			mapId: 'DEMO_MAP_ID' // Required for Advanced Markers
-		});
-
-		mapInitialized = true;
-		
-		if (krpano) {
-			plotKrpanoScenes();
-		}
-	}
-
-	let scenesPlotted = false;
-
-	function plotKrpanoScenes() {
-		if (!krpano || !mapInitialized || scenesPlotted) return;
-		
-		const sceneCount = krpano.get("scene.count");
-		if (!sceneCount || sceneCount === 0) return; // Wait for onxmlcomplete
-		
-		scenesPlotted = true;
-		const bounds = new google.maps.LatLngBounds();
-		let validPins = 0;
-
-		for (let i = 0; i < sceneCount; i++) {
-			const sceneName = krpano.get(`scene[${i}].name`);
-			let lat = krpano.get(`scene[${i}].lat`);
-			let lng = krpano.get(`scene[${i}].lng`);
-
-			if (lat !== null && lng !== null && lat !== "" && lng !== "") {
-				lat = parseFloat(lat);
-				lng = parseFloat(lng);
-				
-				if (!isNaN(lat) && !isNaN(lng)) {
-					// Create default blue pin
-					const pin = new window.PinElement({
-						background: "#4285F4", // Blue
-						borderColor: "#1967D2",
-						glyphColor: "white"
-					});
-
-					const marker = new window.AdvancedMarkerElement({
-						map: map,
-						position: { lat: lat, lng: lng },
-						title: krpano.get(`scene[${i}].title`) || sceneName,
-						content: pin.element
-					});
-
-					// Add click event to load scene
-					marker.addListener('click', () => {
-						krpano.call(`loadscene(${sceneName}, null, MERGE, BLEND(0.5))`);
-					});
-
-					markers[sceneName] = { marker, pin, lat, lng };
-					bounds.extend({ lat, lng });
-					validPins++;
+		function toggleMap() {
+			const modal = document.getElementById('map-modal');
+			const btnText = document.getElementById('map-toggle-text');
+			const isOpen = modal.classList.contains('map-open');
+			if (isOpen) {
+				modal.classList.remove('map-open');
+				if (btnText) btnText.textContent = 'Map';
+			} else {
+				modal.classList.add('map-open');
+				if (btnText) btnText.textContent = 'Close';
+				if (map) {
+					// Trigger resize so map renders correctly after slide-in
+					setTimeout(() => {
+						google.maps.event.trigger(map, 'resize');
+						centerMapOnActiveScene();
+					}, 380); // Wait for transition to complete
 				}
 			}
 		}
 
-		if (validPins > 0) {
-			map.fitBounds(bounds);
-		}
-		
-		// Highlight the current scene immediately if one is loaded
-		updateActiveSceneInfo();
-	}
+		async function initMap() {
+			// Import AdvancedMarkerElement
+			const { Map } = await google.maps.importLibrary("maps");
+			const { AdvancedMarkerElement, PinElement } = await google.maps.importLibrary("marker");
 
-	function updateActiveSceneInfo() {
-		if (!krpano || !mapInitialized) return;
-		
-		const currentSceneName = krpano.get("xml.scene");
-		const currentSceneTitle = krpano.get(`scene[${currentSceneName}].title`) || currentSceneName;
-		
-		// Update HTML Title in Top Bar
-		const titleEl = document.getElementById("top-bar-title");
-		if (titleEl) {
-			titleEl.textContent = currentSceneTitle;
-		}
+			// Make PinElement globally available for later use
+			window.PinElement = PinElement;
+			window.AdvancedMarkerElement = AdvancedMarkerElement;
 
-		// Ensure default skin is hidden
-		krpano.set("layer[skin_layer].visible", false);
-		
-		// Reset all pins to blue
-		for (const sceneName in markers) {
-			const m = markers[sceneName];
-			// Create a new pin element to reset
-			const resetPin = new window.PinElement({
-				background: "#4285F4",
-				borderColor: "#1967D2",
-				glyphColor: "white"
+			map = new Map(document.getElementById("map-container"), {
+				center: { lat: 0, lng: 0 },
+				zoom: 12,
+				mapTypeId: 'hybrid', // Satellite with labels
+				mapTypeControl: false, // Remove Map/Satellite toggle buttons
+				mapId: 'DEMO_MAP_ID' // Required for Advanced Markers
 			});
-			m.marker.content = resetPin.element;
-			m.marker.content.classList.remove('pin-active-glow');
-			m.marker.zIndex = 1;
+
+			mapInitialized = true;
+
+			if (krpano) {
+				plotKrpanoScenes();
+			}
 		}
 
-		// Set active pin to gold and glowing
-		if (currentSceneName && markers[currentSceneName]) {
-			const activeM = markers[currentSceneName];
-			const activePin = new window.PinElement({
-				background: "#FFD700", // Bright Gold
-				borderColor: "#F59E0B",
-				glyphColor: "white"
-			});
-			
-			// Structure the bouncing pin and ground shadow glow
-			const contentWrapper = document.createElement('div');
-			contentWrapper.className = 'pin-active-wrapper';
-			
-			const shadowGlow = document.createElement('div');
-			shadowGlow.className = 'pin-shadow-glow';
-			
-			const pinContainer = document.createElement('div');
-			pinContainer.className = 'pin-bounce';
-			pinContainer.appendChild(activePin.element);
-			
-			contentWrapper.appendChild(shadowGlow);
-			contentWrapper.appendChild(pinContainer);
-			
-			activeM.marker.content = contentWrapper;
-			activeM.marker.zIndex = 100;
+		let scenesPlotted = false;
+
+		function plotKrpanoScenes() {
+			if (!krpano || !mapInitialized || scenesPlotted) return;
+
+			const sceneCount = krpano.get("scene.count");
+			if (!sceneCount || sceneCount === 0) return; // Wait for onxmlcomplete
+
+			scenesPlotted = true;
+			const bounds = new google.maps.LatLngBounds();
+			let validPins = 0;
+
+			for (let i = 0; i < sceneCount; i++) {
+				const sceneName = krpano.get(`scene[${i}].name`);
+				let lat = krpano.get(`scene[${i}].lat`);
+				let lng = krpano.get(`scene[${i}].lng`);
+
+				if (lat !== null && lng !== null && lat !== "" && lng !== "") {
+					lat = parseFloat(lat);
+					lng = parseFloat(lng);
+
+					if (!isNaN(lat) && !isNaN(lng)) {
+						// Create default blue pin
+						const pin = new window.PinElement({
+							background: "#4285F4", // Blue
+							borderColor: "#1967D2",
+							glyphColor: "white"
+						});
+
+						const marker = new window.AdvancedMarkerElement({
+							map: map,
+							position: { lat: lat, lng: lng },
+							title: krpano.get(`scene[${i}].title`) || sceneName,
+							content: pin.element
+						});
+
+						// Add click event to load scene
+						marker.addListener('click', () => {
+							krpano.call(`loadscene(${sceneName}, null, MERGE, BLEND(0.5))`);
+						});
+
+						markers[sceneName] = { marker, pin, lat, lng };
+						bounds.extend({ lat, lng });
+						validPins++;
+					}
+				}
+			}
+
+			if (validPins > 0) {
+				map.fitBounds(bounds);
+			}
+
+			// Highlight the current scene immediately if one is loaded
+			updateActiveSceneInfo();
 		}
-	}
-	
-	function centerMapOnActiveScene() {
-		if (!krpano || !map) return;
-		const currentSceneName = krpano.get("xml.scene");
-		if (currentSceneName && markers[currentSceneName]) {
-			map.setCenter({ lat: markers[currentSceneName].lat, lng: markers[currentSceneName].lng });
+
+		function updateActiveSceneInfo() {
+			if (!krpano || !mapInitialized) return;
+
+			const currentSceneName = krpano.get("xml.scene");
+			const currentSceneTitle = krpano.get(`scene[${currentSceneName}].title`) || currentSceneName;
+
+			// Update HTML Title in Top Bar
+			const titleEl = document.getElementById("top-bar-title");
+			if (titleEl) {
+				titleEl.textContent = currentSceneTitle;
+			}
+
+			// Ensure default skin is hidden
+			krpano.set("layer[skin_layer].visible", false);
+
+			// Reset all pins to blue
+			for (const sceneName in markers) {
+				const m = markers[sceneName];
+				// Create a new pin element to reset
+				const resetPin = new window.PinElement({
+					background: "#4285F4",
+					borderColor: "#1967D2",
+					glyphColor: "white"
+				});
+				m.marker.content = resetPin.element;
+				m.marker.content.classList.remove('pin-active-glow');
+				m.marker.zIndex = 1;
+			}
+
+			// Set active pin to gold and glowing
+			if (currentSceneName && markers[currentSceneName]) {
+				const activeM = markers[currentSceneName];
+				const activePin = new window.PinElement({
+					background: "#FFD700", // Bright Gold
+					borderColor: "#F59E0B",
+					glyphColor: "white"
+				});
+
+				// Structure the bouncing pin and ground shadow glow
+				const contentWrapper = document.createElement('div');
+				contentWrapper.className = 'pin-active-wrapper';
+
+				const shadowGlow = document.createElement('div');
+				shadowGlow.className = 'pin-shadow-glow';
+
+				const pinContainer = document.createElement('div');
+				pinContainer.className = 'pin-bounce';
+				pinContainer.appendChild(activePin.element);
+
+				contentWrapper.appendChild(shadowGlow);
+				contentWrapper.appendChild(pinContainer);
+
+				activeM.marker.content = contentWrapper;
+				activeM.marker.zIndex = 100;
+			}
 		}
-	}
-</script>
-<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB7fZRPxobJM7Mpr3UVfimAFm3odv2ZEUc&callback=initMap&libraries=marker"></script>
+
+		function centerMapOnActiveScene() {
+			if (!krpano || !map) return;
+			const currentSceneName = krpano.get("xml.scene");
+			if (currentSceneName && markers[currentSceneName]) {
+				map.setCenter({ lat: markers[currentSceneName].lat, lng: markers[currentSceneName].lng });
+			}
+		}
+	</script>
+	<script async defer
+		src="https://maps.googleapis.com/maps/api/js?key= AIzaSyADj8Ydma7BpqC7-wbggzXRTP1ZZ0j7osA&callback=initMap&libraries=marker"></script>
+
+	<script src="assets/voice-assistant.js?v=7"></script>
+</body>
 
 </html>

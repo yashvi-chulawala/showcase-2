@@ -56,11 +56,11 @@
 		  );
 	</action>
 
-	<scene name="scene_DJI_20251222160517_0128_D_equi" title="Left View" onstart="js(console.log('SCENE START pending custom view:', get(hs_entry_custom), get(hs_entry_hlookat), get(hs_entry_vlookat), get(hs_entry_fov))); if(hs_entry_custom == true, lookat(get(hs_entry_hlookat), get(hs_entry_vlookat), get(hs_entry_fov)); js(console.log('VIEW APPLIED:', get(view.hlookat), get(view.vlookat), get(view.fov))); delete(hs_entry_custom, hs_entry_hlookat, hs_entry_vlookat, hs_entry_fov););" thumburl="../panos/DJI_20251222160517_0128_D_equi.tiles/thumb.jpg" lat="" lng="" heading="">
+	<scene name="scene_DJI_20251222160517_0128_D_equi" title="DJI_20251222160517_0128_D_equi" onstart="js(console.log('SCENE START pending custom view:', get(hs_entry_custom), get(hs_entry_hlookat), get(hs_entry_vlookat), get(hs_entry_fov))); if(hs_entry_custom == true, lookat(get(hs_entry_hlookat), get(hs_entry_vlookat), get(hs_entry_fov)); js(console.log('VIEW APPLIED:', get(view.hlookat), get(view.vlookat), get(view.fov))); delete(hs_entry_custom, hs_entry_hlookat, hs_entry_vlookat, hs_entry_fov););" thumburl="../panos/DJI_20251222160517_0128_D_equi.tiles/thumb.jpg" lat="" lng="" heading="">
 		
 		<control bouncinglimits="calc:image.cube ? true : false" fovspeed="50" />
 
-		<view hlookat="121.42" vlookat="9.3" fovtype="MFOV" fov="91.97" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+		<view hlookat="0" vlookat="0" fovtype="MFOV" fov="114" maxpixelzoom="2.0" fovmin="30" fovmax="140" limitview="auto" />
 
 		<preview url="../panos/DJI_20251222160517_0128_D_equi.tiles/preview.jpg" />
 
@@ -68,33 +68,14 @@
 			<cube url="../panos/DJI_20251222160517_0128_D_equi.tiles/%s/l%l/%v/l%l_%s_%v_%h.jpg" multires="512,1024,2048,3840" />
 		</image>
 
-		<hotspot name="hs_mse93717jiw165" ath="-42.45" atv="-7.24"   scale="0.85" visible="true" zorder="100" enabled="true" capture="false" url="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4Ij48cGF0aCBkPSJNMjAgNDQgTDQ0IDIwIE00NCAyMCBMMjAgMjAgTTQ0IDIwIEw0NCA0NCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjgiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjwvc3ZnPg==" alpha="1.0"
-		         onclick="loadscene('scene_DJI_20251222162034_0135_D_equi', null, MERGE, BLEND(0.5));" />
-		<hotspot name="hs_mshc1s0jf68ian" ath="5.27" atv="22.46"   scale="0.85" visible="true" zorder="100" enabled="true" capture="false" url="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4Ij48cGF0aCBkPSJNMTQgNDQgTDMyIDIwIEw1MCA0NCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjgiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjwvc3ZnPg==" alpha="1.0"
-		         onclick="loadscene('scene_DJI_20251222162034_0135_D_equi', null, MERGE, BLEND(0.5));" />
-		<hotspot name="hs_mshcd9exjav4o1" ath="31.1" atv="-3.71"   scale="0.85" visible="true" zorder="100" enabled="true" capture="false" type="text" html="Back View" distorted="false" alpha="1" bgcolor="0x000000" bgalpha="0.27" bgborder="0 0x000000 0" bgroundedge="0" bgshadow="2 2 4 0xFF0000 0" css="font-family:Arial; font-size:13px; color:#FFFFFF; font-weight:normal; font-style:normal; text-decoration:none; text-align:center;" padding="4 8"
-		         onclick="js(alert('Back View'));" />
-		<hotspot name="hs_mshfwi2tbl2o92" ath="-152.91" atv="-7.84"   scale="0.85" visible="true" zorder="100" enabled="true" capture="false" url="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4Ij48cGF0aCBkPSJNMTQgNDQgTDMyIDIwIEw1MCA0NCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjgiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjwvc3ZnPg==" alpha="1.0"
-		         onclick="loadscene('scene_DJI_20251222162034_0135_D_equi', null, MERGE, BLEND(0.5));" />
-		<hotspot name="hs_mshg1pjo0f1s89" ath="-160.48" atv="-5.94"   scale="0.85" visible="true" zorder="100" enabled="true" capture="false" url="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4Ij48cGF0aCBkPSJNMTIgMzIgTDQyIDggTDUwIDE4IEwzMCAzMiBMNTAgNDYgTDQyIDU2IFoiIGZpbGw9IiNmZmZmZmYiLz48L3N2Zz4=" alpha="1.0"
-		         onclick="loadscene('scene_DJI_20251222160749_0129_D_equi', null, MERGE, BLEND(0.5));" />
-		<hotspot name="hs_mshg49ljfhsv8d" ath="-139.85" atv="-7.93"   scale="0.85" visible="true" zorder="100" enabled="true" capture="false" url="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4Ij48Y2lyY2xlIGN4PSIzMiIgY3k9IjMyIiByPSIyNCIgZmlsbD0iI2VmNDQ0NCIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjYiLz48Y2lyY2xlIGN4PSIzMiIgY3k9IjMyIiByPSIxMCIgZmlsbD0iI2ZmZmZmZiIvPjwvc3ZnPg==" alpha="1.0"
-		         onclick="loadscene('scene_DJI_20251222162034_0135_D_equi', null, MERGE, BLEND(0.5));" />
-		<hotspot name="hs_mshgrjy1tcg1h7" ath="2.46" atv="-0.71"   scale="0.85" visible="true" zorder="100" enabled="true" capture="false" url="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4Ij48Y2lyY2xlIGN4PSIzMiIgY3k9IjMyIiByPSIyNCIgZmlsbD0iI2VmNDQ0NCIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjYiLz48Y2lyY2xlIGN4PSIzMiIgY3k9IjMyIiByPSIxMCIgZmlsbD0iI2ZmZmZmZiIvPjwvc3ZnPg==" alpha="1.0"
-		         onclick="loadscene('scene_DJI_20251222162034_0135_D_equi', null, MERGE, BLEND(0.5));" />
-		<hotspot name="hs_msifmzvq2v5y7s" ath="116.81" atv="-10.4"   scale="0.85" visible="true" zorder="100" enabled="true" capture="false" url="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4Ij48cGF0aCBkPSJNMTIgMzIgTDQyIDggTDUwIDE4IEwzMCAzMiBMNTAgNDYgTDQyIDU2IFoiIGZpbGw9IiNmZmZmZmYiLz48L3N2Zz4=" alpha="1.0"
-		         onclick="loadscene('scene_DJI_20251222160749_0129_D_equi', null, MERGE, BLEND(0.5));" />
-		<hotspot name="hs_msigee141db0b2" ath="116.85" atv="-3.58"   scale="0.85" visible="true" zorder="100" enabled="true" capture="false" url="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4Ij48cGF0aCBkPSJNMTIgMzIgTDQyIDggTDUwIDE4IEwzMCAzMiBMNTAgNDYgTDQyIDU2IFoiIGZpbGw9IiNmZmZmZmYiLz48L3N2Zz4=" alpha="1.0"
-		         onclick="loadscene('scene_DJI_20251222160749_0129_D_equi', null, MERGE, BLEND(0.5));" />
-
 
 	</scene>
 
-	<scene name="scene_DJI_20251222160749_0129_D_equi" title="Back View" onstart="js(console.log('SCENE START pending custom view:', get(hs_entry_custom), get(hs_entry_hlookat), get(hs_entry_vlookat), get(hs_entry_fov))); if(hs_entry_custom == true, lookat(get(hs_entry_hlookat), get(hs_entry_vlookat), get(hs_entry_fov)); js(console.log('VIEW APPLIED:', get(view.hlookat), get(view.vlookat), get(view.fov))); delete(hs_entry_custom, hs_entry_hlookat, hs_entry_vlookat, hs_entry_fov););" thumburl="../panos/DJI_20251222160749_0129_D_equi.tiles/thumb.jpg" lat="" lng="" heading="">
+	<scene name="scene_DJI_20251222160749_0129_D_equi" title="DJI_20251222160749_0129_D_equi" onstart="js(console.log('SCENE START pending custom view:', get(hs_entry_custom), get(hs_entry_hlookat), get(hs_entry_vlookat), get(hs_entry_fov))); if(hs_entry_custom == true, lookat(get(hs_entry_hlookat), get(hs_entry_vlookat), get(hs_entry_fov)); js(console.log('VIEW APPLIED:', get(view.hlookat), get(view.vlookat), get(view.fov))); delete(hs_entry_custom, hs_entry_hlookat, hs_entry_vlookat, hs_entry_fov););" thumburl="../panos/DJI_20251222160749_0129_D_equi.tiles/thumb.jpg" lat="" lng="" heading="">
 		
 		<control bouncinglimits="calc:image.cube ? true : false" fovspeed="50" />
 
-		<view hlookat="3.44" vlookat="28.53" fovtype="MFOV" fov="84.72" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+		<view hlookat="0" vlookat="0" fovtype="MFOV" fov="114" maxpixelzoom="2.0" fovmin="30" fovmax="140" limitview="auto" />
 
 		<preview url="../panos/DJI_20251222160749_0129_D_equi.tiles/preview.jpg" />
 
@@ -102,40 +83,20 @@
 			<cube url="../panos/DJI_20251222160749_0129_D_equi.tiles/%s/l%l/%v/l%l_%s_%v_%h.jpg" multires="512,1024,2048,3840" />
 		</image>
 
-		<hotspot name="hs_mshc1wcg6raqoy" ath="-7.43" atv="33.17"   scale="0.85" visible="true" zorder="100" enabled="true" capture="false" url="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4Ij48cGF0aCBkPSJNMTQgNDQgTDMyIDIwIEw1MCA0NCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjgiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjwvc3ZnPg==" alpha="1.0"
-		         onclick="loadscene('scene_DJI_20251222160517_0128_D_equi', null, MERGE, BLEND(0.5));" />
-		<hotspot name="hs_mshg20er2572ij" ath="103.79" atv="-2.18"   scale="0.85" visible="true" zorder="100" enabled="true" capture="false" url="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4Ij48cGF0aCBkPSJNMTIgMzIgTDQyIDggTDUwIDE4IEwzMCAzMiBMNTAgNDYgTDQyIDU2IFoiIGZpbGw9IiNmZmZmZmYiLz48L3N2Zz4=" alpha="1.0"
-		         onclick="loadscene('scene_DJI_20251222160517_0128_D_equi', null, MERGE, BLEND(0.5));" />
-		<hotspot name="hs_msifn33h6rtvrc" ath="16.79" atv="34.62"   scale="0.85" visible="true" zorder="100" enabled="true" capture="false" url="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4Ij48cGF0aCBkPSJNMTIgMzIgTDQyIDggTDUwIDE4IEwzMCAzMiBMNTAgNDYgTDQyIDU2IFoiIGZpbGw9IiNmZmZmZmYiLz48L3N2Zz4=" alpha="1.0"
-		         onclick="loadscene('scene_DJI_20251222160517_0128_D_equi', null, MERGE, BLEND(0.5));" />
-		<hotspot name="hs_msigeftzgpumlr" ath="110.13" atv="7.63"   scale="0.85" visible="true" zorder="100" enabled="true" capture="false" url="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4Ij48cGF0aCBkPSJNMTIgMzIgTDQyIDggTDUwIDE4IEwzMCAzMiBMNTAgNDYgTDQyIDU2IFoiIGZpbGw9IiNmZmZmZmYiLz48L3N2Zz4=" alpha="1.0"
-		         onclick="loadscene('scene_DJI_20251222160517_0128_D_equi', null, MERGE, BLEND(0.5));" />
-
 
 	</scene>
 
-	<scene name="scene_DJI_20251222162034_0135_D_equi" title="Right View" onstart="js(console.log('SCENE START pending custom view:', get(hs_entry_custom), get(hs_entry_hlookat), get(hs_entry_vlookat), get(hs_entry_fov))); if(hs_entry_custom == true, lookat(get(hs_entry_hlookat), get(hs_entry_vlookat), get(hs_entry_fov)); js(console.log('VIEW APPLIED:', get(view.hlookat), get(view.vlookat), get(view.fov))); delete(hs_entry_custom, hs_entry_hlookat, hs_entry_vlookat, hs_entry_fov););" thumburl="../panos/DJI_20251222162034_0135_D_equi.tiles/thumb.jpg" lat="" lng="" heading="">
+	<scene name="scene_DJI_20251222162034_0135_D_equi" title="DJI_20251222162034_0135_D_equi" onstart="js(console.log('SCENE START pending custom view:', get(hs_entry_custom), get(hs_entry_hlookat), get(hs_entry_vlookat), get(hs_entry_fov))); if(hs_entry_custom == true, lookat(get(hs_entry_hlookat), get(hs_entry_vlookat), get(hs_entry_fov)); js(console.log('VIEW APPLIED:', get(view.hlookat), get(view.vlookat), get(view.fov))); delete(hs_entry_custom, hs_entry_hlookat, hs_entry_vlookat, hs_entry_fov););" thumburl="../panos/DJI_20251222162034_0135_D_equi.tiles/thumb.jpg" lat="" lng="" heading="">
 		
 		<control bouncinglimits="calc:image.cube ? true : false" fovspeed="50" />
 
-		<view hlookat="290.93" vlookat="18.81" fovtype="MFOV" fov="113.82" maxpixelzoom="2.0" fovmin="70" fovmax="140" limitview="auto" />
+		<view hlookat="0" vlookat="0" fovtype="MFOV" fov="114" maxpixelzoom="2.0" fovmin="30" fovmax="140" limitview="auto" />
 
 		<preview url="../panos/DJI_20251222162034_0135_D_equi.tiles/preview.jpg" />
 
 		<image>
 			<cube url="../panos/DJI_20251222162034_0135_D_equi.tiles/%s/l%l/%v/l%l_%s_%v_%h.jpg" multires="512,1024,2048,3840" />
 		</image>
-
-		<hotspot name="hs_mseajfuqok9253" ath="-22.85" atv="38.56"   scale="0.85" visible="true" zorder="100" enabled="true" capture="false" url="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4Ij48cGF0aCBkPSJNMzIgMTIgTDU2IDQyIEw0NiA1MCBMMzIgMzAgTDE4IDUwIEw4IDQyIFoiIGZpbGw9IiNmZmZmZmYiLz48L3N2Zz4=" alpha="1.0"
-		         onclick="loadscene('scene_DJI_20251222160517_0128_D_equi', null, MERGE, BLEND(0.5));" />
-		<hotspot name="hs_mshgg4cupvmgr1" ath="-49.58" atv="-5.37"   scale="0.85" visible="true" zorder="100" enabled="true" capture="false" url="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4Ij48Y2lyY2xlIGN4PSIzMiIgY3k9IjMyIiByPSIyNCIgZmlsbD0iI2VmNDQ0NCIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjYiLz48Y2lyY2xlIGN4PSIzMiIgY3k9IjMyIiByPSIxMCIgZmlsbD0iI2ZmZmZmZiIvPjwvc3ZnPg==" alpha="1.0"
-		         onclick="loadscene('scene_DJI_20251222160517_0128_D_equi', null, MERGE, BLEND(0.5));" />
-		<hotspot name="hs_mshggvq8ko4cct" ath="-64.61" atv="-5.75"   scale="0.85" visible="true" zorder="100" enabled="true" capture="false" url="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4Ij48Y2lyY2xlIGN4PSIzMiIgY3k9IjMyIiByPSIyNCIgZmlsbD0iIzNiODJmNiIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjYiLz48Y2lyY2xlIGN4PSIzMiIgY3k9IjMyIiByPSIxMCIgZmlsbD0iI2ZmZmZmZiIvPjwvc3ZnPg==" alpha="1.0"
-		         onclick="loadscene('scene_DJI_20251222162034_0135_D_equi', null, MERGE, BLEND(0.5));" />
-		<hotspot name="hs_mshgr8pvgrzkjf" ath="-35.98" atv="-4.49"   scale="0.85" visible="true" zorder="100" enabled="true" capture="false" url="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4Ij48Y2lyY2xlIGN4PSIzMiIgY3k9IjMyIiByPSIyNCIgZmlsbD0iI2VmNDQ0NCIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjYiLz48Y2lyY2xlIGN4PSIzMiIgY3k9IjMyIiByPSIxMCIgZmlsbD0iI2ZmZmZmZiIvPjwvc3ZnPg==" alpha="1.0"
-		         onclick="loadscene('scene_DJI_20251222160517_0128_D_equi', null, MERGE, BLEND(0.5));" />
-		<hotspot name="hs_mshgwewqee41ov" ath="-82.95" atv="-2.62"   scale="0.85" visible="true" zorder="100" enabled="true" capture="false" type="text" html="vhggg" distorted="false" alpha="1" bgcolor="0x000000" bgalpha="0.27" bgborder="0 0x000000 0" bgroundedge="0" bgshadow="2 2 4 0xFF0000 0" css="font-family:Arial; font-size:13px; color:#FFFFFF; font-weight:normal; font-style:normal; text-decoration:none; text-align:center;" padding="4 8"
-		         onclick="js(alert('vhggg'));" />
 
 
 	</scene>

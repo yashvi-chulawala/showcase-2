@@ -1,31 +1,31 @@
 {
   "scenes": [
     {
-      "_id": "mt170an8e0jp51",
+      "_id": "mt9x1tr857phhi",
       "tourId": "default",
       "title": "DJI_20251222160517_0128_D_equi",
       "slug": "dji_20251222160517_0128_d_equi",
       "tilesFolder": "DJI_20251222160517_0128_D_equi.tiles",
       "order": 0,
-      "createdAt": "2026-08-20T07:22:15.140Z"
+      "createdAt": "2026-08-26T09:53:25.988Z"
     },
     {
-      "_id": "mt170anc23nuor",
+      "_id": "mt9x1trfrq8rmw",
       "tourId": "default",
       "title": "DJI_20251222160749_0129_D_equi",
       "slug": "dji_20251222160749_0129_d_equi",
       "tilesFolder": "DJI_20251222160749_0129_D_equi.tiles",
       "order": 1,
-      "createdAt": "2026-08-20T07:22:15.144Z"
+      "createdAt": "2026-08-26T09:53:25.995Z"
     },
     {
-      "_id": "mt170and8ettbi",
+      "_id": "mt9x1trh5f74oj",
       "tourId": "default",
       "title": "DJI_20251222162034_0135_D_equi",
       "slug": "dji_20251222162034_0135_d_equi",
       "tilesFolder": "DJI_20251222162034_0135_D_equi.tiles",
       "order": 2,
-      "createdAt": "2026-08-20T07:22:15.145Z"
+      "createdAt": "2026-08-26T09:53:25.997Z"
     }
   ],
   "hotspots": [],

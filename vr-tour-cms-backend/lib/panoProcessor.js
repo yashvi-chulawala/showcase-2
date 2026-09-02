@@ -27,59 +27,59 @@ function processPano(inputImagePath, tilesFolderName, tourId) {
     }
 
     const baseName = tilesFolderName.replace(/\.tiles$/i, '');
-    const tmpDir = path.join(__dirname, '../../vtour/panos');
-    const tilesPath = path.join(tmpDir, `${baseName}.tiles`);
+    const tourDir = resolveTourDir(tourId);
+    const PANOS_DIR = path.join(tourDir, 'panos');
+    const outputPath = path.join(PANOS_DIR, baseName);
+    const tilesPath = path.join(PANOS_DIR, `${baseName}.tiles`);
 
-    if (!fs.existsSync(tmpDir)) {
-      fs.mkdirSync(tmpDir, { recursive: true });
+    if (!fs.existsSync(PANOS_DIR)) {
+      fs.mkdirSync(PANOS_DIR, { recursive: true });
     }
 
-    const driveStorage = require('./driveStorage');
+    console.log("DEBUG KRPANOTOOLS_BIN:", KRPANOTOOLS_BIN, "exists:", fs.existsSync(KRPANOTOOLS_BIN));
+    console.log("DEBUG CONFIG_PATH:", CONFIG_PATH, "exists:", fs.existsSync(CONFIG_PATH));
 
-    const finishAndUpload = () => {
-      // Resolve immediately so the user doesn't wait!
+    if (!fs.existsSync(CONFIG_PATH) || !fs.existsSync(KRPANOTOOLS_BIN)) {
+      console.warn(`krpano config or binary not found. Simulating processing for: ${baseName}`);
+      // MOCK PROCESSING: Just create the tiles folder and copy the image as thumb and preview
+      fs.mkdirSync(tilesPath, { recursive: true });
+      try {
+        // Copy the uploaded image to use as thumb and preview
+        fs.copyFileSync(inputImagePath, path.join(tilesPath, 'thumb.jpg'));
+        fs.copyFileSync(inputImagePath, path.join(tilesPath, 'preview.jpg'));
+        // Resolve successfully
+        return resolve({
+          tilesFolder: `${baseName}.tiles`,
+          thumburl: `panos/${baseName}.tiles/thumb.jpg`,
+          previewurl: `panos/${baseName}.tiles/preview.jpg`
+        });
+      } catch (err) {
+        return reject(new Error(`Failed to simulate pano processing: ${err.message}`));
+      }
+    }
+
+    const krpanoTilesPath = tilesPath.replace(/\\/g, '/');
+    const args = [
+      'makepano',
+      `-config=${CONFIG_PATH}`,
+      `-outputpath=${krpanoTilesPath}`,
+      `-tilepath=${krpanoTilesPath}/[c/]l%Al/%Av/l%Al[_c]_%Av_%Ah.jpg`,
+      `-previewpath=${krpanoTilesPath}/preview.jpg`,
+      `-thumbpath=${krpanoTilesPath}/thumb.jpg`,
+      inputImagePath
+    ];
+
+    execFile(KRPANOTOOLS_BIN, args, { timeout: 5 * 60 * 1000, maxBuffer: 1024 * 1024 * 50 }, (err, stdout, stderr) => {
+      if (err) return reject(new Error(`krpanotools makepano failed: ${err.message}\n${stderr}`));
+      if (!fs.existsSync(tilesPath)) {
+        return reject(new Error(`Pano processing failed. Output not found at ${tilesPath}. \nStdout: ${stdout}\nStderr: ${stderr}`));
+      }
       resolve({
         tilesFolder: `${baseName}.tiles`,
         thumburl: `panos/${baseName}.tiles/thumb.jpg`,
         previewurl: `panos/${baseName}.tiles/preview.jpg`
       });
-      // Fire-and-forget the Google Drive upload in the background
-      driveStorage.uploadTilesFolder(tourId, baseName, tilesPath)
-        .then(() => console.log(`\n☁️ Background sync to Google Drive finished for ${baseName}\n`))
-        .catch(err => console.error(`Background upload for ${baseName} failed:`, err));
-      // NOTE: We no longer delete the local tilesPath so it acts as a local cache!
-    };
-
-    if (!fs.existsSync(CONFIG_PATH) || !fs.existsSync(KRPANOTOOLS_BIN)) {
-      console.warn(`krpano config or binary not found. Simulating processing for: ${baseName}`);
-      fs.mkdirSync(tilesPath, { recursive: true });
-      try {
-        fs.copyFileSync(inputImagePath, path.join(tilesPath, 'thumb.jpg'));
-        fs.copyFileSync(inputImagePath, path.join(tilesPath, 'preview.jpg'));
-        finishAndUpload();
-      } catch (err) {
-        return reject(new Error(`Failed to simulate pano processing: ${err.message}`));
-      }
-    } else {
-      const krpanoTilesPath = tilesPath.replace(/\\/g, '/');
-      const args = [
-        'makepano',
-        `-config=${CONFIG_PATH}`,
-        `-outputpath=${krpanoTilesPath}`,
-        `-tilepath=${krpanoTilesPath}/[c/]l%Al/%Av/l%Al[_c]_%Av_%Ah.jpg`,
-        `-previewpath=${krpanoTilesPath}/preview.jpg`,
-        `-thumbpath=${krpanoTilesPath}/thumb.jpg`,
-        inputImagePath
-      ];
-
-      execFile(KRPANOTOOLS_BIN, args, { timeout: 5 * 60 * 1000, maxBuffer: 1024 * 1024 * 50 }, (err, stdout, stderr) => {
-        if (err) return reject(new Error(`krpanotools makepano failed: ${err.message}\n${stderr}`));
-        if (!fs.existsSync(tilesPath)) {
-          return reject(new Error(`Pano processing failed. Output not found at ${tilesPath}. \nStdout: ${stdout}\nStderr: ${stderr}`));
-        }
-        finishAndUpload();
-      });
-    }
+    });
   });
 }
 

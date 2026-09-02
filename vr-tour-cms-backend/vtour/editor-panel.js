@@ -174,7 +174,7 @@ function getHotspotSvgBase64(style, labelText, color, bgColor, textStyle) {
   const s = String(style || 'Arrow').toLowerCase();
   const fillCol = color || '#ffffff';
 
-  if (style && String(style).startsWith('data:image/')) {
+  if (style && (String(style).startsWith('data:image/') || String(style).startsWith('assets/'))) {
     return style;
   }
   const customList = getCustomIcons();
@@ -356,6 +356,8 @@ function switchMainPage(page) {
     if (pageMedia) pageMedia.style.display = 'flex';
     if (mediaSubBar) mediaSubBar.style.display = 'flex';
     if (pageHotspot) pageHotspot.style.display = 'none';
+    const bulkBar = document.getElementById('bulk-action-bar');
+    if (bulkBar) bulkBar.style.display = '';
 
     renderMediaScenes();
     renderMediaIcons();
@@ -365,6 +367,10 @@ function switchMainPage(page) {
     if (pageMedia) pageMedia.style.display = 'none';
     if (mediaSubBar) mediaSubBar.style.display = 'none';
     if (pageHotspot) pageHotspot.style.display = 'flex';
+
+    // Hide bulk selection bar when entering hotspot editor
+    const bulkBar = document.getElementById('bulk-action-bar');
+    if (bulkBar) bulkBar.style.display = 'none';
 
     renderScenes();
     renderCurrentSceneHotspots();
@@ -669,17 +675,123 @@ function activateTool(toolName) {
   }
 }
 
-function openImageHotspotTool() {
-  const popover = document.getElementById('hotspot-popover');
-  if (!popover) return;
+window._selectedImageAsset = null; // { name, url }
 
-  const containerRect = document.getElementById('pano-container').getBoundingClientRect();
-  popover.style.left = `${Math.max(20, containerRect.width / 2 - 140)}px`;
-  popover.style.top = `${Math.max(20, containerRect.height / 2 - 150)}px`;
-  popover.style.display = 'flex';
-  updatePopoverIconGrid();
-  showToast("Select an icon style to place Image Hotspot");
+function openImageHotspotTool() {
+  const modal = document.getElementById('modal-select-image-asset');
+  if (!modal) return;
+  window._selectedImageAsset = null;
+  _selectedImageAsset = null;
+  modal.style.display = 'flex';
+  _renderImageAssetGrid();
+  _updateImageSelectBtn();
 }
+
+function _renderImageAssetGrid() {
+  const grid = document.getElementById('modal-select-image-asset-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  if (!assets || assets.length === 0) {
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:#64748b;padding:40px;">No images found in Media. Upload some first!</div>`;
+    return;
+  }
+
+  let count = 0;
+  assets.forEach(asset => {
+    const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(asset.url);
+    if (!isImage) return;
+    count++;
+
+    const url = asset.url;
+    const isSelected = _selectedImageAsset && _selectedImageAsset.url === url;
+
+    const card = document.createElement('div');
+    card.className = 'image-card';
+    card.dataset.url = url;
+    card.style.cssText = `cursor:pointer;outline:${isSelected ? '2px solid #10b981' : 'none'};border-radius:10px;transition:outline 0.15s;`;
+    card.innerHTML = `
+      <div class="image-card-thumb-wrap" style="height:120px;position:relative;">
+        <img class="image-card-thumb" src="${url}" alt="${asset.name}" style="object-fit:cover;">
+      </div>
+      <div class="image-card-body" style="padding:8px;">
+        <div style="font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:${isSelected ? '#10b981' : '#fff'};font-weight:${isSelected ? '700' : '500'};" title="${asset.name}">${asset.name}</div>
+      </div>
+    `;
+    card.onclick = () => {
+      _selectedImageAsset = { name: asset.name, url };
+      window._selectedImageAsset = _selectedImageAsset;
+      _renderImageAssetGrid();
+      _updateImageSelectBtn();
+    };
+    grid.appendChild(card);
+  });
+
+  if (count === 0) {
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:#64748b;padding:40px;">No images found in Media. Upload some first!</div>`;
+  }
+}
+
+function _updateImageSelectBtn() {
+  const btn = document.getElementById('modal-image-asset-select-btn');
+  if (!btn) return;
+  const has = !!(window._selectedImageAsset);
+  btn.disabled = !has;
+  btn.style.opacity = has ? '1' : '0.4';
+  btn.style.cursor = has ? 'pointer' : 'not-allowed';
+}
+
+async function addImageHotspotFromAsset(assetName, assetUrl) {
+  const currentScene = scenes.find(s => String(s._id) === String(activeSceneId));
+  if (!currentScene) {
+    showToast("Please add at least one panorama scene first!");
+    return;
+  }
+
+  const url = assetUrl;
+
+  try {
+    const res = await fetch('/api/hotspots', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sceneId: activeSceneId,
+        title: assetName,
+        kind: 'info',
+        info: assetName,
+        style: url,
+        ath: 0,
+        atv: 0,
+        width: 150,
+        height: 150
+      })
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error('Failed to create image hotspot:', errText);
+      throw new Error('Failed to create image hotspot: ' + errText);
+    }
+
+    const data = await res.json();
+    hotspots.push(data.hotspot);
+
+    // Use the central addHotspotToKrpano which now handles image style properly
+    addHotspotToKrpano(data.hotspot, null);
+
+    document.getElementById('modal-select-image-asset').style.display = 'none';
+    window._selectedImageAsset = null;
+    _selectedImageAsset = null;
+
+    renderHotspotList();
+    publishTourSilent();
+    showToast("✓ Image added to tour!");
+  } catch(e) {
+    console.error(e);
+    showToast("Error adding image hotspot");
+  }
+}
+
 
 function updatePopoverIconGrid() {
   const grid = document.getElementById('popover-icons-grid');
@@ -727,13 +839,41 @@ function renderMediaScenes() {
     const card = document.createElement('div');
     card.className = 'image-card';
     card.dataset.id = scene._id;
+    card.draggable = true;
+
+    card.ondragstart = (e) => {
+      e.dataTransfer.setData('text/plain', scene._id);
+      card.classList.add('dragging');
+    };
+    card.ondragend = (e) => {
+      card.classList.remove('dragging');
+      document.querySelectorAll('.image-card').forEach(c => c.classList.remove('drag-over'));
+    };
+    card.ondragover = (e) => {
+      e.preventDefault();
+    };
+    card.ondragenter = (e) => {
+      e.preventDefault();
+      if (!card.classList.contains('dragging')) card.classList.add('drag-over');
+    };
+    card.ondragleave = (e) => {
+      card.classList.remove('drag-over');
+    };
+    card.ondrop = (e) => {
+      e.preventDefault();
+      card.classList.remove('drag-over');
+      const draggedId = e.dataTransfer.getData('text/plain');
+      if (draggedId && draggedId !== scene._id) {
+        if (typeof reorderScene === 'function') reorderScene(draggedId, scene._id);
+      }
+    };
 
     const origBaseName = getOriginalBaseName(scene);
     const thumbUrl = `panos/${scene.tilesFolder || origBaseName + '.tiles'}/thumb.jpg?t=${scene._lastThumbUpdate || 1}`;
 
     card.innerHTML = `
       <div class="image-card-thumb-wrap">
-        <img class="image-card-thumb" src="${thumbUrl}" alt="${scene.title}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'400\\' height=\'200\\'><rect width=\\'100%\\' height=\\'100%\\' fill=\\'%231d1d26\\'//></svg>'">
+        <img class="image-card-thumb" draggable="false" src="${thumbUrl}" alt="${scene.title}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'400\\' height=\'200\\'><rect width=\\'100%\\' height=\\'100%\\' fill=\\'%231d1d26\\'//></svg>'">
         <div class="image-card-tags-overlay">
           ${scene.tags && scene.tags.length > 0
             ? scene.tags.map(t => `<span class="tag-chip" style="${getTagStyle(t)}">${t}</span>`).join('')
@@ -1294,6 +1434,10 @@ function populatePanoPropertyEditor(scene) {
   if (fovInput) {
     fovInput.value = scene.fov !== undefined ? scene.fov : 114;
   }
+  const minfovInput = document.getElementById('prop-pano-minfov');
+  if (minfovInput) {
+    minfovInput.value = scene.minfov !== undefined ? scene.minfov : 30;
+  }
   const fovspeedInput = document.getElementById('prop-pano-fovspeed');
   if (fovspeedInput) {
     fovspeedInput.value = scene.fovspeed !== undefined ? scene.fovspeed : 50;
@@ -1383,9 +1527,11 @@ function onPanoNumberInputDebounced(field, elementId) {
       
       sc[field] = val;
       
-      // Update krpano live view if it's fov
-      if (field === 'fov' && window.krpano) {
-         krpano.set('view.fov', val);
+      // Update krpano live view
+      if (window.krpano) {
+        if (field === 'fov') krpano.set('view.fov', val);
+        if (field === 'minfov') krpano.set('view.minfov', val);
+        if (field === 'fovspeed') krpano.set('view.fovspeed', val);
       }
       
       publishTourSilent();
@@ -2048,7 +2194,22 @@ function addHotspotToKrpano(hotspot, targetScene) {
   krpano.set(`hotspot[${name}].enabled`, true);
   krpano.set(`hotspot[${name}].capture`, true);
 
-  if (styleName === 'Text' || hotspot.kind === 'info') {
+  if (hotspot.kind === 'image' || (hotspot.style && (String(hotspot.style).startsWith('assets/') || String(hotspot.style).startsWith('http')))) {
+    // Render as an actual image overlay in the panorama
+    krpano.set(`hotspot[${name}].type`, 'image');
+    krpano.set(`hotspot[${name}].url`, hotspot.style);
+    krpano.set(`hotspot[${name}].width`, hotspot.width || 150);
+    krpano.set(`hotspot[${name}].height`, hotspot.height || 150);
+    krpano.set(`hotspot[${name}].zoom`, false);
+    krpano.set(`hotspot[${name}].ondown`, 'draghotspot()');
+    krpano.set(`hotspot[${name}].onclick`, `js(window.onHotspotClicked('${hotspot._id}'))`);
+    if (hotspot.locked) {
+      krpano.set(`hotspot[${name}].ondown`, '');
+    }
+    return;
+  }
+
+  if (isTextHotspot(hotspot)) {
     krpano.set(`hotspot[${name}].type`, 'text');
     krpano.set(`hotspot[${name}].html`, hotspot.title || 'TEXT');
     
@@ -2282,7 +2443,8 @@ async function toggleHotspotLock(hotspotId) {
   const hs = hotspots.find(h => String(h._id) === String(hotspotId));
   if (!hs) return;
   
-  const newLockedState = !hs.locked;
+  const isCurrentlyLocked = (hs.locked === true || hs.locked === 'true');
+  const newLockedState = !isCurrentlyLocked;
   
   try {
     const res = await fetch(`/api/hotspots/${hotspotId}`, {
@@ -2294,7 +2456,12 @@ async function toggleHotspotLock(hotspotId) {
     if (res.ok) {
       hs.locked = newLockedState;
       if (typeof renderHotspotList === 'function') renderHotspotList();
-      
+      if (String(selectedHotspotId) === String(hotspotId)) {
+        const hs2 = hotspots.find(h => String(h._id) === String(hotspotId));
+        if (isImageHotspot(hs2)) selectImageHotspot(hotspotId);
+        else if (isTextHotspot(hs2)) selectTextHotspot(hotspotId);
+        else selectHotspot(hotspotId);
+      }
       if (krpano && typeof krpano.set === 'function') {
         const name = `hs_${hotspotId}`;
         krpano.set(`hotspot[${name}].ondown`, newLockedState ? "" : "draghotspot();");
@@ -2350,18 +2517,24 @@ function renderHotspotList() {
       else selectHotspot(h._id);
     };
     
-    const visIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hs-layer-icon-action"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+    const visIcon = `<svg onclick="event.stopPropagation(); lookAtHotspot('${h._id}')" title="Look at Hotspot" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hs-layer-icon-action" style="cursor: pointer; transition: color 0.2s;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
     
     const isLocked = h.locked;
-    const lockColor = isLocked ? 'var(--accent-green)' : 'currentColor';
-    const lockOpacity = isLocked ? '1' : '0.6';
-    const lockIcon = `<svg onclick="event.stopPropagation(); toggleHotspotLock('${h._id}')" title="Toggle Lock" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="${lockColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hs-layer-icon-action" style="opacity: ${lockOpacity}; cursor: pointer; transition: all 0.2s;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`;
+    const lockColor = isLocked ? '#ef4444' : 'currentColor';
+    const lockOpacity = isLocked ? '1' : '0.5';
+    const lockPath = isLocked 
+      ? '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path>'
+      : '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path>';
+      
+    const lockIcon = `<svg onclick="event.stopPropagation(); toggleHotspotLock('${h._id}')" title="${isLocked ? 'Unlock' : 'Lock'}" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="${lockColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hs-layer-icon-action" style="opacity: ${lockOpacity}; cursor: pointer; transition: all 0.2s;">${lockPath}</svg>`;
     
-    let typeIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hs-layer-icon-type"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>';
+    let typeIcon = '';
     if (isImageHotspot(h)) {
       typeIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hs-layer-icon-type"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>';
     } else if (isTextHotspot(h)) {
       typeIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hs-layer-icon-type"><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg>';
+    } else {
+      typeIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hs-layer-icon-type"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>';
     }
     
     const name = h.title || h.name || 'Untitled';
@@ -2394,7 +2567,106 @@ function renderEmptyHotspotPanel() {
   }
 }
 
+// Center view on hotspot
+window.lookAtHotspot = function(hotspotId) {
+  if (!krpano) return;
+  const hs = hotspots.find(h => String(h._id) === String(hotspotId));
+  if (hs && hs.ath !== undefined && hs.atv !== undefined) {
+    krpano.call(`lookto(${hs.ath}, ${hs.atv}, get(view.fov), smooth(100, 100, 200))`);
+  }
+};
+
 // Select a Hotspot and populate Hotspot Property Editor
+// Select an Image Hotspot - shows minimal panel (no icon/action/target scene props)
+function selectImageHotspot(hotspotId) {
+  selectedHotspotId = hotspotId;
+  const hs = hotspots.find(h => String(h._id) === String(hotspotId));
+  if (!hs) return;
+
+  showTabOnly('hotspot');
+
+  currentHotspotFilter = 'image';
+  const btnHs = document.getElementById('prop-quick-hotspot');
+  const btnTxt = document.getElementById('prop-quick-text');
+  const btnImg = document.getElementById('prop-quick-image');
+  if (btnHs) btnHs.classList.remove('active');
+  if (btnTxt) btnTxt.classList.remove('active');
+  if (btnImg) btnImg.classList.add('active');
+
+  const emptyEl = document.getElementById('prop-hs-empty-state');
+  const contentEl = document.getElementById('prop-hs-content-state');
+  const detailsEl = document.getElementById('prop-hs-details-section');
+  if (emptyEl) emptyEl.style.display = 'none';
+  if (contentEl) contentEl.style.display = 'block';
+  if (detailsEl) detailsEl.style.display = 'none'; // hide all regular properties
+  const iconSec = document.getElementById('prop-hs-icon-section');
+  if (iconSec) iconSec.style.display = 'none';
+  const copyStyleBtns = document.querySelector('.prop-hs-style-btns');
+  if (copyStyleBtns) copyStyleBtns.style.display = 'none';
+
+  // Show image-specific minimal panel
+  let imgPanel = document.getElementById('prop-image-hotspot-panel');
+  if (!imgPanel) {
+    imgPanel = document.createElement('div');
+    imgPanel.id = 'prop-image-hotspot-panel';
+    imgPanel.style.cssText = 'padding: 16px; display: flex; flex-direction: column; gap: 14px;';
+    contentEl.appendChild(imgPanel);
+  }
+  imgPanel.style.display = 'block';
+
+  const titleEl = document.getElementById('prop-hs-active-title');
+  if (titleEl) {
+    titleEl.innerHTML = `<span style="color:#94a3b8; font-weight:700;">IMAGE:</span> <span style="color:#fff; font-weight:800; margin-left:4px;">"${hs.title || 'Image'}"</span>`;
+  }
+
+  const isLocked = !!(hs.locked === true || hs.locked === 'true');
+  imgPanel.innerHTML = `
+    <div style="text-align:center; padding: 10px 0;">
+      <img src="${hs.style}" style="max-width:100%; max-height:160px; border-radius:8px; object-fit:contain; border:1px solid #282c35;">
+    </div>
+    <div style="display:flex; gap:10px;">
+      <div style="flex:1;">
+        <label style="font-size:11px;color:#64748b;display:block;margin-bottom:4px;">Width (px)</label>
+        <input id="img-hs-width" type="number" class="property-input" value="${hs.width || 150}" ${isLocked ? 'disabled' : ''} style="${isLocked ? 'opacity:0.5;' : ''}" oninput="onImageHotspotSizeChange()">
+      </div>
+      <div style="flex:1;">
+        <label style="font-size:11px;color:#64748b;display:block;margin-bottom:4px;">Height (px)</label>
+        <input id="img-hs-height" type="number" class="property-input" value="${hs.height || 150}" ${isLocked ? 'disabled' : ''} style="${isLocked ? 'opacity:0.5;' : ''}" oninput="onImageHotspotSizeChange()">
+      </div>
+    </div>
+    <button onclick="deleteSelectedHotspotAction()" class="property-btn-outline" style="color:#ef4444;border-color:#ef4444;width:100%;padding:8px;">
+      Delete Image
+    </button>
+  `;
+
+  if (typeof renderHotspotList === 'function') renderHotspotList();
+}
+
+// Debounced save for image hotspot size
+let _imgSizeDebounce = null;
+window.onImageHotspotSizeChange = async function() {
+  const w = parseInt(document.getElementById('img-hs-width')?.value) || 150;
+  const h = parseInt(document.getElementById('img-hs-height')?.value) || 150;
+  if (!selectedHotspotId) return;
+  const hs = hotspots.find(h2 => String(h2._id) === String(selectedHotspotId));
+  if (!hs) return;
+  hs.width = w;
+  hs.height = h;
+  if (krpano) {
+    krpano.set(`hotspot[hs_${selectedHotspotId}].width`, w);
+    krpano.set(`hotspot[hs_${selectedHotspotId}].height`, h);
+  }
+  clearTimeout(_imgSizeDebounce);
+  _imgSizeDebounce = setTimeout(async () => {
+    await fetch(`/api/hotspots/${selectedHotspotId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ width: w, height: h })
+    });
+    publishTourSilent();
+  }, 600);
+};
+
 function selectHotspot(hotspotId) {
   selectedHotspotId = hotspotId;
   const hs = hotspots.find(h => String(h._id) === String(hotspotId));
@@ -2426,12 +2698,35 @@ function selectHotspot(hotspotId) {
   if (emptyEl) emptyEl.style.display = 'none';
   if (contentEl) contentEl.style.display = 'block';
   if (detailsEl) detailsEl.style.display = 'block';
+  const imgPanelA = document.getElementById('prop-image-hotspot-panel');
+  if (imgPanelA) imgPanelA.style.display = 'none';
+  const iconSecA = document.getElementById('prop-hs-icon-section');
+  if (iconSecA) iconSecA.style.display = '';
+  const copyStyleBtnsA = document.querySelector('.prop-hs-style-btns');
+  if (copyStyleBtnsA) copyStyleBtnsA.style.display = '';
 
   const titleEl = document.getElementById('prop-hs-active-title');
   if (titleEl) {
     titleEl.innerHTML = `<span style="color:#94a3b8; font-weight:700;">ACTIVE:</span> <span style="color:#fff; font-weight:800; margin-left:4px;">"${hs.title || 'Untitled'}"</span>`;
   }
 
+  const isLocked = !!hs.locked;
+  const panel = document.getElementById('panel-hotspot-properties');
+  if (panel) {
+    const inputs = panel.querySelectorAll('input, select, button');
+    inputs.forEach(el => {
+      el.disabled = isLocked;
+      if (isLocked) {
+        el.style.opacity = '0.5';
+        el.style.cursor = 'not-allowed';
+      } else {
+        el.style.opacity = '';
+        el.style.cursor = '';
+      }
+    });
+  }
+
+  // Render grid but it will be visually disabled if locked
   renderHotspotIconPickerGrid(hs.style || 'Arrow');
 
   const actionEl = document.getElementById('prop-hs-action');
@@ -2496,6 +2791,8 @@ function selectTextHotspot(hotspotId) {
   if (emptyEl) emptyEl.style.display = 'none';
   if (contentEl) contentEl.style.display = 'block';
   if (detailsEl) detailsEl.style.display = 'block';
+  const imgPanelB = document.getElementById('prop-image-hotspot-panel');
+  if (imgPanelB) imgPanelB.style.display = 'none';
 
   const titleEl = document.getElementById('prop-text-active-title');
   if (titleEl) {
@@ -2505,6 +2802,22 @@ function selectTextHotspot(hotspotId) {
   const contentInput = document.getElementById('prop-text-content');
   if (contentInput) {
     contentInput.value = hs.title || hs.info || '';
+  }
+
+  const isLocked = !!hs.locked;
+  const panel = document.getElementById('panel-text-properties');
+  if (panel) {
+    const inputs = panel.querySelectorAll('input, select, button');
+    inputs.forEach(el => {
+      el.disabled = isLocked;
+      if (isLocked) {
+        el.style.opacity = '0.5';
+        el.style.cursor = 'not-allowed';
+      } else {
+        el.style.opacity = '';
+        el.style.cursor = '';
+      }
+    });
   }
 
   const tp = hs.textProps || {};
@@ -2846,6 +3159,14 @@ function renderHotspotIconPickerGrid(currentStyle) {
   if (!grid) return;
   grid.innerHTML = '';
 
+  let isLocked = false;
+  if (selectedHotspotId) {
+    const hs = hotspots.find(h => String(h._id) === String(selectedHotspotId));
+    if (hs && (hs.locked === true || hs.locked === 'true')) {
+      isLocked = true;
+    }
+  }
+
   const builtInStyles = [
     { name: 'Arrow', label: 'Arrow', svg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
     { name: 'Arrow 01', label: 'Chevron', svg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 15 12 9 18 15"></polyline></svg>' },
@@ -2854,11 +3175,14 @@ function renderHotspotIconPickerGrid(currentStyle) {
     { name: 'Dot', label: 'Dot', svg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="12" cy="12" r="8"></circle></svg>' }
   ];
 
+  const lockedStyle = isLocked ? 'opacity: 0.4; cursor: not-allowed; pointer-events: none;' : '';
+
   builtInStyles.forEach(item => {
     const card = document.createElement('div');
     card.className = 'icon-mini-card' + (currentStyle === item.name ? ' active' : '');
+    card.style.cssText = lockedStyle;
     card.innerHTML = `${item.svg}<span style="font-size:11px; font-weight:700;">${item.label}</span>`;
-    card.onclick = () => onHotspotIconStyleChange(item.name);
+    if (!isLocked) card.onclick = () => onHotspotIconStyleChange(item.name);
     grid.appendChild(card);
   });
 
@@ -2866,16 +3190,17 @@ function renderHotspotIconPickerGrid(currentStyle) {
   custom.forEach(item => {
     const card = document.createElement('div');
     card.className = 'icon-mini-card' + (currentStyle === item.name ? ' active' : '');
+    card.style.cssText = lockedStyle;
     card.innerHTML = `<img src="${item.url}" style="width:20px; height:20px; object-fit:contain;"><span style="font-size:11px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:50px;">${item.name}</span>`;
-    card.onclick = () => onHotspotIconStyleChange(item.name);
+    if (!isLocked) card.onclick = () => onHotspotIconStyleChange(item.name);
     grid.appendChild(card);
   });
 
   const allBtn = document.createElement('div');
   allBtn.className = 'icon-mini-card';
-  allBtn.style.border = '1px dashed #10b981';
+  allBtn.style.cssText = `border: 1px dashed #10b981; ${lockedStyle}`;
   allBtn.innerHTML = `<span style="font-size:16px; color:#10b981; font-weight:900; line-height:1;">+</span><span style="font-size:10px; font-weight:700; color:#10b981;">All Icons</span>`;
-  allBtn.onclick = () => openIconLibraryModal('change');
+  if (!isLocked) allBtn.onclick = () => openIconLibraryModal('change');
   grid.appendChild(allBtn);
 }
 
@@ -4246,5 +4571,30 @@ async function applyBulkTag() {
   showToast(`Successfully tagged ${successCount} items.`);
   clearSelection();
   publishTourSilent();
+}
+
+async function reorderScene(draggedId, targetId) {
+  const draggedIndex = scenes.findIndex(s => s._id === draggedId);
+  const targetIndex = scenes.findIndex(s => s._id === targetId);
+  if (draggedIndex < 0 || targetIndex < 0) return;
+
+  const [draggedScene] = scenes.splice(draggedIndex, 1);
+  scenes.splice(targetIndex, 0, draggedScene);
+
+  renderMediaScenes();
+  renderScenes();
+
+  try {
+    const res = await fetch(`/api/tours/${encodeURIComponent(currentTourId)}/scenes/reorder`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderedSceneIds: scenes.map(s => s._id) })
+    });
+    if (!res.ok) throw new Error('Failed to save order');
+    publishTourSilent();
+  } catch (err) {
+    console.error(err);
+    showToast('Failed to save scene order');
+  }
 }
 

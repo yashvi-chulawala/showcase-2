@@ -77,8 +77,11 @@ function getHotspotSvgBase64(style, labelText, color) {
   const s = String(style || 'Arrow').toLowerCase();
   const fillCol = color || '#ffffff';
 
-  if (style && String(style).startsWith('data:image/')) {
+  if (style && (String(style).startsWith('data:image/') || String(style).startsWith('http'))) {
     return style;
+  }
+  if (style && String(style).startsWith('assets/')) {
+    return '../' + style;
   }
   const foundLib = ICON_LIBRARY_ITEMS.find(x => String(x.name).toLowerCase() === s);
   if (foundLib && foundLib.svg) {
@@ -194,7 +197,7 @@ ${dynamicStylesXml}
       
       let baseAttrs = `ath="${h.ath}" atv="${h.atv}" ${widthAttr} ${heightAttr} ${scaleAttr} visible="true" zorder="100" enabled="true" capture="false"`;
       
-      if (style === 'Text' || h.kind === 'info') {
+      if (style === 'Text') {
         const tp = h.textProps || {};
         const isSticker = tp.sticker !== undefined ? tp.sticker : false;
         const isRollover = tp.rollover !== undefined ? tp.rollover : false;

@@ -1,72 +1,102 @@
 /**
  * db.js
- * Project-specific storage using Google Drive.
- * Data lives in project.json within the active project directory on Google Drive.
+ * Project-specific file-based store.
+ * Data lives in project.json within the active project directory.
  */
 
 const fs = require('fs');
 const path = require('path');
-const driveStorage = require('./driveStorage');
+
+const RECENT_PROJECTS_FILE = path.join(__dirname, '../data/recent_projects.json');
+const LEGACY_DB_FILE = path.join(__dirname, '../data/db.json');
 
 let activeTourId = 'default';
-let inMemoryDB = { scenes: [], hotspots: [], assets: [] };
+
+function getRecentProjects() {
+  if (!fs.existsSync(RECENT_PROJECTS_FILE)) {
+    return [];
+  }
+  try {
+    return JSON.parse(fs.readFileSync(RECENT_PROJECTS_FILE, 'utf8'));
+  } catch(e) {
+    return [];
+  }
+}
+
+function addRecentProject(tourId) {
+  let projects = getRecentProjects();
+  if (!projects.includes(tourId)) {
+    projects.push(tourId);
+    fs.writeFileSync(RECENT_PROJECTS_FILE, JSON.stringify(projects, null, 2));
+  }
+}
 
 function getActiveTour() {
   return activeTourId;
 }
 
-/**
- * Async function to set the active tour and load its data from Drive.
- * Called by /api/project/active or server startup.
- */
-async function setActiveTourAsync(tourId) {
+function setActiveTour(tourId) {
   activeTourId = tourId || 'default';
-  
-  if (activeTourId === 'default') {
-    inMemoryDB = { scenes: [], hotspots: [], assets: [] };
-    return;
-  }
-  
-  try {
-    inMemoryDB = await driveStorage.readProjectJson(activeTourId);
-  } catch (err) {
-    console.warn(`Could not read project.json from Drive for ${tourId}, initializing new...`);
-    inMemoryDB = { scenes: [], hotspots: [], assets: [] };
-    await driveStorage.initProject(tourId, inMemoryDB);
+  if (activeTourId !== 'default' && path.isAbsolute(activeTourId)) {
+    addRecentProject(activeTourId);
   }
 }
 
-// Keep setActiveTour for backwards compatibility if needed synchronously, 
-// though it won't load from Drive immediately.
-function setActiveTour(tourId) {
-  setActiveTourAsync(tourId).catch(err => {
-    console.error("Error setting active tour:", err);
-  });
+function resolveTourPath(tourId) {
+  if (!tourId || tourId === 'default') return null;
+  if (path.isAbsolute(tourId) && fs.existsSync(tourId)) return tourId;
+
+  // Check in data folder by basename
+  const name = path.basename(tourId);
+  const inData = path.join(__dirname, '../data', name);
+  if (fs.existsSync(inData)) return inData;
+
+  const rel = path.resolve(__dirname, '..', tourId);
+  if (fs.existsSync(rel)) return rel;
+
+  return null;
+}
+
+function getDbPath(tourId = activeTourId) {
+  if (!tourId || tourId === 'default') {
+    return LEGACY_DB_FILE;
+  }
+  const resolved = resolveTourPath(tourId);
+  if (resolved) {
+    return path.join(resolved, 'project.json');
+  }
+  if (path.isAbsolute(tourId)) {
+    return path.join(tourId, 'project.json');
+  }
+  return LEGACY_DB_FILE;
+}
+
+function ensureFile(dbPath) {
+  const dir = path.dirname(dbPath);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  if (!fs.existsSync(dbPath)) {
+    fs.writeFileSync(dbPath, JSON.stringify({ scenes: [], hotspots: [], assets: [] }, null, 2));
+  }
 }
 
 function readDB(tourId = activeTourId) {
-  // We assume the requested tourId is the active one.
-  // If it's not, we have a problem because we can't synchronously load from Drive here.
-  // In the normal flow, the client sets active tour before requesting data.
-  if (tourId !== activeTourId) {
-    console.warn(`readDB called for ${tourId} but active is ${activeTourId}. This may return wrong data!`);
+  const dbPath = getDbPath(tourId);
+  ensureFile(dbPath);
+  try {
+    const db = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
+    if (!db.assets) db.assets = [];
+    if (!db.scenes) db.scenes = [];
+    if (!db.hotspots) db.hotspots = [];
+    return db;
+  } catch(e) {
+    return { scenes: [], hotspots: [], assets: [] };
   }
-  
-  if (!inMemoryDB.assets) inMemoryDB.assets = [];
-  if (!inMemoryDB.scenes) inMemoryDB.scenes = [];
-  if (!inMemoryDB.hotspots) inMemoryDB.hotspots = [];
-  return inMemoryDB;
 }
 
 function writeDB(data, tourId = activeTourId) {
   const dbPath = getDbPath(tourId);
   ensureFile(dbPath);
   fs.writeFileSync(dbPath, JSON.stringify(data, null, 2));
-  
-  // Fire and forget upload to Drive
-  driveStorage.writeProjectJson(tourId, data).catch(err => {
-    console.error('Failed to sync project.json to drive:', err);
-  });
 }
 
 function generateId() {
@@ -103,11 +133,6 @@ function updateScene(sceneId, patch) {
   return scene;
 }
 
-function getSceneById(sceneId) {
-  const db = readDB();
-  return db.scenes.find(s => s._id === sceneId) || null;
-}
-
 function deleteScene(sceneId) {
   const db = readDB();
   db.scenes = db.scenes.filter(s => s._id !== sceneId);
@@ -137,6 +162,11 @@ function reorderScenes(orderedSceneIds, tourId = activeTourId) {
   return db.scenes;
 }
 
+function getSceneById(sceneId) {
+  const db = readDB();
+  return db.scenes.find(s => s._id === sceneId) || null;
+}
+
 function setStartScene(sceneId, tourId = activeTourId) {
   const db = readDB(tourId);
   let found = null;
@@ -157,47 +187,136 @@ function resetTour(tourId = activeTourId) {
 
 // ---- Tours -------------------------------------------------------------
 
-async function listToursWithDetailsAsync() {
-  const projects = await driveStorage.listProjects();
-  const tours = [];
-  
-  for (const proj of projects) {
+function listToursWithDetails() {
+  const toursMap = new Map();
+  const dataDir = path.join(__dirname, '../data');
+
+  // 1. Scan data directory directly for projects
+  if (fs.existsSync(dataDir)) {
     try {
-      const projDb = await driveStorage.readProjectJson(proj.id);
-      const latestScene = projDb.scenes && projDb.scenes.length > 0 ? 
-        projDb.scenes.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0] : null;
-      
-      tours.push({
-        id: proj.id,
-        title: proj.name, // Will be something like "project-..."
-        date: latestScene ? latestScene.createdAt : new Date().toISOString(),
-        thumbnail: latestScene ? `panos/${latestScene.tilesFolder}/thumb.jpg` : null
+      const entries = fs.readdirSync(dataDir, { withFileTypes: true });
+      entries.forEach(entry => {
+        if (entry.isDirectory()) {
+          const tourPath = path.join(dataDir, entry.name);
+          const pJsonPath = path.join(tourPath, 'project.json');
+          let projDb = { scenes: [] };
+          let mtime = new Date().toISOString();
+          if (fs.existsSync(pJsonPath)) {
+            try {
+              projDb = JSON.parse(fs.readFileSync(pJsonPath, 'utf8'));
+              mtime = fs.statSync(pJsonPath).mtime.toISOString();
+            } catch(e) {}
+          }
+          const latestScene = projDb.scenes && projDb.scenes.length > 0 ? 
+            projDb.scenes.sort((a,b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())[0] : null;
+
+          toursMap.set(tourPath, {
+            id: tourPath,
+            title: entry.name,
+            date: latestScene ? latestScene.createdAt : mtime,
+            thumbnail: latestScene ? `panos/${latestScene.tilesFolder}/thumb.jpg` : null
+          });
+        }
       });
-    } catch (e) {
-      console.error("Error reading project.json in listToursWithDetailsAsync for", proj.id, e);
+    } catch (err) {
+      console.error("Error scanning data dir for projects:", err);
     }
   }
-  
-  return tours.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-}
 
-// Legacy synchronous listToursWithDetails is tricky, better to just return what we can
-function listToursWithDetails() {
-  // Routes should use the async version now
-  return [];
+  // 2. Scan recent projects
+  const recent = getRecentProjects();
+  recent.forEach(tourPath => {
+    const resolved = resolveTourPath(tourPath);
+    if (resolved && !toursMap.has(resolved)) {
+      const pJsonPath = path.join(resolved, 'project.json');
+      if (fs.existsSync(pJsonPath)) {
+        try {
+          const projDb = JSON.parse(fs.readFileSync(pJsonPath, 'utf8'));
+          const title = path.basename(resolved);
+          const latestScene = projDb.scenes && projDb.scenes.length > 0 ? 
+            projDb.scenes.sort((a,b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())[0] : null;
+          
+          toursMap.set(resolved, {
+            id: resolved,
+            title: title,
+            date: latestScene ? latestScene.createdAt : fs.statSync(pJsonPath).mtime.toISOString(),
+            thumbnail: latestScene ? `panos/${latestScene.tilesFolder}/thumb.jpg` : null
+          });
+        } catch (e) {
+          console.error("Error reading project.json in listToursWithDetails for", resolved, e);
+        }
+      }
+    }
+  });
+
+  // 3. Add default legacy tour if legacy DB has scenes
+  const legacyDb = readDB('default');
+  if (legacyDb.scenes && legacyDb.scenes.length > 0 && !toursMap.has('default')) {
+    const latestScene = legacyDb.scenes.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+    toursMap.set('default', {
+      id: 'default',
+      title: 'Legacy Project (Please Migrate)',
+      date: latestScene ? latestScene.createdAt : new Date().toISOString(),
+      thumbnail: latestScene ? `panos/${latestScene.tilesFolder}/thumb.jpg` : null
+    });
+  }
+
+  return Array.from(toursMap.values()).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 }
 
 function listTours() {
-  return [];
+  return listToursWithDetails().map(t => t.id);
 }
 
 function cloneTour(oldTourId, newTourId) {
-  // Clones are harder to implement synchronously with Drive.
-  // We'll leave it as a no-op for now.
-}
+  const oldDb = readDB(oldTourId);
+  const newDb = { scenes: [], hotspots: [], assets: [] };
+  
+  const sceneIdMap = {};
+  oldDb.scenes.forEach(s => {
+    const newId = generateId();
+    sceneIdMap[s._id] = newId;
+    newDb.scenes.push({ ...s, _id: newId, tourId: newTourId, createdAt: new Date().toISOString() });
+  });
 
-function renameTour(oldTourId, newTourId) {
-  // Handled in routes via drive API now
+  oldDb.hotspots.forEach(h => {
+    newDb.hotspots.push({
+      ...h,
+      _id: generateId(),
+      sceneId: sceneIdMap[h.sceneId] || h.sceneId,
+      targetSceneId: sceneIdMap[h.targetSceneId] || h.targetSceneId,
+      createdAt: new Date().toISOString()
+    });
+  });
+
+  oldDb.assets.forEach(a => {
+    newDb.assets.push({ ...a, _id: generateId(), tourId: newTourId, createdAt: new Date().toISOString() });
+  });
+
+  writeDB(newDb, newTourId);
+  
+  // Physical copying logic
+  const oldResolved = resolveTourPath(oldTourId);
+  const newResolved = resolveTourPath(newTourId) || newTourId;
+
+  const oldPanosPath = oldResolved ? path.join(oldResolved, 'panos') : path.join(__dirname, '../vtour/panos');
+  const oldAssetsPath = oldResolved ? path.join(oldResolved, 'assets') : path.join(__dirname, '../vtour/assets');
+  
+  const newPanosPath = path.isAbsolute(newResolved) ? path.join(newResolved, 'panos') : path.join(__dirname, '../vtour/panos');
+  const newAssetsPath = path.isAbsolute(newResolved) ? path.join(newResolved, 'assets') : path.join(__dirname, '../vtour/assets');
+
+  if (oldTourId !== newTourId) {
+    if (fs.existsSync(oldPanosPath)) {
+      fs.cpSync(oldPanosPath, newPanosPath, { recursive: true, force: true });
+    }
+    if (fs.existsSync(oldAssetsPath)) {
+      fs.cpSync(oldAssetsPath, newAssetsPath, { recursive: true, force: true });
+    }
+  }
+
+  if (newTourId !== 'default' && path.isAbsolute(newTourId)) {
+    addRecentProject(newTourId);
+  }
 }
 
 // ---- Hotspots -------------------------------------------------------------
@@ -205,19 +324,22 @@ function renameTour(oldTourId, newTourId) {
 function listHotspots(tourId = activeTourId) {
   const db = readDB(tourId);
   let scenes = db.scenes || [];
+  if (getDbPath(tourId) === LEGACY_DB_FILE) {
+    scenes = scenes.filter(s => (s.tourId || 'default') === tourId);
+  }
   const sceneIds = new Set(scenes.map(s => s._id));
   return db.hotspots.filter(h => sceneIds.has(h.sceneId));
 }
 
 function createHotspot({ sceneId, targetSceneId, ath, atv, style, title, kind, info, color, transition, action, textProps, width, height }) {
-  const db = readDB();
+  const db = readDB(); // uses activeTourId
   const hotspot = {
     _id: generateId(),
     sceneId,
     title: title || '',
-    kind: kind || 'scene',
-    targetSceneId: targetSceneId || null,
-    info: info || '',
+    kind: kind || 'scene',           // 'scene' (jump) or 'info' (popup)
+    targetSceneId: targetSceneId || null,  // only meaningful when kind === 'scene'
+    info: info || '',                // only meaningful when kind === 'info'
     ath,
     atv,
     style: style || 'Arrow',
@@ -249,11 +371,20 @@ function deleteHotspot(hotspotId) {
   writeDB(db);
 }
 
+function renameTour(oldTourId, newTourId) {
+  // handled externally via fs.renameSync
+  if (path.isAbsolute(newTourId)) addRecentProject(newTourId);
+}
+
 // ---- Assets -------------------------------------------------------------
 
 function listAssets(tourId = activeTourId) {
   let db = readDB(tourId);
-  return db.assets || [];
+  let assets = db.assets || [];
+  if (getDbPath(tourId) === LEGACY_DB_FILE) {
+    assets = assets.filter(a => (a.tourId || 'default') === tourId);
+  }
+  return assets;
 }
 
 function createAsset({ tourId, name, url }) {
@@ -280,18 +411,13 @@ function updateAsset(assetId, patch) {
   return asset;
 }
 
-function getRecentProjects() {
-  return [];
-}
-
 module.exports = {
-  setActiveTourAsync,
+  DB_FILE: LEGACY_DB_FILE,
   setActiveTour,
   getActiveTour,
   getRecentProjects,
   listTours,
   listToursWithDetails,
-  listToursWithDetailsAsync,
   cloneTour,
   renameTour,
   listScenes,

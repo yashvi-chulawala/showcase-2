@@ -42,12 +42,6 @@ router.post('/tours/:tourId/scenes/upload', upload.single('file'), async (req, r
     counter++;
   }
   const tilesFolderName = `${slug}.tiles`;
-  
-  console.log(`\n======================================================`);
-  console.log(`✅ RECEIVED IMAGE: ${req.file.originalname}`);
-  console.log(`⏳ PLEASE WAIT: krpanotools is now slicing it into hundreds of 3D tiles.`);
-  console.log(`⏳ This step is CPU-heavy and can take 1 to 4 minutes per image depending on size...`);
-  console.log(`======================================================\n`);
 
   try {
     let lat = null;
@@ -62,41 +56,19 @@ router.post('/tours/:tourId/scenes/upload', upload.single('file'), async (req, r
       console.warn("Failed to extract GPS data:", e);
     }
     const result = await processPano(req.file.path, tilesFolderName, tourId);
-    
-    // Upload the original pano image to Drive (Skipping to prevent hanging and save time since frontend only needs tiles)
-    // const driveStorage = require('../lib/driveStorage');
-    // await driveStorage.uploadPanoImage(tourId, req.file.path, req.file.originalname);
-    
-    // Cleanup the local temp file
-    if (fs.existsSync(req.file.path)) {
-      fs.unlinkSync(req.file.path);
-    }
-
     const scene = db.createScene({ tourId, title, slug, tilesFolder: result.tilesFolder, lat, lng });
-    
-    // Auto-publish
-    try {
-      const { publishTour } = require('../lib/publisher');
-      publishTour(tourId);
-    } catch (e) {
-      console.warn("Auto-publish failed after upload:", e);
-    }
-
-    res.json({ success: true, scene, processResult: result });
+    res.json({ scene });
   } catch (err) {
-    console.error('Pano processing error:', err);
+    console.error(err);
     res.status(500).json({ error: err.message });
+  } finally {
+    fs.unlink(req.file.path, () => {});
   }
 });
 
 /** GET /api/tours */
-router.get('/tours', async (req, res) => {
-  try {
-    const tours = await db.listToursWithDetailsAsync();
-    res.json({ tours });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+router.get('/tours', (req, res) => {
+  res.json({ tours: db.listToursWithDetails() });
 });
 
 /** POST /api/tours/:tourId/clone — body: { newTourId: "..." } */
@@ -196,15 +168,24 @@ router.post('/tours/:tourId/assets/upload', upload.single('file'), async (req, r
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
   try {
-    const driveStorage = require('../lib/driveStorage');
-    const originalName = req.file.originalname;
-    
-    // Upload asset to drive
-    // In a real prod environment we'd check for conflicts, but for Drive it's okay to overwrite or let it have duplicates.
-    // For simplicity, we just upload it with original name.
-    await driveStorage.uploadAsset(tourId, req.file.path, originalName, req.file.mimetype);
+    const tourDir = resolveTourDir(tourId);
+    const assetsDir = path.join(tourDir, 'assets');
+    if (!fs.existsSync(assetsDir)) fs.mkdirSync(assetsDir, { recursive: true });
 
-    const asset = db.createAsset({ tourId, name: originalName, url: `assets/${originalName}` });
+    const originalName = req.file.originalname;
+    let finalName = originalName;
+    let counter = 1;
+    while (fs.existsSync(path.join(assetsDir, finalName))) {
+      const ext = path.extname(originalName);
+      const name = path.basename(originalName, ext);
+      finalName = `${name}_${counter}${ext}`;
+      counter++;
+    }
+
+    const finalPath = path.join(assetsDir, finalName);
+    fs.copyFileSync(req.file.path, finalPath);
+    
+    const asset = db.createAsset({ tourId, name: finalName, url: `assets/${finalName}` });
     res.json({ asset });
   } catch (err) {
     console.error(err);

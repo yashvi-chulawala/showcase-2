@@ -59,6 +59,9 @@
       max-height: 250px;
       overflow-y: auto;
     }
+    .hs-layers-list:empty {
+      display: none;
+    }
     .hs-layer-item {
       display: flex;
       align-items: center;
@@ -415,15 +418,28 @@
 
     /* 360 Image Card */
     .image-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-color);
-      border-radius: 20px;
+      background: var(--bg-surface);
+      border-radius: 12px;
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      transition: all 0.25s ease;
       position: relative;
-      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: grab;
+      border: 2px solid transparent;
+    }
+
+    .image-card:active {
+      cursor: grabbing;
+    }
+
+    .image-card.dragging {
+      opacity: 0.5;
+      transform: scale(0.95);
+    }
+    
+    .image-card.drag-over {
+      border: 2px dashed #3b82f6;
     }
 
     .image-card.selected {
@@ -803,15 +819,15 @@
       padding: 28px 24px;
       display: flex;
       flex-direction: column;
-      gap: 28px;
+      gap: 16px;
       overflow-y: auto;
     }
 
     .property-group {
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      margin-bottom: 28px;
+      gap: 8px;
+      margin-bottom: 8px;
     }
 
     .property-group:last-of-type {
@@ -824,7 +840,7 @@
       color: #94a3b8;
       text-transform: uppercase;
       letter-spacing: 1px;
-      margin: 0 0 8px 0;
+      margin: 0 0 4px 0;
     }
 
     .property-input {
@@ -956,8 +972,11 @@
       box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
     }
 
-    .prop-quick-btn:active {
-      transform: translateY(0) scale(0.97);
+    .prop-quick-btn.active {
+      color: #fff;
+      background: #232334;
+      border-color: var(--accent-green);
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.25);
     }
 
     .prop-quick-btn svg {
@@ -2171,6 +2190,15 @@
               </svg>
               <div style="font-size:11px; font-weight:600; color:#fff;">Pin</div>
             </div>
+            <div class="icon-picker-item" onclick="commitPopover('TextPin')">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="32" height="32">
+                <circle cx="32" cy="54" r="6" fill="#10b981"/>
+                <line x1="32" y1="28" x2="32" y2="54" stroke="#ffffff" stroke-width="2"/>
+                <rect x="8" y="10" width="48" height="18" rx="4" ry="4" fill="#10b981" stroke="#ffffff" stroke-width="1"/>
+                <text x="32" y="23" text-anchor="middle" fill="#ffffff" font-family="sans-serif" font-weight="bold" font-size="10">TEXT</text>
+              </svg>
+              <div style="font-size:11px; font-weight:600; color:#fff;">Text Pin</div>
+            </div>
             <div class="icon-picker-item" onclick="commitPopover('Dot')">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="32" height="32">
                 <circle cx="32" cy="32" r="24" fill="#10b981" stroke="#ffffff" stroke-width="6" />
@@ -2310,14 +2338,24 @@
           <!-- 5. Zoom Settings -->
           <div class="property-group">
             <label class="property-label">Zoom Settings</label>
-            <input type="number" id="prop-pano-fov" class="property-input" value="114"
-              oninput="onPanoNumberInputDebounced('fov', 'prop-pano-fov')">
+            <div style="display: flex; gap: 10px; margin-top: 6px;">
+              <div style="flex: 1;">
+                <label style="font-size: 11px; color: #64748b; margin-bottom: 4px; display: block;">Initial (°)</label>
+                <input type="number" id="prop-pano-fov" class="property-input" value="114" min="10" max="150"
+                  oninput="onPanoNumberInputDebounced('fov', 'prop-pano-fov')">
+              </div>
+              <div style="flex: 1;">
+                <label style="font-size: 11px; color: #64748b; margin-bottom: 4px; display: block;">Minimum (°)</label>
+                <input type="number" id="prop-pano-minfov" class="property-input" value="30" min="1" max="120"
+                  oninput="onPanoNumberInputDebounced('minfov', 'prop-pano-minfov')">
+              </div>
+            </div>
           </div>
 
           <!-- 6. Zoom Speed -->
           <div class="property-group">
             <label class="property-label">Zoom Speed</label>
-            <input type="number" id="prop-pano-fovspeed" class="property-input" value="50"
+            <input type="number" id="prop-pano-fovspeed" class="property-input" value="50" min="1" max="200"
               oninput="onPanoNumberInputDebounced('fovspeed', 'prop-pano-fovspeed')">
           </div>
 
@@ -2349,7 +2387,7 @@
             </div>
 
             <!-- 1. Icon Section (Pin, Arrow, etc. + Custom Icons) -->
-            <div class="property-group">
+            <div class="property-group" id="prop-hs-icon-section">
               <label class="property-label">Icon</label>
               <div id="prop-hs-icons-grid" class="icon-picker-mini-grid">
                 <!-- Dynamically populated by renderHotspotIconPickerGrid() -->
@@ -2383,7 +2421,7 @@
               </div>
 
               <!-- 3. Select Panoramas (Target Scene) -->
-              <div class="property-group">
+              <div class="property-group" id="prop-hs-target-scene-group">
                 <label class="property-label">Target Scene</label>
                 <button class="property-btn-outline"
                   style="width: 100%; border-color: var(--accent-green); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 12px;"
@@ -2435,13 +2473,15 @@
               </div>
 
               <!-- Checkboxes -->
-              <div style="display:flex; flex-direction:column; gap:8px;">
-                <label style="display:flex; align-items:center; gap:10px; cursor:pointer; color:#94a3b8; font-size:13px; font-weight:600;">
-                  <input type="checkbox" id="prop-text-sticker" onchange="onTextPropChange()" style="width:16px; height:16px; accent-color:#3b82f6; cursor:pointer;"> Apply as Sticker
-                </label>
-                <label style="display:flex; align-items:center; gap:10px; cursor:pointer; color:#94a3b8; font-size:13px; font-weight:600;">
-                  <input type="checkbox" id="prop-text-rollover" onchange="onTextPropChange()" style="width:16px; height:16px; accent-color:#3b82f6; cursor:pointer;"> Visible On RollOver
-                </label>
+              <div id="prop-text-extra-features">
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                  <label style="display:flex; align-items:center; gap:10px; cursor:pointer; color:#94a3b8; font-size:13px; font-weight:600;">
+                    <input type="checkbox" id="prop-text-sticker" onchange="onTextPropChange()" style="width:16px; height:16px; accent-color:#3b82f6; cursor:pointer;"> Apply as Sticker
+                  </label>
+                  <label style="display:flex; align-items:center; gap:10px; cursor:pointer; color:#94a3b8; font-size:13px; font-weight:600;">
+                    <input type="checkbox" id="prop-text-rollover" onchange="onTextPropChange()" style="width:16px; height:16px; accent-color:#3b82f6; cursor:pointer;"> Visible On RollOver
+                  </label>
+                </div>
               </div>
 
               <!-- Sliders & Colors Grid -->
@@ -2475,6 +2515,13 @@
               </style>
 
               <div style="display:flex; flex-direction:column; gap:14px; margin-top:4px;">
+                <!-- Scale Slider -->
+                <div class="text-prop-grid" id="prop-text-scale-group" style="display:none;">
+                  <span class="text-prop-label">Scale:</span>
+                  <input type="range" class="text-prop-slider" id="prop-text-scale-slider" min="0.1" max="3" step="0.05" value="0.85" oninput="document.getElementById('prop-text-scale').value=this.value; onTextContentChangeDebounced()">
+                  <input type="number" class="text-prop-num" id="prop-text-scale" min="0.1" max="3" step="0.05" value="0.85" oninput="document.getElementById('prop-text-scale-slider').value=this.value; onTextContentChangeDebounced()">
+                </div>
+
                 <div class="text-prop-grid">
                   <span class="text-prop-label">Opacity:</span>
                   <input type="range" class="text-prop-slider" id="prop-text-opacity-slider" min="0" max="1" step="0.01" value="1" oninput="document.getElementById('prop-text-opacity').value=this.value; onTextPropChange()">
@@ -2518,23 +2565,24 @@
                 </div>
               </div>
 
-              <!-- Typography Box -->
-              <div style="background:rgba(255,255,255,0.03); padding:16px; border-radius:12px; margin-top:8px;">
-                <select id="prop-text-font" class="text-prop-select" onchange="onTextPropChange()">
-                  <option value="Arial">Arial</option>
-                  <option value="Helvetica">Helvetica</option>
-                  <option value="Times New Roman">Times New Roman</option>
-                  <option value="Courier New">Courier New</option>
-                  <option value="Verdana">Verdana</option>
-                  <option value="Georgia">Georgia</option>
-                  <option value="'Outfit', sans-serif">Outfit</option>
-                </select>
-                
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px;">
-                  <div style="display:flex; gap:8px; align-items:center;">
-                    <input type="number" class="text-prop-num" id="prop-text-font-size" min="8" value="17" oninput="onTextPropChange()" style="width:50px;">
-                    <input type="color" class="text-prop-color" id="prop-text-color" value="#FFFFFF" onchange="onTextPropChange()" oninput="onTextPropChange()" style="width:28px; height:28px;">
-                  </div>
+              <div id="prop-text-extra-typography">
+                <!-- Typography Box -->
+                <div style="background:rgba(255,255,255,0.03); padding:16px; border-radius:12px; margin-top:8px;">
+                  <select id="prop-text-font" class="text-prop-select" onchange="onTextPropChange()">
+                    <option value="Arial">Arial</option>
+                    <option value="Helvetica">Helvetica</option>
+                    <option value="Times New Roman">Times New Roman</option>
+                    <option value="Courier New">Courier New</option>
+                    <option value="Verdana">Verdana</option>
+                    <option value="Georgia">Georgia</option>
+                    <option value="'Outfit', sans-serif">Outfit</option>
+                  </select>
+                  
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px;">
+                    <div style="display:flex; gap:8px; align-items:center;">
+                      <input type="number" class="text-prop-num" id="prop-text-font-size" min="8" value="17" oninput="onTextPropChange()" style="width:50px;">
+                      <input type="color" class="text-prop-color" id="prop-text-color" value="#FFFFFF" onchange="onTextPropChange()" oninput="onTextPropChange()" style="width:28px; height:28px;">
+                    </div>
                   
                   <div style="display:flex; gap:6px;">
                     <button id="prop-text-bold" class="text-style-btn" onclick="toggleTextStyle('bold')"><b>B</b></button>
@@ -2945,6 +2993,23 @@
           </div>
           
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Select Image Asset -->
+  <div class="modal-overlay" id="modal-select-image-asset" style="display: none; z-index: 10000;">
+    <div class="modal-box" style="width: 820px; max-width: 95vw; height: 590px; display: flex; flex-direction: column; padding: 0; overflow: hidden;">
+      <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; background: #16181d; border-bottom: 1px solid #282c35;">
+        <span style="font-size: 15px; font-weight: 700; color: #fff;">Select Image from Media</span>
+        <button onclick="document.getElementById('modal-select-image-asset').style.display='none'" style="font-size: 20px; color: #94a3b8; background: none; border: none; cursor: pointer;">&times;</button>
+      </div>
+      <div id="modal-select-image-asset-grid" style="flex: 1; overflow-y: auto; background: #1c2027; padding: 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; align-content: start;">
+        <!-- Filled dynamically -->
+      </div>
+      <div style="display: flex; align-items: center; justify-content: flex-end; gap: 10px; padding: 12px 20px; background: #16181d; border-top: 1px solid #282c35;">
+        <button onclick="document.getElementById('modal-select-image-asset').style.display='none'" style="background: #282e38; border: 1px solid #3b4252; color: #fff; padding: 8px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;">Cancel</button>
+        <button id="modal-image-asset-select-btn" onclick="if(_selectedImageAsset) addImageHotspotFromAsset(_selectedImageAsset.name, _selectedImageAsset.url)" style="background: #10b981; border: none; color: #fff; padding: 8px 24px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: not-allowed; opacity: 0.4; transition: all 0.2s;">Add to Tour</button>
       </div>
     </div>
   </div>
