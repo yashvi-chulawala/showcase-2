@@ -32,6 +32,14 @@ function publishTour(tourId) {
   
   fs.writeFileSync(scenesFile, xml, { encoding: 'utf8' });
 
+  // Also sync to vtour/src/scenes.xml so all fallbacks receive the latest scenes
+  const vtourScenes = path.resolve(__dirname, '../vtour/src/scenes.xml');
+  if (scenesFile !== vtourScenes) {
+    try {
+      fs.writeFileSync(vtourScenes, xml, { encoding: 'utf8' });
+    } catch(e) {}
+  }
+
   return { scenesFile, backupFile, sceneCount: scenes.length, hotspotCount: hotspots.length };
 }
 

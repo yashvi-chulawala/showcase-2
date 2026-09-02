@@ -234,7 +234,7 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   embedpano({
-    xml: "tour.xml",
+    xml: "tour.xml?v=" + Date.now(),
     target: "pano",
     html5: "only",
     webglsettings: { preserveDrawingBuffer: true },
