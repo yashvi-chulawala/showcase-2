@@ -287,10 +287,25 @@
 	</div>
 
 	<!-- Google Maps Integration JS -->
+	<!-- Leaflet Fallback CSS & JS -->
+	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+	<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+	<!-- Google Maps & Leaflet Smart Map JS -->
 	<script>
 		let map;
+		let leafletMap = null;
+		let leafletMarkers = {};
 		let markers = {};
 		let mapInitialized = false;
+		let useLeaflet = false;
+
+		// Catch Google Maps authorization failures (e.g. RefererNotAllowedMapError) and automatically switch to Leaflet
+		window.gm_authFailure = function() {
+			console.warn("Google Maps auth failed or restricted. Automatically falling back to high-resolution Satellite Map...");
+			useLeaflet = true;
+			initLeafletMap();
+		};
 
 		function toggleMap() {
 			const modal = document.getElementById('map-modal');
@@ -302,47 +317,123 @@
 			} else {
 				modal.classList.add('map-open');
 				if (btnText) btnText.textContent = 'Close';
-				if (map) {
-					// Trigger resize so map renders correctly after slide-in
-					setTimeout(() => {
+				setTimeout(() => {
+					if (leafletMap) {
+						leafletMap.invalidateSize();
+						centerLeafletOnActiveScene();
+					} else if (map && typeof google !== 'undefined' && google.maps && google.maps.event) {
 						google.maps.event.trigger(map, 'resize');
 						centerMapOnActiveScene();
-					}, 380); // Wait for transition to complete
-				}
+					} else if (!mapInitialized) {
+						initLeafletMap();
+					}
+				}, 380);
 			}
 		}
 
 		async function initMap() {
-			// Import AdvancedMarkerElement
-			const { Map } = await google.maps.importLibrary("maps");
-			const { AdvancedMarkerElement, PinElement } = await google.maps.importLibrary("marker");
+			if (useLeaflet) return;
+			try {
+				const { Map } = await google.maps.importLibrary("maps");
+				const { AdvancedMarkerElement, PinElement } = await google.maps.importLibrary("marker");
 
-			// Make PinElement globally available for later use
-			window.PinElement = PinElement;
-			window.AdvancedMarkerElement = AdvancedMarkerElement;
+				window.PinElement = PinElement;
+				window.AdvancedMarkerElement = AdvancedMarkerElement;
 
-			map = new Map(document.getElementById("map-container"), {
-				center: { lat: 0, lng: 0 },
-				zoom: 12,
-				mapTypeId: 'hybrid', // Satellite with labels
-				mapTypeControl: false, // Remove Map/Satellite toggle buttons
-				mapId: 'DEMO_MAP_ID' // Required for Advanced Markers
-			});
+				map = new Map(document.getElementById("map-container"), {
+					center: { lat: 21.146, lng: 72.765 },
+					zoom: 13,
+					mapTypeId: 'hybrid',
+					mapTypeControl: false,
+					mapId: 'DEMO_MAP_ID'
+				});
 
-			mapInitialized = true;
-
-			if (krpano) {
-				plotKrpanoScenes();
+				mapInitialized = true;
+				if (krpano) plotKrpanoScenes();
+			} catch (e) {
+				console.warn("Error initializing Google Maps, falling back to Satellite Map:", e);
+				initLeafletMap();
 			}
+		}
+
+		function initLeafletMap() {
+			if (leafletMap) return;
+			mapInitialized = true;
+			useLeaflet = true;
+			const container = document.getElementById('map-container');
+			if (container) container.innerHTML = '';
+
+			leafletMap = L.map('map-container', {
+				zoomControl: true,
+				attributionControl: false
+			}).setView([21.146, 72.765], 14);
+
+			// High-resolution Esri World Imagery (Satellite) + Street Labels
+			L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+				maxZoom: 19
+			}).addTo(leafletMap);
+
+			L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png', {
+				maxZoom: 19,
+				subdomains: 'abcd'
+			}).addTo(leafletMap);
+
+			if (krpano) plotLeafletScenes();
 		}
 
 		let scenesPlotted = false;
 
+		function plotLeafletScenes() {
+			if (!krpano || !leafletMap) return;
+			const sceneCount = krpano.get("scene.count");
+			if (!sceneCount || sceneCount === 0) return;
+
+			const latLngs = [];
+			for (let i = 0; i < sceneCount; i++) {
+				const sceneName = krpano.get(`scene[${i}].name`);
+				let lat = krpano.get(`scene[${i}].lat`);
+				let lng = krpano.get(`scene[${i}].lng`);
+
+				if (lat !== null && lng !== null && lat !== "" && lng !== "") {
+					lat = parseFloat(lat);
+					lng = parseFloat(lng);
+
+					if (!isNaN(lat) && !isNaN(lng)) {
+						const customIcon = L.divIcon({
+							className: 'leaflet-custom-marker',
+							html: `<div style="background: #3b82f6; width: 24px; height: 24px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; color: white; font-size: 11px; font-weight: bold;">${i+1}</div>`,
+							iconSize: [24, 24],
+							iconAnchor: [12, 12]
+						});
+
+						const marker = L.marker([lat, lng], { icon: customIcon }).addTo(leafletMap);
+						marker.bindTooltip(krpano.get(`scene[${i}].title`) || sceneName, { permanent: false, direction: 'top' });
+
+						marker.on('click', () => {
+							krpano.call(`loadscene(${sceneName}, null, MERGE, BLEND(0.5))`);
+						});
+
+						leafletMarkers[sceneName] = { marker, lat, lng, index: i + 1 };
+						latLngs.push([lat, lng]);
+					}
+				}
+			}
+
+			if (latLngs.length > 0) {
+				leafletMap.fitBounds(latLngs, { padding: [30, 30] });
+			}
+			updateActiveSceneInfo();
+		}
+
 		function plotKrpanoScenes() {
+			if (useLeaflet) {
+				plotLeafletScenes();
+				return;
+			}
 			if (!krpano || !mapInitialized || scenesPlotted) return;
 
 			const sceneCount = krpano.get("scene.count");
-			if (!sceneCount || sceneCount === 0) return; // Wait for onxmlcomplete
+			if (!sceneCount || sceneCount === 0) return;
 
 			scenesPlotted = true;
 			const bounds = new google.maps.LatLngBounds();
@@ -358,9 +449,8 @@
 					lng = parseFloat(lng);
 
 					if (!isNaN(lat) && !isNaN(lng)) {
-						// Create default blue pin
 						const pin = new window.PinElement({
-							background: "#4285F4", // Blue
+							background: "#4285F4",
 							borderColor: "#1967D2",
 							glyphColor: "white"
 						});
@@ -372,7 +462,6 @@
 							content: pin.element
 						});
 
-						// Add click event to load scene
 						marker.addListener('click', () => {
 							krpano.call(`loadscene(${sceneName}, null, MERGE, BLEND(0.5))`);
 						});
@@ -388,7 +477,6 @@
 				map.fitBounds(bounds);
 			}
 
-			// Highlight the current scene immediately if one is loaded
 			updateActiveSceneInfo();
 		}
 
@@ -398,39 +486,49 @@
 			const currentSceneName = krpano.get("xml.scene");
 			const currentSceneTitle = krpano.get(`scene[${currentSceneName}].title`) || currentSceneName;
 
-			// Update HTML Title in Top Bar
 			const titleEl = document.getElementById("top-bar-title");
 			if (titleEl) {
 				titleEl.textContent = currentSceneTitle;
 			}
 
-			// Ensure default skin is hidden
 			krpano.set("layer[skin_layer].visible", false);
 
-			// Reset all pins to blue
+			if (useLeaflet && leafletMap) {
+				for (const sName in leafletMarkers) {
+					const m = leafletMarkers[sName];
+					const isActive = sName === currentSceneName;
+					const bg = isActive ? '#f59e0b' : '#3b82f6';
+					const scale = isActive ? 'transform: scale(1.2); z-index: 1000;' : '';
+					const customIcon = L.divIcon({
+						className: 'leaflet-custom-marker',
+						html: `<div style="background: ${bg}; width: 24px; height: 24px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 12px ${isActive ? 'rgba(245,158,11,0.8)' : 'rgba(0,0,0,0.5)'}; display: flex; align-items: center; justify-content: center; color: white; font-size: 11px; font-weight: bold; ${scale}">${m.index}</div>`,
+						iconSize: [24, 24],
+						iconAnchor: [12, 12]
+					});
+					m.marker.setIcon(customIcon);
+				}
+				return;
+			}
+
 			for (const sceneName in markers) {
 				const m = markers[sceneName];
-				// Create a new pin element to reset
 				const resetPin = new window.PinElement({
 					background: "#4285F4",
 					borderColor: "#1967D2",
 					glyphColor: "white"
 				});
 				m.marker.content = resetPin.element;
-				m.marker.content.classList.remove('pin-active-glow');
 				m.marker.zIndex = 1;
 			}
 
-			// Set active pin to gold and glowing
 			if (currentSceneName && markers[currentSceneName]) {
 				const activeM = markers[currentSceneName];
 				const activePin = new window.PinElement({
-					background: "#FFD700", // Bright Gold
+					background: "#FFD700",
 					borderColor: "#F59E0B",
 					glyphColor: "white"
 				});
 
-				// Structure the bouncing pin and ground shadow glow
 				const contentWrapper = document.createElement('div');
 				contentWrapper.className = 'pin-active-wrapper';
 
@@ -449,13 +547,32 @@
 			}
 		}
 
+		function centerLeafletOnActiveScene() {
+			if (!krpano || !leafletMap) return;
+			const currentSceneName = krpano.get("xml.scene");
+			if (currentSceneName && leafletMarkers[currentSceneName]) {
+				leafletMap.panTo([leafletMarkers[currentSceneName].lat, leafletMarkers[currentSceneName].lng]);
+			}
+		}
+
 		function centerMapOnActiveScene() {
+			if (useLeaflet) {
+				centerLeafletOnActiveScene();
+				return;
+			}
 			if (!krpano || !map) return;
 			const currentSceneName = krpano.get("xml.scene");
 			if (currentSceneName && markers[currentSceneName]) {
 				map.setCenter({ lat: markers[currentSceneName].lat, lng: markers[currentSceneName].lng });
 			}
 		}
+
+		// Auto fallback to Leaflet after 2.5s if Google Maps fails to initialize
+		setTimeout(() => {
+			if (!mapInitialized) {
+				initLeafletMap();
+			}
+		}, 2500);
 	</script>
 	<script async defer
 		src="https://maps.googleapis.com/maps/api/js?key=AIzaSyADj8Ydma7BpqC7-wbggzXRTP1ZZ0j7osA&callback=initMap&libraries=marker"></script>
