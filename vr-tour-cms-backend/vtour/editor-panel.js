@@ -22,6 +22,14 @@ let currentTool = 'hotspot'; // default tool
 const urlParams = new URLSearchParams(window.location.search);
 const currentTourId = urlParams.get('tour') || 'default';
 
+function openTourPreview() {
+  const currentTour = currentTourId || 'default';
+  const currentScene = scenes.find(s => s.id === activeSceneId);
+  const startSceneParam = (currentScene && (currentScene.name || currentScene.slug)) ? `&startscene=${encodeURIComponent(currentScene.name || currentScene.slug)}` : '';
+  window.open(`tour.html?tour=${encodeURIComponent(currentTour)}${startSceneParam}&v=${Date.now()}`, '_blank');
+}
+window.openTourPreview = openTourPreview;
+
 // Tell the backend which tour is currently active so it can serve the correct local files
 const setActiveTourPromise = fetch('/api/system/set-active-tour', {
   method: 'POST',
