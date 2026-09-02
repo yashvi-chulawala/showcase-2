@@ -402,14 +402,10 @@
 				attributionControl: false
 			}).setView([21.146, 72.765], 14);
 
-			// High-resolution Satellite layer with roads & labels
-			L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-				maxZoom: 19
-			}).addTo(leafletMap);
-
-			L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png', {
-				maxZoom: 19,
-				subdomains: 'abcd'
+			// Google Satellite with Labels (Hybrid)
+			L.tileLayer('https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+				maxZoom: 20,
+				subdomains: ['0', '1', '2', '3']
 			}).addTo(leafletMap);
 
 			if (krpano) plotLeafletScenes();
