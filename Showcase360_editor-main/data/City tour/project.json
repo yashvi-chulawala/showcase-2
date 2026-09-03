@@ -54,6 +54,72 @@
       "lat": 21.147721971666666,
       "lng": 72.772278,
       "createdAt": "2026-08-18T08:51:16.767Z"
+    },
+    {
+      "_id": "mtlhq3viplii00",
+      "tourId": "City tour",
+      "title": "Vesu 1",
+      "slug": "vesu_1",
+      "tilesFolder": "vesu_1.tiles",
+      "order": 5,
+      "lat": null,
+      "lng": null,
+      "createdAt": "2026-09-03T12:17:39.102Z"
+    },
+    {
+      "_id": "mtlhq3vjjhxgzx",
+      "tourId": "City tour",
+      "title": "Vesu 16",
+      "slug": "vesu_16",
+      "tilesFolder": "vesu_16.tiles",
+      "order": 6,
+      "lat": null,
+      "lng": null,
+      "createdAt": "2026-09-03T12:17:39.103Z"
+    },
+    {
+      "_id": "mtlhq3vjuspu0w",
+      "tourId": "City tour",
+      "title": "Vesu 18",
+      "slug": "vesu_18",
+      "tilesFolder": "vesu_18.tiles",
+      "order": 7,
+      "lat": null,
+      "lng": null,
+      "createdAt": "2026-09-03T12:17:39.103Z"
+    },
+    {
+      "_id": "mtlhq3vje64upx",
+      "tourId": "City tour",
+      "title": "Vesu 2",
+      "slug": "vesu_2",
+      "tilesFolder": "vesu_2.tiles",
+      "order": 8,
+      "lat": null,
+      "lng": null,
+      "createdAt": "2026-09-03T12:17:39.103Z"
+    },
+    {
+      "_id": "mtlhq3vjz09j0q",
+      "tourId": "City tour",
+      "title": "Vesu 5",
+      "slug": "vesu_5",
+      "tilesFolder": "vesu_5.tiles",
+      "order": 9,
+      "lat": null,
+      "lng": null,
+      "createdAt": "2026-09-03T12:17:39.103Z"
+    },
+    {
+      "_id": "mtlhq3vkyc9zze",
+      "tourId": "City tour",
+      "title": "Vesu 7",
+      "slug": "vesu_7",
+      "tilesFolder": "vesu_7.tiles",
+      "order": 10,
+      "lat": null,
+      "lng": null,
+      "createdAt": "2026-09-03T12:17:39.104Z"
     }
   ],
   "hotspots": [],

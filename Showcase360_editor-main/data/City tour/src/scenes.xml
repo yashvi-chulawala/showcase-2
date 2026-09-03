@@ -131,4 +131,94 @@
 
 	</scene>
 
+	<scene name="scene_vesu_1" title="Vesu 1" onstart="js(console.log('SCENE START pending custom view:', get(hs_entry_custom), get(hs_entry_hlookat), get(hs_entry_vlookat), get(hs_entry_fov))); if(hs_entry_custom == true, lookat(get(hs_entry_hlookat), get(hs_entry_vlookat), get(hs_entry_fov)); js(console.log('VIEW APPLIED:', get(view.hlookat), get(view.vlookat), get(view.fov))); delete(hs_entry_custom, hs_entry_hlookat, hs_entry_vlookat, hs_entry_fov););" thumburl="../panos/vesu_1.tiles/thumb.jpg" lat="" lng="" heading="">
+		
+		<control bouncinglimits="calc:image.cube ? true : false" fovspeed="50" />
+
+		<view hlookat="0" vlookat="0" fovtype="MFOV" fov="114" maxpixelzoom="2.0" fovmin="30" fovmax="140" limitview="auto" />
+
+		<preview url="../panos/vesu_1.tiles/preview.jpg" />
+
+		<image>
+			<cube url="../panos/vesu_1.tiles/%s/l%l/%v/l%l_%s_%v_%h.jpg" multires="512,1024,2048,3840" />
+		</image>
+
+
+	</scene>
+
+	<scene name="scene_vesu_16" title="Vesu 16" onstart="js(console.log('SCENE START pending custom view:', get(hs_entry_custom), get(hs_entry_hlookat), get(hs_entry_vlookat), get(hs_entry_fov))); if(hs_entry_custom == true, lookat(get(hs_entry_hlookat), get(hs_entry_vlookat), get(hs_entry_fov)); js(console.log('VIEW APPLIED:', get(view.hlookat), get(view.vlookat), get(view.fov))); delete(hs_entry_custom, hs_entry_hlookat, hs_entry_vlookat, hs_entry_fov););" thumburl="../panos/vesu_16.tiles/thumb.jpg" lat="" lng="" heading="">
+		
+		<control bouncinglimits="calc:image.cube ? true : false" fovspeed="50" />
+
+		<view hlookat="0" vlookat="0" fovtype="MFOV" fov="114" maxpixelzoom="2.0" fovmin="30" fovmax="140" limitview="auto" />
+
+		<preview url="../panos/vesu_16.tiles/preview.jpg" />
+
+		<image>
+			<cube url="../panos/vesu_16.tiles/%s/l%l/%v/l%l_%s_%v_%h.jpg" multires="512,1024,2048,3840" />
+		</image>
+
+
+	</scene>
+
+	<scene name="scene_vesu_18" title="Vesu 18" onstart="js(console.log('SCENE START pending custom view:', get(hs_entry_custom), get(hs_entry_hlookat), get(hs_entry_vlookat), get(hs_entry_fov))); if(hs_entry_custom == true, lookat(get(hs_entry_hlookat), get(hs_entry_vlookat), get(hs_entry_fov)); js(console.log('VIEW APPLIED:', get(view.hlookat), get(view.vlookat), get(view.fov))); delete(hs_entry_custom, hs_entry_hlookat, hs_entry_vlookat, hs_entry_fov););" thumburl="../panos/vesu_18.tiles/thumb.jpg" lat="" lng="" heading="">
+		
+		<control bouncinglimits="calc:image.cube ? true : false" fovspeed="50" />
+
+		<view hlookat="0" vlookat="0" fovtype="MFOV" fov="114" maxpixelzoom="2.0" fovmin="30" fovmax="140" limitview="auto" />
+
+		<preview url="../panos/vesu_18.tiles/preview.jpg" />
+
+		<image>
+			<cube url="../panos/vesu_18.tiles/%s/l%l/%v/l%l_%s_%v_%h.jpg" multires="512,1024,2048,3840" />
+		</image>
+
+
+	</scene>
+
+	<scene name="scene_vesu_2" title="Vesu 2" onstart="js(console.log('SCENE START pending custom view:', get(hs_entry_custom), get(hs_entry_hlookat), get(hs_entry_vlookat), get(hs_entry_fov))); if(hs_entry_custom == true, lookat(get(hs_entry_hlookat), get(hs_entry_vlookat), get(hs_entry_fov)); js(console.log('VIEW APPLIED:', get(view.hlookat), get(view.vlookat), get(view.fov))); delete(hs_entry_custom, hs_entry_hlookat, hs_entry_vlookat, hs_entry_fov););" thumburl="../panos/vesu_2.tiles/thumb.jpg" lat="" lng="" heading="">
+		
+		<control bouncinglimits="calc:image.cube ? true : false" fovspeed="50" />
+
+		<view hlookat="0" vlookat="0" fovtype="MFOV" fov="114" maxpixelzoom="2.0" fovmin="30" fovmax="140" limitview="auto" />
+
+		<preview url="../panos/vesu_2.tiles/preview.jpg" />
+
+		<image>
+			<cube url="../panos/vesu_2.tiles/%s/l%l/%v/l%l_%s_%v_%h.jpg" multires="512,1024,2048,3840" />
+		</image>
+
+
+	</scene>
+
+	<scene name="scene_vesu_5" title="Vesu 5" onstart="js(console.log('SCENE START pending custom view:', get(hs_entry_custom), get(hs_entry_hlookat), get(hs_entry_vlookat), get(hs_entry_fov))); if(hs_entry_custom == true, lookat(get(hs_entry_hlookat), get(hs_entry_vlookat), get(hs_entry_fov)); js(console.log('VIEW APPLIED:', get(view.hlookat), get(view.vlookat), get(view.fov))); delete(hs_entry_custom, hs_entry_hlookat, hs_entry_vlookat, hs_entry_fov););" thumburl="../panos/vesu_5.tiles/thumb.jpg" lat="" lng="" heading="">
+		
+		<control bouncinglimits="calc:image.cube ? true : false" fovspeed="50" />
+
+		<view hlookat="0" vlookat="0" fovtype="MFOV" fov="114" maxpixelzoom="2.0" fovmin="30" fovmax="140" limitview="auto" />
+
+		<preview url="../panos/vesu_5.tiles/preview.jpg" />
+
+		<image>
+			<cube url="../panos/vesu_5.tiles/%s/l%l/%v/l%l_%s_%v_%h.jpg" multires="512,1024,2048,3840" />
+		</image>
+
+
+	</scene>
+
+	<scene name="scene_vesu_7" title="Vesu 7" onstart="js(console.log('SCENE START pending custom view:', get(hs_entry_custom), get(hs_entry_hlookat), get(hs_entry_vlookat), get(hs_entry_fov))); if(hs_entry_custom == true, lookat(get(hs_entry_hlookat), get(hs_entry_vlookat), get(hs_entry_fov)); js(console.log('VIEW APPLIED:', get(view.hlookat), get(view.vlookat), get(view.fov))); delete(hs_entry_custom, hs_entry_hlookat, hs_entry_vlookat, hs_entry_fov););" thumburl="../panos/vesu_7.tiles/thumb.jpg" lat="" lng="" heading="">
+		
+		<control bouncinglimits="calc:image.cube ? true : false" fovspeed="50" />
+
+		<view hlookat="0" vlookat="0" fovtype="MFOV" fov="114" maxpixelzoom="2.0" fovmin="30" fovmax="140" limitview="auto" />
+
+		<preview url="../panos/vesu_7.tiles/preview.jpg" />
+
+		<image>
+			<cube url="../panos/vesu_7.tiles/%s/l%l/%v/l%l_%s_%v_%h.jpg" multires="512,1024,2048,3840" />
+		</image>
+
+
+	</scene>
+
 </krpano>

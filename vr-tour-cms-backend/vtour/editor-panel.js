@@ -873,7 +873,7 @@ function renderMediaScenes() {
 
     card.innerHTML = `
       <div class="image-card-thumb-wrap">
-        <img class="image-card-thumb" draggable="false" src="${thumbUrl}" alt="${scene.title}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'400\\' height=\'200\\'><rect width=\\'100%\\' height=\\'100%\\' fill=\\'%231d1d26\\'//></svg>'">
+        <img class="image-card-thumb" draggable="false" src="${thumbUrl}" alt="${scene.title}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'400\\' height=\\'200\\'><rect width=\\'100%\\' height=\\'100%\\' fill=\\'%231d1d26\\'/></svg>'">
         <div class="image-card-tags-overlay">
           ${scene.tags && scene.tags.length > 0
             ? scene.tags.map(t => `<span class="tag-chip" style="${getTagStyle(t)}">${t}</span>`).join('')
@@ -1366,7 +1366,7 @@ function renderScenes() {
 
     card.innerHTML = `
       <div class="editor-scene-thumb-wrap">
-        <img class="editor-scene-thumb" src="${thumbUrl}" alt="thumb" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'200\\' height=\'84\\'><rect width=\\'100%\\' height=\\'100%\\' fill=\\'%2327272a\\'//></svg>'">
+        <img class="editor-scene-thumb" src="${thumbUrl}" alt="thumb" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'200\\' height=\\'84\\'><rect width=\\'100%\\' height=\\'100%\\' fill=\\'%2327272a\\'/></svg>'">
       </div>
       <div class="editor-scene-name" title="${scene.title}">${scene.title}</div>
     `;

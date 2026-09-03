@@ -103,14 +103,56 @@ function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
-// ---- Scenes -------------------------------------------------------------
-
 function listScenes(tourId = activeTourId) {
-  let db = readDB(tourId);
-  let scenes = db.scenes || [];
+  let dbData = readDB(tourId);
+  let scenes = dbData.scenes || [];
   if (getDbPath(tourId) === LEGACY_DB_FILE) {
     scenes = scenes.filter(s => (s.tourId || 'default') === tourId);
   }
+
+  // Auto-scan panos folder for any tiles directories on disk that might not be in db yet
+  const tourDir = resolveTourPath(tourId);
+  if (tourDir) {
+    const panosDir = path.join(tourDir, 'panos');
+    if (fs.existsSync(panosDir)) {
+      try {
+        const entries = fs.readdirSync(panosDir, { withFileTypes: true });
+        let modified = false;
+        for (const entry of entries) {
+          if (entry.isDirectory() && entry.name.endsWith('.tiles')) {
+            const folderName = entry.name;
+            const exists = scenes.some(s => s.tilesFolder === folderName || `${s.slug}.tiles` === folderName);
+            if (!exists) {
+              const baseName = folderName.replace(/\.tiles$/, '');
+              // Clean up title (e.g. vesu_1_1 -> Vesu 1)
+              let cleanTitle = baseName.replace(/_/g, ' ');
+              cleanTitle = cleanTitle.charAt(0).toUpperCase() + cleanTitle.slice(1);
+              const newScene = {
+                _id: generateId(),
+                tourId: tourId || activeTourId,
+                title: cleanTitle,
+                slug: baseName,
+                tilesFolder: folderName,
+                order: scenes.length,
+                lat: null,
+                lng: null,
+                createdAt: new Date().toISOString()
+              };
+              scenes.push(newScene);
+              modified = true;
+            }
+          }
+        }
+        if (modified) {
+          dbData.scenes = scenes;
+          writeDB(dbData, tourId);
+        }
+      } catch (e) {
+        console.warn('Auto-scan panos directory failed:', e.message);
+      }
+    }
+  }
+
   return scenes.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 }
 
