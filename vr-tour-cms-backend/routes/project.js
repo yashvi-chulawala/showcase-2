@@ -37,7 +37,7 @@ router.get('/export', (req, res) => {
     res.setHeader('Content-Type', 'application/zip');
     res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
 
-    const archive = typeof archiver === 'function' ? archiver('zip', { store: true }) : new (archiver.ZipArchive || archiver)({ store: true });
+    const archive = archiver('zip', { store: true });
 
     archive.on('warning', (err) => {
       if (err.code === 'ENOENT') {
