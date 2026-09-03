@@ -160,8 +160,6 @@ router.post('/tours/:tourId/reset', (req, res) => {
   res.json({ reset: true });
 });
 
-module.exports = router;
-
 /** POST /api/tours/:tourId/assets/upload */
 router.post('/tours/:tourId/assets/upload', upload.single('file'), async (req, res) => {
   const { tourId } = req.params;
@@ -212,4 +210,6 @@ router.patch('/assets/:assetId', express.json(), (req, res) => {
   if (!updated) return res.status(404).json({ error: 'Asset not found' });
   res.json({ asset: updated });
 });
+
+module.exports = router;
 

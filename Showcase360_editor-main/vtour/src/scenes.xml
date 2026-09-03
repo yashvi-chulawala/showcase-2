@@ -46,6 +46,7 @@
 	<style name="Dot White" url="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4Ij48Y2lyY2xlIGN4PSIzMiIgY3k9IjMyIiByPSIyNCIgZmlsbD0iI2ZmZmZmZiIgc3Ryb2tlPSIjMzMzMzMzIiBzdHJva2Utd2lkdGg9IjYiLz48Y2lyY2xlIGN4PSIzMiIgY3k9IjMyIiByPSIxMCIgZmlsbD0iIzNiODJmNiIvPjwvc3ZnPg==" scale="0.85" alpha="1.0" visible="true" zorder="100" enabled="true" capture="false" />
 	<style name="Portal" url="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0Ij4KICAgICAgPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMjgiIGZpbGw9IiMzYjgyZjYiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLXdpZHRoPSI0Ii8+CiAgICAgIDxwYXRoIGQ9Ik0yNCAyMCBMMzggMzIgTDI0IDQ0IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iNiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgICA8L3N2Zz4=" scale="0.85" alpha="1.0" visible="true" zorder="100" enabled="true" capture="false" />
 	<style name="Info Badge" url="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4Ij48Y2lyY2xlIGN4PSIzMiIgY3k9IjMyIiByPSIyOCIgZmlsbD0iIzNiODJmNiIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjQiLz48dGV4dCB4PSIzMiIgeT0iNDQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiNmZmZmZmYiIGZvbnQtZmFtaWx5PSJPdXRmaXQsIHNhbnMtc2VyaWYiIGZvbnQtd2VpZ2h0PSI5MDAiIGZvbnQtc2l6ZT0iMzQiPmk8L3RleHQ+PC9zdmc+" scale="0.85" alpha="1.0" visible="true" zorder="100" enabled="true" capture="false" />
+	<style name="assets/ChatGPT Image Aug 26, 2026, 06_00_08 PM.png" url="../assets/ChatGPT Image Aug 26, 2026, 06_00_08 PM.png" scale="0.85" alpha="1.0" visible="true" zorder="100" enabled="true" capture="false" />
 
 	<!-- Action for dragging hotspots and standalone text labels in editor mode -->
 	<action name="draghotspot">
@@ -68,20 +69,40 @@
 			<cube url="../panos/vesu_1_1.tiles/%s/l%l/%v/l%l_%s_%v_%h.jpg" multires="512,1024,2048,3840" />
 		</image>
 
+		<hotspot name="hs_mta2vnkaam9ye5" ath="-123.2" atv="-5.75" width="150" height="150" scale="1" visible="true" zorder="100" enabled="true" capture="false" url="../assets/ChatGPT Image Aug 26, 2026, 06_00_08 PM.png" alpha="1.0"
+		         onclick="js(alert('Pin'));" />
+		<hotspot name="hs_mta30lxdb3o71v" ath="-54.16" atv="-12.74" width="60" height="60" scale="1" visible="true" zorder="100" enabled="true" capture="false" url="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4Ij48cGF0aCBkPSJNMjAgMTQgTDQ0IDMyIEwyMCA1MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjgiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjwvc3ZnPg==" alpha="1.0"
+		         onclick="loadscene('scene_dumas_2', null, MERGE, BLEND(0.5));" />
+		<hotspot name="hs_mta31de55o6e24" ath="-54.72" atv="-8.13"   scale="0.85" visible="true" zorder="100" enabled="true" capture="false" type="text" html="Airport" distorted="true" alpha="1" bgcolor="0x000000" bgalpha="0" bgborder="0 0x000000 0" bgroundedge="0" txtshadow="2 2 4 0xff0000 0" css="font-family:Arial; font-size:30px; color:#ffffff; font-weight:normal; font-style:normal; text-decoration:none; text-align:center;" padding="4 8"
+		         onclick="js(alert('Airport'));" />
+		<hotspot name="hs_mta4a0nw7lcz2f" ath="25.35" atv="-33.58"   scale="0.85" visible="true" zorder="100" enabled="true" capture="false" url="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4Ij48cGF0aCBkPSJNMTQgNDQgTDMyIDIwIEw1MCA0NCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjgiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjwvc3ZnPg==" alpha="1.0"
+		         onclick="loadscene('scene_vesu_5_1', null, MERGE, BLEND(0.5));" />
+		<hotspot name="hs_mta4auhrd4bp3g" ath="61.48" atv="-24.55"   scale="0.85" visible="true" zorder="100" enabled="true" capture="false" type="text" html="TEXT" distorted="true" alpha="1" bgcolor="0x000000" bgalpha="0.27" bgborder="0 0x000000 0" bgroundedge="0" bgshadow="2 2 4 0xff0000 0" css="font-family:Arial; font-size:30px; color:#ffffff; font-weight:normal; font-style:normal; text-decoration:none; text-align:center;" padding="4 8"
+		         onclick="js(alert('TEXT'));" />
+		<hotspot name="hs_mta4bjlg6wmvpv" ath="-7.03" atv="-2.56" width="150" height="150" scale="1" visible="true" zorder="100" enabled="true" capture="false" url="../assets/ChatGPT Image Aug 26, 2026, 06_00_08 PM.png" alpha="1.0"
+		         onclick="js(alert('Pin'));" />
+		<hotspot name="hs_mte3d1q99dv0nk" ath="-28.96" atv="-17.35"   scale="0.85" visible="true" zorder="100" enabled="true" capture="false" url="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4Ij48cGF0aCBkPSJNNDggMTYgTDE2IDE2IEwxNiAyNiBMMzYgMjYgTDM2IDQ4IEw0OCA0OCBaIiBmaWxsPSIjZmZmZmZmIi8+PC9zdmc+" alpha="1.0"
+		         onclick="loadscene('scene_vesu_2_1', null, MERGE, BLEND(0.5));" />
+
 
 	</scene>
 
-	<scene name="scene_vesu_16_1" title="Vesu 16" onstart="js(console.log('SCENE START pending custom view:', get(hs_entry_custom), get(hs_entry_hlookat), get(hs_entry_vlookat), get(hs_entry_fov))); if(hs_entry_custom == true, lookat(get(hs_entry_hlookat), get(hs_entry_vlookat), get(hs_entry_fov)); js(console.log('VIEW APPLIED:', get(view.hlookat), get(view.vlookat), get(view.fov))); delete(hs_entry_custom, hs_entry_hlookat, hs_entry_vlookat, hs_entry_fov););" thumburl="../panos/vesu_16_1.tiles/thumb.jpg" lat="21.146476166666666" lng="72.76053958333334" heading="">
+	<scene name="scene_vesu_2_1" title="Vesu 2" onstart="js(console.log('SCENE START pending custom view:', get(hs_entry_custom), get(hs_entry_hlookat), get(hs_entry_vlookat), get(hs_entry_fov))); if(hs_entry_custom == true, lookat(get(hs_entry_hlookat), get(hs_entry_vlookat), get(hs_entry_fov)); js(console.log('VIEW APPLIED:', get(view.hlookat), get(view.vlookat), get(view.fov))); delete(hs_entry_custom, hs_entry_hlookat, hs_entry_vlookat, hs_entry_fov););" thumburl="../panos/vesu_2_1.tiles/thumb.jpg" lat="21.147721971666666" lng="72.772278" heading="">
 		
 		<control bouncinglimits="calc:image.cube ? true : false" fovspeed="50" />
 
 		<view hlookat="0" vlookat="0" fovtype="MFOV" fov="114" maxpixelzoom="2.0" fovmin="30" fovmax="140" limitview="auto" />
 
-		<preview url="../panos/vesu_16_1.tiles/preview.jpg" />
+		<preview url="../panos/vesu_2_1.tiles/preview.jpg" />
 
 		<image>
-			<cube url="../panos/vesu_16_1.tiles/%s/l%l/%v/l%l_%s_%v_%h.jpg" multires="512,1024,2048,3840" />
+			<cube url="../panos/vesu_2_1.tiles/%s/l%l/%v/l%l_%s_%v_%h.jpg" multires="512,1024,2048,3840" />
 		</image>
+
+		<hotspot name="hs_mta494hr8sfxni" ath="112.99" atv="8.43"   scale="0.85" visible="true" zorder="100" enabled="true" capture="false" url="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4Ij48cGF0aCBkPSJNMTQgNDQgTDMyIDIwIEw1MCA0NCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjgiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjwvc3ZnPg==" alpha="1.0"
+		         onclick="loadscene('scene_vesu_1_1', null, MERGE, BLEND(0.5));" />
+		<hotspot name="hs_mte3d53a6xckw2" ath="48.87" atv="-8.52"   scale="0.85" visible="true" zorder="100" enabled="true" capture="false" url="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4Ij48cGF0aCBkPSJNNDggMTYgTDE2IDE2IEwxNiAyNiBMMzYgMjYgTDM2IDQ4IEw0OCA0OCBaIiBmaWxsPSIjZmZmZmZmIi8+PC9zdmc+" alpha="1.0"
+		         onclick="loadscene('scene_vesu_1_1', null, MERGE, BLEND(0.5));" />
 
 
 	</scene>
@@ -97,6 +118,9 @@
 		<image>
 			<cube url="../panos/vesu_5_1.tiles/%s/l%l/%v/l%l_%s_%v_%h.jpg" multires="512,1024,2048,3840" />
 		</image>
+
+		<hotspot name="hs_mta4a6qe0m9z6a" ath="-23.24" atv="-1.91"   scale="0.85" visible="true" zorder="100" enabled="true" capture="false" url="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4Ij48cGF0aCBkPSJNMTQgNDQgTDMyIDIwIEw1MCA0NCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjgiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjwvc3ZnPg==" alpha="1.0"
+		         onclick="loadscene('scene_vesu_1_1', null, MERGE, BLEND(0.5));" />
 
 
 	</scene>
@@ -116,17 +140,61 @@
 
 	</scene>
 
-	<scene name="scene_vesu_2_1" title="Vesu 2" onstart="js(console.log('SCENE START pending custom view:', get(hs_entry_custom), get(hs_entry_hlookat), get(hs_entry_vlookat), get(hs_entry_fov))); if(hs_entry_custom == true, lookat(get(hs_entry_hlookat), get(hs_entry_vlookat), get(hs_entry_fov)); js(console.log('VIEW APPLIED:', get(view.hlookat), get(view.vlookat), get(view.fov))); delete(hs_entry_custom, hs_entry_hlookat, hs_entry_vlookat, hs_entry_fov););" thumburl="../panos/vesu_2_1.tiles/thumb.jpg" lat="21.147721971666666" lng="72.772278" heading="">
+	<scene name="scene_vesu_16_1" title="Vesu 16" onstart="js(console.log('SCENE START pending custom view:', get(hs_entry_custom), get(hs_entry_hlookat), get(hs_entry_vlookat), get(hs_entry_fov))); if(hs_entry_custom == true, lookat(get(hs_entry_hlookat), get(hs_entry_vlookat), get(hs_entry_fov)); js(console.log('VIEW APPLIED:', get(view.hlookat), get(view.vlookat), get(view.fov))); delete(hs_entry_custom, hs_entry_hlookat, hs_entry_vlookat, hs_entry_fov););" thumburl="../panos/vesu_16_1.tiles/thumb.jpg" lat="21.146476166666666" lng="72.76053958333334" heading="">
 		
 		<control bouncinglimits="calc:image.cube ? true : false" fovspeed="50" />
 
 		<view hlookat="0" vlookat="0" fovtype="MFOV" fov="114" maxpixelzoom="2.0" fovmin="30" fovmax="140" limitview="auto" />
 
-		<preview url="../panos/vesu_2_1.tiles/preview.jpg" />
+		<preview url="../panos/vesu_16_1.tiles/preview.jpg" />
 
 		<image>
-			<cube url="../panos/vesu_2_1.tiles/%s/l%l/%v/l%l_%s_%v_%h.jpg" multires="512,1024,2048,3840" />
+			<cube url="../panos/vesu_16_1.tiles/%s/l%l/%v/l%l_%s_%v_%h.jpg" multires="512,1024,2048,3840" />
 		</image>
+
+
+	</scene>
+
+	<scene name="scene_dumas_2" title="Dumas 2" onstart="js(console.log('SCENE START pending custom view:', get(hs_entry_custom), get(hs_entry_hlookat), get(hs_entry_vlookat), get(hs_entry_fov))); if(hs_entry_custom == true, lookat(get(hs_entry_hlookat), get(hs_entry_vlookat), get(hs_entry_fov)); js(console.log('VIEW APPLIED:', get(view.hlookat), get(view.vlookat), get(view.fov))); delete(hs_entry_custom, hs_entry_hlookat, hs_entry_vlookat, hs_entry_fov););" thumburl="../panos/dumas_2.tiles/thumb.jpg" lat="21.119009833333333" lng="72.71936847166667" heading="">
+		
+		<control bouncinglimits="calc:image.cube ? true : false" fovspeed="50" />
+
+		<view hlookat="0" vlookat="0" fovtype="MFOV" fov="114" maxpixelzoom="2.0" fovmin="30" fovmax="140" limitview="auto" />
+
+		<preview url="../panos/dumas_2.tiles/preview.jpg" />
+
+		<image>
+			<cube url="../panos/dumas_2.tiles/%s/l%l/%v/l%l_%s_%v_%h.jpg" multires="512,1024,2048,3840" />
+		</image>
+
+		<hotspot name="hs_mta30vdsfiqded" ath="100.35" atv="-8.87"   scale="0.85" visible="true" zorder="100" enabled="true" capture="false" url="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4Ij48cGF0aCBkPSJNMjAgMTQgTDQ0IDMyIEwyMCA1MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjgiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjwvc3ZnPg==" alpha="1.0"
+		         onclick="loadscene('scene_vesu_1_1', null, MERGE, BLEND(0.5));" />
+		<hotspot name="hs_mta34okcphb3n8" ath="100.08" atv="-5.07"   scale="0.85" visible="true" zorder="100" enabled="true" capture="false" type="text" html="Vesu" distorted="true" alpha="1" bgcolor="0x000000" bgalpha="0" bgborder="0 0x000000 0" bgroundedge="0" txtshadow="2 2 4 0xff0000 0" css="font-family:Arial; font-size:30px; color:#ffffff; font-weight:normal; font-style:normal; text-decoration:none; text-align:center;" padding="4 8"
+		         onclick="js(alert('Vesu'));" />
+		<hotspot name="hs_mta3c9y5dqxgie" ath="-35.84" atv="-7.34"   scale="0.85" visible="true" zorder="100" enabled="true" capture="false" url="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4Ij48cGF0aCBkPSJNMzIgNCBDMTguNyA0IDggMTQuNyA4IDI4IEM4IDQ1LjMgMzIgNjAgMzIgNjAgQzMyIDYwIDU2IDQ1LjMgNTYgMjggQzU2IDE0LjcgNDUuMyA0IDMyIDQgWiIgZmlsbD0iI2VmNDQ0NCIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjQiLz48Y2lyY2xlIGN4PSIzMiIgY3k9IjI0IiByPSIxMCIgZmlsbD0iI2ZmZmZmZiIvPjwvc3ZnPg==" alpha="1.0"
+		         onclick="loadscene('scene_dumas_4', null, MERGE, BLEND(0.5));" />
+		<hotspot name="hs_mta3crp98oht8q" ath="-35.39" atv="-2.84"   scale="0.85" visible="true" zorder="100" enabled="true" capture="false" type="text" html="Avadh Circle" distorted="true" alpha="1" bgcolor="0x000000" bgalpha="0" bgborder="0 0x000000 0" bgroundedge="0" txtshadow="2 2 4 0xff0000 0" css="font-family:Arial; font-size:30px; color:#ffffff; font-weight:normal; font-style:normal; text-decoration:none; text-align:center;" padding="4 8"
+		         onclick="js(alert('Avadh Circle'));" />
+
+
+	</scene>
+
+	<scene name="scene_dumas_4" title="Dumas 4" onstart="js(console.log('SCENE START pending custom view:', get(hs_entry_custom), get(hs_entry_hlookat), get(hs_entry_vlookat), get(hs_entry_fov))); if(hs_entry_custom == true, lookat(get(hs_entry_hlookat), get(hs_entry_vlookat), get(hs_entry_fov)); js(console.log('VIEW APPLIED:', get(view.hlookat), get(view.vlookat), get(view.fov))); delete(hs_entry_custom, hs_entry_hlookat, hs_entry_vlookat, hs_entry_fov););" thumburl="../panos/dumas_4.tiles/thumb.jpg" lat="21.123827638333335" lng="72.73184827833333" heading="">
+		
+		<control bouncinglimits="calc:image.cube ? true : false" fovspeed="50" />
+
+		<view hlookat="0" vlookat="0" fovtype="MFOV" fov="114" maxpixelzoom="2.0" fovmin="30" fovmax="140" limitview="auto" />
+
+		<preview url="../panos/dumas_4.tiles/preview.jpg" />
+
+		<image>
+			<cube url="../panos/dumas_4.tiles/%s/l%l/%v/l%l_%s_%v_%h.jpg" multires="512,1024,2048,3840" />
+		</image>
+
+		<hotspot name="hs_mta3cfl72e1ced" ath="176.74" atv="-13.87"   scale="0.85" visible="true" zorder="100" enabled="true" capture="false" url="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4Ij48cGF0aCBkPSJNMzIgNCBDMTguNyA0IDggMTQuNyA4IDI4IEM4IDQ1LjMgMzIgNjAgMzIgNjAgQzMyIDYwIDU2IDQ1LjMgNTYgMjggQzU2IDE0LjcgNDUuMyA0IDMyIDQgWiIgZmlsbD0iI2VmNDQ0NCIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjQiLz48Y2lyY2xlIGN4PSIzMiIgY3k9IjI0IiByPSIxMCIgZmlsbD0iI2ZmZmZmZiIvPjwvc3ZnPg==" alpha="1.0"
+		         onclick="loadscene('scene_dumas_2', null, MERGE, BLEND(0.5));" />
+		<hotspot name="hs_mta3eb2ernf4te" ath="178.87" atv="-7.97"   scale="0.85" visible="true" zorder="100" enabled="true" capture="false" type="text" html="Boketto Restro" distorted="true" alpha="1" bgcolor="0x000000" bgalpha="0" bgborder="0 0x000000 0" bgroundedge="0" txtshadow="2 2 4 0xff0000 0" css="font-family:Arial; font-size:30px; color:#ffffff; font-weight:normal; font-style:normal; text-decoration:none; text-align:center;" padding="4 8"
+		         onclick="js(alert('Boketto Restro'));" />
 
 
 	</scene>

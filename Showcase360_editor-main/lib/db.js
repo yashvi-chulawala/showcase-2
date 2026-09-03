@@ -379,35 +379,75 @@ function renameTour(oldTourId, newTourId) {
 // ---- Assets -------------------------------------------------------------
 
 function listAssets(tourId = activeTourId) {
-  let db = readDB(tourId);
-  let assets = db.assets || [];
+  let dbData = readDB(tourId);
+  let assets = dbData.assets || [];
   if (getDbPath(tourId) === LEGACY_DB_FILE) {
     assets = assets.filter(a => (a.tourId || 'default') === tourId);
   }
+
+  // Auto-scan physical assets on disk
+  const tourDir = resolveTourPath(tourId);
+  if (tourDir) {
+    const assetsDir = path.join(tourDir, 'assets');
+    if (fs.existsSync(assetsDir)) {
+      try {
+        const files = fs.readdirSync(assetsDir);
+        let modified = false;
+        for (const file of files) {
+          const ext = path.extname(file).toLowerCase();
+          if (['.png', '.jpg', '.jpeg', '.webp', '.svg', '.gif'].includes(ext)) {
+            const exists = assets.some(a => a.name === file || a.url === `assets/${file}` || a.url === file);
+            if (!exists) {
+              const newAsset = {
+                _id: generateId(),
+                tourId: tourId || activeTourId,
+                name: file,
+                url: `assets/${file}`,
+                createdAt: new Date().toISOString()
+              };
+              assets.push(newAsset);
+              modified = true;
+            }
+          }
+        }
+        if (modified) {
+          dbData.assets = assets;
+          writeDB(dbData, tourId);
+        }
+      } catch (e) {
+        console.warn('Auto-scan assets directory failed:', e.message);
+      }
+    }
+  }
+
   return assets;
 }
 
 function createAsset({ tourId, name, url }) {
   tourId = tourId || activeTourId;
-  const db = readDB(tourId);
+  const dbData = readDB(tourId);
   const asset = { _id: generateId(), tourId, name, url, createdAt: new Date().toISOString() };
-  db.assets.push(asset);
-  writeDB(db, tourId);
+  if (!dbData.assets) dbData.assets = [];
+  dbData.assets.push(asset);
+  writeDB(dbData, tourId);
   return asset;
 }
 
 function deleteAsset(assetId) {
-  const db = readDB();
-  db.assets = db.assets.filter(a => a._id !== assetId);
-  writeDB(db);
+  const dbData = readDB();
+  if (dbData.assets) {
+    dbData.assets = dbData.assets.filter(a => a._id !== assetId);
+    writeDB(dbData);
+  }
 }
 
 function updateAsset(assetId, patch) {
-  const db = readDB();
-  const asset = db.assets.find(a => a._id === assetId);
+  const dbData = readDB();
+  if (!dbData.assets) return null;
+  const asset = dbData.assets.find(a => a._id === assetId);
   if (!asset) return null;
   Object.assign(asset, patch);
-  writeDB(db);
+  writeDB(dbData);
   return asset;
 }
 

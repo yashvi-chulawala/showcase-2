@@ -161,8 +161,10 @@
 
 		<view hlookat="0" vlookat="0" fovtype="MFOV" fov="114" maxpixelzoom="2.0" fovmin="30" fovmax="140" limitview="auto" />
 
+		<preview url="../panos/dumas_2.tiles/preview.jpg" />
+
 		<image>
-			<sphere url="../panos/dumas_2.tiles/preview.jpg" />
+			<cube url="../panos/dumas_2.tiles/%s/l%l/%v/l%l_%s_%v_%h.jpg" multires="512,1024,2048,3840" />
 		</image>
 
 		<hotspot name="hs_mta30vdsfiqded" ath="100.35" atv="-8.87"   scale="0.85" visible="true" zorder="100" enabled="true" capture="false" url="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4Ij48cGF0aCBkPSJNMjAgMTQgTDQ0IDMyIEwyMCA1MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjgiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjwvc3ZnPg==" alpha="1.0"
@@ -183,8 +185,10 @@
 
 		<view hlookat="0" vlookat="0" fovtype="MFOV" fov="114" maxpixelzoom="2.0" fovmin="30" fovmax="140" limitview="auto" />
 
+		<preview url="../panos/dumas_4.tiles/preview.jpg" />
+
 		<image>
-			<sphere url="../panos/dumas_4.tiles/preview.jpg" />
+			<cube url="../panos/dumas_4.tiles/%s/l%l/%v/l%l_%s_%v_%h.jpg" multires="512,1024,2048,3840" />
 		</image>
 
 		<hotspot name="hs_mta3cfl72e1ced" ath="176.74" atv="-13.87"   scale="0.85" visible="true" zorder="100" enabled="true" capture="false" url="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4Ij48cGF0aCBkPSJNMzIgNCBDMTguNyA0IDggMTQuNyA4IDI4IEM4IDQ1LjMgMzIgNjAgMzIgNjAgQzMyIDYwIDU2IDQ1LjMgNTYgMjggQzU2IDE0LjcgNDUuMyA0IDMyIDQgWiIgZmlsbD0iI2VmNDQ0NCIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjQiLz48Y2lyY2xlIGN4PSIzMiIgY3k9IjI0IiByPSIxMCIgZmlsbD0iI2ZmZmZmZiIvPjwvc3ZnPg==" alpha="1.0"
