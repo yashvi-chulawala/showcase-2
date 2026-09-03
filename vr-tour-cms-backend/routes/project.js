@@ -16,31 +16,57 @@ const upload = multer({
   limits: { fileSize: 2000 * 1024 * 1024 } // Support large project files up to 2GB
 });
 
-// GET /api/project/export — download active tour as a .s360 zip archive
+const archiver = require('archiver');
+
+// GET /api/project/export — stream active tour as a .s360 zip archive (Low memory streaming)
 router.get('/export', (req, res) => {
   const activeTourId = db.getActiveTour();
   if (!activeTourId || activeTourId === 'default') {
     return res.status(400).json({ error: 'No active project to export' });
   }
 
+  const tourDir = db.resolveTourPath(activeTourId);
+  if (!tourDir || !fs.existsSync(tourDir)) {
+    return res.status(400).json({ error: 'Active project folder not found on disk' });
+  }
+
   try {
-    const zip = new AdmZip();
-    const tourName = path.basename(activeTourId);
-
-    if (path.isAbsolute(activeTourId) && fs.existsSync(activeTourId)) {
-      zip.addLocalFolder(activeTourId);
-    } else {
-      return res.status(400).json({ error: 'Active project folder not found on disk' });
-    }
-
-    const zipBuffer = zip.toBuffer();
+    const tourName = path.basename(tourDir);
     const fileName = `${tourName}.s360`;
+
     res.setHeader('Content-Type', 'application/zip');
     res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-    res.send(zipBuffer);
+
+    const archive = typeof archiver === 'function' ? archiver('zip', { store: true }) : new (archiver.ZipArchive || archiver)({ store: true });
+
+    archive.on('warning', (err) => {
+      if (err.code === 'ENOENT') {
+        console.warn('Archiver warning:', err);
+      } else {
+        console.error('Archiver error:', err);
+      }
+    });
+
+    archive.on('error', (err) => {
+      console.error('Export archive error:', err);
+      if (!res.headersSent) {
+        res.status(500).json({ error: err.message });
+      }
+    });
+
+    // Pipe directly to client response
+    archive.pipe(res);
+
+    // Append entire active tour directory
+    archive.directory(tourDir, false);
+
+    // Finalize stream
+    archive.finalize();
   } catch (err) {
     console.error('Export error:', err);
-    res.status(500).json({ error: err.message });
+    if (!res.headersSent) {
+      res.status(500).json({ error: err.message });
+    }
   }
 });
 
