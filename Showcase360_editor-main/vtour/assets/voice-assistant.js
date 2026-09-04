@@ -153,7 +153,7 @@
           handleSuccessfulNavigation(res.scene || { name: target });
         },
         onSessionEnd: () => {
-          resetToIdle();
+          console.log('[Hey 360] Gemini Live stream closed; local speech recognizer active.');
         }
       });
     }
