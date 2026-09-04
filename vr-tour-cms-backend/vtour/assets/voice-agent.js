@@ -4,6 +4,7 @@
   let outputAudioContext = null;
   let mediaStream = null;
   let workletNode = null;
+  let scriptProcessor = null;
   let isSetupComplete = false;
   
   let playbackQueue = [];
@@ -89,14 +90,25 @@ Keep responses friendly, warm, concise, and natural.`;
       updateState('Connecting...');
       isSetupComplete = false;
       
-      // 1. Get Microphone permission
+      // 1. Initialize Audio Outputs immediately to capture user gesture
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      outputAudioContext = new AudioCtx({ sampleRate: 24000 });
+      if (outputAudioContext.state === 'suspended') {
+        await outputAudioContext.resume();
+      }
+
+      inputAudioContext = new AudioCtx({ sampleRate: 16000 });
+      if (inputAudioContext.state === 'suspended') {
+        await inputAudioContext.resume();
+      }
+
+      // 2. Get Microphone permission
       try {
         mediaStream = await navigator.mediaDevices.getUserMedia({ 
           audio: {
-            channelCount: 1,
-            sampleRate: 16000,
             echoCancellation: true,
-            noiseSuppression: true
+            noiseSuppression: true,
+            autoGainControl: true
           }
         });
       } catch (e) {
@@ -105,9 +117,9 @@ Keep responses friendly, warm, concise, and natural.`;
         return;
       }
       
-      // 2. Fetch Ephemeral Token
+      // 3. Fetch Gemini Token
       const tokenRes = await fetch('/api/gemini-live-token');
-      if (!tokenRes.ok) throw new Error("Gemini token failure");
+      if (!tokenRes.ok) throw new Error("Gemini token endpoint failure");
       const { token } = await tokenRes.json();
       
       if (!token || token === 'your_gemini_api_key_here') {
@@ -116,17 +128,16 @@ Keep responses friendly, warm, concise, and natural.`;
         return;
       }
       
-      // 3. Initialize WebSockets (v1beta BidiGenerateContent)
+      // 4. Initialize WebSockets with Gemini Live model
       const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${token}`;
       console.log('[Hey 360] Connecting to Gemini Live WebSocket...');
       ws = new WebSocket(wsUrl);
       
       ws.onopen = () => {
         console.log('[Hey 360] WebSocket Connected! Sending setup payload...');
-        // Send initial setup
         ws.send(JSON.stringify({
           setup: {
-            model: "models/gemini-2.0-flash-exp",
+            model: "models/gemini-2.5-flash-native-audio-latest",
             systemInstruction: {
               parts: [{ text: INSTRUCTION }]
             },
@@ -186,19 +197,71 @@ Keep responses friendly, warm, concise, and natural.`;
         stopAgent();
       };
       
-      // 4. Initialize Audio Input (16kHz)
-      inputAudioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
-      await inputAudioContext.audioWorklet.addModule('assets/pcm-processor.js');
-      
+      // 5. Initialize Audio Input Streaming (16kHz PCM)
       const source = inputAudioContext.createMediaStreamSource(mediaStream);
-      workletNode = new AudioWorkletNode(inputAudioContext, 'pcm-processor');
       
-      workletNode.port.onmessage = (e) => {
-        // Only stream audio AFTER setup handshake is completed!
-        if (isSetupComplete && ws && ws.readyState === WebSocket.OPEN) {
-          const pcmData = new Int16Array(e.data);
+      const workletCode = `
+        class PCMProcessor extends AudioWorkletProcessor {
+          constructor() {
+            super();
+            this.buffer = new Int16Array(2048);
+            this.bufferIndex = 0;
+            this.chunkSize = 512;
+          }
+          process(inputs) {
+            const input = inputs[0];
+            if (input && input.length > 0 && input[0]) {
+              const channelData = input[0];
+              for (let i = 0; i < channelData.length; i++) {
+                let s = Math.max(-1, Math.min(1, channelData[i]));
+                this.buffer[this.bufferIndex++] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                if (this.bufferIndex >= this.chunkSize) {
+                  const chunk = this.buffer.slice(0, this.chunkSize);
+                  this.port.postMessage(chunk.buffer, [chunk.buffer]);
+                  this.bufferIndex = 0;
+                }
+              }
+            }
+            return true;
+          }
+        }
+        registerProcessor('pcm-processor', PCMProcessor);
+      `;
+      
+      try {
+        const blob = new Blob([workletCode], { type: 'application/javascript' });
+        const blobUrl = URL.createObjectURL(blob);
+        await inputAudioContext.audioWorklet.addModule(blobUrl);
+        URL.revokeObjectURL(blobUrl);
+        
+        workletNode = new AudioWorkletNode(inputAudioContext, 'pcm-processor');
+        workletNode.port.onmessage = (e) => {
+          if (isSetupComplete && ws && ws.readyState === WebSocket.OPEN) {
+            const base64Audio = arrayBufferToBase64(e.data);
+            ws.send(JSON.stringify({
+              realtimeInput: {
+                mediaChunks: [{
+                  mimeType: "audio/pcm;rate=16000",
+                  data: base64Audio
+                }]
+              }
+            }));
+          }
+        };
+        source.connect(workletNode);
+        workletNode.connect(inputAudioContext.destination);
+      } catch (workletErr) {
+        console.warn("[Hey 360] Falling back to ScriptProcessorNode:", workletErr);
+        scriptProcessor = inputAudioContext.createScriptProcessor(1024, 1, 1);
+        scriptProcessor.onaudioprocess = (e) => {
+          if (!isSetupComplete || !ws || ws.readyState !== WebSocket.OPEN) return;
+          const inputData = e.inputBuffer.getChannelData(0);
+          const pcmData = new Int16Array(inputData.length);
+          for (let i = 0; i < inputData.length; i++) {
+            let s = Math.max(-1, Math.min(1, inputData[i]));
+            pcmData[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+          }
           const base64Audio = arrayBufferToBase64(pcmData.buffer);
-          
           ws.send(JSON.stringify({
             realtimeInput: {
               mediaChunks: [{
@@ -207,14 +270,10 @@ Keep responses friendly, warm, concise, and natural.`;
               }]
             }
           }));
-        }
-      };
-      
-      source.connect(workletNode);
-      workletNode.connect(inputAudioContext.destination);
-      
-      // 5. Initialize Audio Output (24kHz Native Playback)
-      outputAudioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+        };
+        source.connect(scriptProcessor);
+        scriptProcessor.connect(inputAudioContext.destination);
+      }
       
     } catch (e) {
       console.error("[Hey 360 Error]:", e);
@@ -247,7 +306,7 @@ Keep responses friendly, warm, concise, and natural.`;
       if (msg.serverContent.modelTurn) {
         const parts = msg.serverContent.modelTurn.parts;
         for (const part of parts) {
-          if (part.inlineData && part.inlineData.mimeType.startsWith('audio/pcm')) {
+          if (part.inlineData && part.inlineData.mimeType && part.inlineData.mimeType.startsWith('audio/pcm')) {
             updateState('Speaking...');
             playAudioChunk(part.inlineData.data);
           }
@@ -323,6 +382,10 @@ Keep responses friendly, warm, concise, and natural.`;
   function playAudioChunk(base64Audio) {
     if (!outputAudioContext) return;
     
+    if (outputAudioContext.state === 'suspended') {
+      outputAudioContext.resume();
+    }
+    
     const binaryString = atob(base64Audio);
     const bytes = new Uint8Array(binaryString.length);
     for (let i = 0; i < binaryString.length; i++) {
@@ -377,6 +440,10 @@ Keep responses friendly, warm, concise, and natural.`;
     if (workletNode) {
       try { workletNode.disconnect(); } catch(e) {}
       workletNode = null;
+    }
+    if (scriptProcessor) {
+      try { scriptProcessor.disconnect(); } catch(e) {}
+      scriptProcessor = null;
     }
     if (inputAudioContext) {
       try { inputAudioContext.close(); } catch(e) {}
