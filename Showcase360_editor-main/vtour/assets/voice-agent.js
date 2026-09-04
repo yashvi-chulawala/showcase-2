@@ -245,6 +245,9 @@ Keep responses friendly, warm, concise, and natural.`;
         workletNode = new AudioWorkletNode(inputAudioContext, 'pcm-processor');
         workletNode.port.onmessage = (e) => {
           if (isSetupComplete && ws && ws.readyState === WebSocket.OPEN) {
+            // Mute mic streaming while assistant is speaking to prevent echo & double speaking
+            if (state === 'Speaking...' || isGuiding || isSpeakingTTS) return;
+
             const base64Audio = arrayBufferToBase64(e.data);
             ws.send(JSON.stringify({
               realtimeInput: {
@@ -263,6 +266,8 @@ Keep responses friendly, warm, concise, and natural.`;
         scriptProcessor = inputAudioContext.createScriptProcessor(1024, 1, 1);
         scriptProcessor.onaudioprocess = (e) => {
           if (!isSetupComplete || !ws || ws.readyState !== WebSocket.OPEN) return;
+          if (state === 'Speaking...' || isGuiding || isSpeakingTTS) return;
+
           const inputData = e.inputBuffer.getChannelData(0);
           const pcmData = new Int16Array(inputData.length);
           for (let i = 0; i < inputData.length; i++) {
@@ -520,6 +525,12 @@ Keep responses friendly, warm, concise, and natural.`;
     }
   };
 
+  // Timing configuration:
+  const IDLE_TRIGGER_SECONDS = 20; // Tells the user after 20 seconds of staying still
+  const COOLDOWN_SECONDS = 45;     // 45 seconds cooldown before another guide can trigger
+
+  let isGuiding = false;
+  let isSpeakingTTS = false;
   let lastHlookat = null;
   let lastVlookat = null;
   let lastViewMoveTime = Date.now();
@@ -541,6 +552,10 @@ Keep responses friendly, warm, concise, and natural.`;
   window.addEventListener('pointerdown', unlockAudioEngine, { passive: true });
 
   function showHintBubble(text) {
+    if (isSpeakingTTS) return;
+    isSpeakingTTS = true;
+    isGuiding = true;
+
     let bubble = document.getElementById('va-hint-bubble');
     if (!bubble) {
       bubble = document.createElement('div');
@@ -557,7 +572,7 @@ Keep responses friendly, warm, concise, and natural.`;
       textEl.innerText = 'Let me guide you';
     }
     
-    // Proactively speak out loud
+    // Proactively speak out loud once
     if (window.speechSynthesis) {
       try {
         window.speechSynthesis.cancel();
@@ -570,15 +585,27 @@ Keep responses friendly, warm, concise, and natural.`;
         if (preferredVoice) utterance.voice = preferredVoice;
         
         utterance.onend = () => {
+          isSpeakingTTS = false;
+          setTimeout(() => { isGuiding = false; }, 2000);
           if (state === 'Idle' && textEl) {
             textEl.innerText = originalText;
           }
         };
 
+        utterance.onerror = () => {
+          isSpeakingTTS = false;
+          isGuiding = false;
+        };
+
         window.speechSynthesis.speak(utterance);
       } catch (e) {
         console.warn("[Hey 360] Speech synthesis error:", e);
+        isSpeakingTTS = false;
+        isGuiding = false;
       }
+    } else {
+      isSpeakingTTS = false;
+      isGuiding = false;
     }
 
     clearTimeout(bubbleTimeout);
@@ -591,6 +618,8 @@ Keep responses friendly, warm, concise, and natural.`;
   }
 
   function triggerProactiveGuidance(sceneId, reason) {
+    if (isGuiding || isSpeakingTTS || state === 'Speaking...') return;
+
     let attraction = SCENE_ATTRACTIONS[sceneId];
     if (!attraction && sceneId) {
       const lower = sceneId.toLowerCase();
@@ -607,16 +636,17 @@ Keep responses friendly, warm, concise, and natural.`;
       tip = "You're exploring quickly! " + tip;
     }
 
-    // If Gemini Live session is connected, prompt Gemini to speak in its AI voice!
+    // If Gemini Live session is connected, prompt Gemini to speak in its AI voice
     if (ws && ws.readyState === WebSocket.OPEN && isSetupComplete) {
       try {
+        isGuiding = true;
         console.log("[Hey 360] Sending proactive guidance prompt to Gemini Live:", tip);
         ws.send(JSON.stringify({
           clientContent: {
             turns: [
               {
                 role: "user",
-                parts: [{ text: `[PROACTIVE GUIDANCE: The user is in '${attraction ? attraction.name : sceneId}'. Verbally tell them this guidance tip warmly: "${tip}"]` }]
+                parts: [{ text: `[PROACTIVE GUIDANCE: The user is in '${attraction ? attraction.name : sceneId}'. Verbally tell them this guidance tip warmly once: "${tip}"]` }]
               }
             ],
             turnComplete: true
@@ -682,8 +712,8 @@ Keep responses friendly, warm, concise, and natural.`;
       lastViewMoveTime = now;
     }
 
-    // 3. Inactivity / Stuck on scene detection (stuck for 18 seconds without rotating or exploring)
-    if ((now - lastViewMoveTime > 18000) && (now - lastSpokenTipTime > 30000)) {
+    // 3. Inactivity / Stuck on scene detection (20 seconds without rotating or exploring)
+    if ((now - lastViewMoveTime > IDLE_TRIGGER_SECONDS * 1000) && (now - lastSpokenTipTime > COOLDOWN_SECONDS * 1000)) {
       lastSpokenTipTime = now;
       lastViewMoveTime = now;
       triggerProactiveGuidance(currentScene, "idle");
