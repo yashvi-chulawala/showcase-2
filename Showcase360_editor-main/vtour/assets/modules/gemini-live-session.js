@@ -1,7 +1,7 @@
 /**
  * gemini-live-session.js
  * Real-Time Bidirectional Gemini Live API WebSocket Session Manager
- * Includes WebSocket Code 1008 / Tool-calling error handling & fallback
+ * Includes WebSocket Code 1008/1007 handshake guards, tool-calling resilience & fallback
  */
 
 (function(global) {
@@ -22,6 +22,7 @@
       this.silenceTimer = null;
       this.lastToolCallTime = 0;
       this.isConnected = false;
+      this.isSetupComplete = false;
       this.isSpeaking = false;
       this.lastToolCalled = null;
     }
@@ -29,6 +30,7 @@
     async start(token) {
       if (!token) throw new Error("Gemini API token is required");
       this.onStateChange('Connecting...');
+      this.isSetupComplete = false;
 
       try {
         // 1. Get microphone stream (16kHz mono)
@@ -43,7 +45,7 @@
         await this.inputAudioContext.audioWorklet.addModule('assets/pcm-processor.js');
 
         // 3. Connect WebSocket to Gemini Live API
-        const activeModel = global.VOICE_CONFIG ? global.VOICE_CONFIG.getActiveModel() : 'models/gemini-2.5-flash-native-audio-preview-12-2025';
+        const activeModel = global.VOICE_CONFIG ? global.VOICE_CONFIG.getActiveModel() : 'models/gemini-2.0-flash-exp';
         const voiceName = global.VOICE_CONFIG ? global.VOICE_CONFIG.VOICE_NAME : 'Aoede';
 
         console.log(`[Hey 360 Gemini Live] Opening session with model: ${activeModel}, voice: ${voiceName}`);
@@ -80,7 +82,8 @@
         this.workletNode = new AudioWorkletNode(this.inputAudioContext, 'pcm-processor');
 
         this.workletNode.port.onmessage = (e) => {
-          if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+          // CRITICAL: Only send audio chunks AFTER handshake setupComplete is received!
+          if (this.isSetupComplete && this.ws && this.ws.readyState === WebSocket.OPEN) {
             const pcmData = new Int16Array(e.data);
             const base64Audio = this.arrayBufferToBase64(pcmData.buffer);
 
@@ -110,7 +113,6 @@
 
     sendInitialSetup(model, voiceName) {
       const sceneListText = global.KrpanoBridge ? global.KrpanoBridge.getSceneListForPrompt() : '';
-      const sceneIds = global.KrpanoBridge ? global.KrpanoBridge.getSceneIdsForSchema() : [];
 
       const systemPrompt = `You are Hey 360, a warm, polite, and helpful voice guide inside a 360 virtual tour.
 Your job is understanding spoken navigation requests and confirming them warmly and concisely.
@@ -139,8 +141,7 @@ Instructions:
                     properties: {
                       scene_id: {
                         type: "STRING",
-                        description: "The scene ID or name of the destination in the virtual tour",
-                        ...(sceneIds.length > 0 ? { enum: sceneIds } : {})
+                        description: "The scene ID or name of the destination in the virtual tour"
                       }
                     },
                     required: ["scene_id"]
@@ -170,7 +171,8 @@ Instructions:
       this.resetSilenceTimer();
 
       if (msg.setupComplete) {
-        console.log('[Hey 360 Gemini Live] Session ready and listening');
+        console.log('[Hey 360 Gemini Live] Setup completed by server. Now streaming audio...');
+        this.isSetupComplete = true;
         this.onStateChange('Listening...');
       }
 
@@ -241,18 +243,16 @@ Instructions:
 
     handleSocketClose(evt) {
       this.isConnected = false;
+      this.isSetupComplete = false;
       const timeSinceTool = Date.now() - this.lastToolCallTime;
 
       if (evt.code === 1008 || (timeSinceTool < 2000 && this.lastToolCalled)) {
-        console.warn(`[Hey 360 Gemini Live] Abnormal closure (Code: ${evt.code}, Reason: "${evt.reason}") during/after function call.`, 
-          'Triggering resilient fallback navigation.');
-        
-        // If navigation didn't execute, execute fallback resolution immediately
+        console.warn(`[Hey 360 Gemini Live] Socket closure (Code: ${evt.code}). Triggering fallback.`);
         if (this.lastToolCalled && global.KrpanoBridge) {
           global.KrpanoBridge.navigateToScene(this.lastToolCalled.args.scene_id || this.lastToolCalled.args.destination);
         }
       } else {
-        console.log(`[Hey 360 Gemini Live] WebSocket session ended cleanly (Code: ${evt.code})`);
+        console.log(`[Hey 360 Gemini Live] WebSocket session ended (Code: ${evt.code})`);
       }
 
       this.cleanup();
@@ -333,6 +333,7 @@ Instructions:
     }
 
     cleanup() {
+      this.isSetupComplete = false;
       if (this.silenceTimer) clearTimeout(this.silenceTimer);
       if (this.workletNode) {
         try { this.workletNode.disconnect(); } catch(e) {}

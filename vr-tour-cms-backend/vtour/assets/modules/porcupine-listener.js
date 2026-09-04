@@ -1,6 +1,6 @@
 /**
  * porcupine-listener.js
- * On-Device Wake-Word Detection using Picovoice Porcupine Web SDK with fallback
+ * On-Device Wake-Word Detection using Picovoice Porcupine Web SDK with throttled fallback
  */
 
 (function(global) {
@@ -13,6 +13,7 @@
       
       this.porcupineWorker = null;
       this.webVoiceListener = null;
+      this.restartTimer = null;
       this.isListening = false;
       this.isPaused = false;
       this.useFallback = false;
@@ -36,11 +37,11 @@
           console.log('[Hey 360 Porcupine] Porcupine Worker initialized successfully.');
           return true;
         } catch (err) {
-          console.warn('[Hey 360 Porcupine] Porcupine initialization failed, switching to continuous wake fallback:', err.message);
+          console.warn('[Hey 360 Porcupine] Porcupine initialization notice, using wake fallback:', err.message);
         }
       }
 
-      // 2. Setup Lightweight On-Device WebSpeech / Audio Wake Word Listener Fallback
+      // 2. Setup Lightweight On-Device WebSpeech Wake Word Listener Fallback
       this.setupFallbackWakeListener();
       return true;
     }
@@ -69,20 +70,25 @@
 
           rec.onend = () => {
             if (this.isListening && !this.isPaused) {
-              try { rec.start(); } catch(e) {}
+              if (this.restartTimer) clearTimeout(this.restartTimer);
+              this.restartTimer = setTimeout(() => {
+                if (this.isListening && !this.isPaused) {
+                  try { rec.start(); } catch(e) {}
+                }
+              }, 1200);
             }
           };
 
           rec.onerror = (e) => {
-            if (e.error !== 'no-speech') {
-              console.warn('[Hey 360 Wake] Speech recognition notice:', e.error);
+            if (e.error !== 'no-speech' && e.error !== 'network') {
+              console.warn('[Hey 360 Wake] Status notice:', e.error);
             }
           };
 
           this.webVoiceListener = rec;
           console.log('[Hey 360 Wake] Wake listener ready.');
         } catch (e) {
-          console.warn('[Hey 360 Wake] SpeechRecognition unavailable:', e);
+          console.warn('[Hey 360 Wake] SpeechRecognition notice:', e);
         }
       }
     }
@@ -99,7 +105,6 @@
 
       if (this.porcupineWorker) {
         try {
-          // Resume Porcupine audio capture
           this.porcupineWorker.postMessage({ command: "resume" });
         } catch(e) {}
       } else if (this.webVoiceListener) {
@@ -111,6 +116,7 @@
 
     pause() {
       this.isPaused = true;
+      if (this.restartTimer) clearTimeout(this.restartTimer);
       if (this.porcupineWorker) {
         try {
           this.porcupineWorker.postMessage({ command: "pause" });
@@ -142,6 +148,7 @@
     stop() {
       this.isListening = false;
       this.isPaused = false;
+      if (this.restartTimer) clearTimeout(this.restartTimer);
       this.onStatusChange('Idle');
 
       if (this.porcupineWorker) {
