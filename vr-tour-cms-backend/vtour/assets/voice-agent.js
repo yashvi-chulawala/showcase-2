@@ -480,5 +480,145 @@ Keep responses friendly, warm, concise, and natural.`;
     }
     return window.btoa(binary);
   }
+
+  // --- Proactive Guidance for Idle / Stuck / Random Navigation ---
+  const SCENE_ATTRACTIONS = {
+    scene_DJI_20251222160517_0128_D_equi: {
+      name: "Left View",
+      tip: "Look at your left, it's a beautiful lake view you can explore! You can also check out the connected central viewpoints."
+    },
+    scene_DJI_20251222160749_0129_D_equi: {
+      name: "Back View",
+      tip: "Take a look around to your right to see the main property layout and connected vistas."
+    },
+    scene_DJI_20251222162034_0135_D_equi: {
+      name: "Right View",
+      tip: "Look ahead and to your left to explore the scenic surroundings, or click the navigation markers to move ahead!"
+    },
+    scene_vesu_1_1: {
+      name: "Vesu 1",
+      tip: "Here at Vesu 1, glance over to your left to see the scenic landscape, or follow the path ahead!"
+    },
+    scene_vesu_16_1: {
+      name: "Vesu 16",
+      tip: "At Vesu 16, look around at the open courtyard area and connected pathways."
+    },
+    scene_vesu_5_1: {
+      name: "Vesu 5",
+      tip: "Look to your left at the beautiful surrounding views, or tap on the navigation markers to proceed."
+    },
+    scene_vesu_7_1: {
+      name: "Vesu 7",
+      tip: "Here at Vesu 7, take in the wide open perspective, or move towards the adjacent views."
+    },
+    scene_vesu_2_1: {
+      name: "Vesu 2",
+      tip: "At Vesu 2, look to your side to explore the lush landscape and panoramic views."
+    }
+  };
+
+  let lastActivityTime = Date.now();
+  let lastSpokenTipTime = 0;
+  let lastSceneName = '';
+  let sceneSwitchTimes = [];
+  let bubbleTimeout = null;
+
+  function recordActivity() {
+    lastActivityTime = Date.now();
+  }
+
+  ['pointermove', 'pointerdown', 'touchstart', 'keydown', 'wheel'].forEach(evt => {
+    window.addEventListener(evt, recordActivity, { passive: true });
+  });
+
+  function showHintBubble(text) {
+    let bubble = document.getElementById('va-hint-bubble');
+    if (!bubble) {
+      bubble = document.createElement('div');
+      bubble.id = 'va-hint-bubble';
+      bubble.className = 'va-hint-bubble';
+      document.body.appendChild(bubble);
+    }
+    bubble.innerHTML = `<span class="va-hint-icon">💡</span> <span class="va-hint-text">${text}</span>`;
+    bubble.classList.add('visible');
+    
+    // Proactively speak out loud
+    if (window.speechSynthesis) {
+      try {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 0.95;
+        utterance.pitch = 1.05;
+        const voices = window.speechSynthesis.getVoices();
+        const preferredVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Female') || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Zira')));
+        if (preferredVoice) utterance.voice = preferredVoice;
+        window.speechSynthesis.speak(utterance);
+      } catch (e) {
+        console.warn("[Hey 360] Speech synthesis error:", e);
+      }
+    }
+
+    clearTimeout(bubbleTimeout);
+    bubbleTimeout = setTimeout(() => {
+      bubble.classList.remove('visible');
+    }, 8500);
+  }
+
+  function triggerProactiveGuidance(sceneId, reason) {
+    let attraction = SCENE_ATTRACTIONS[sceneId];
+    if (!attraction && sceneId) {
+      const lower = sceneId.toLowerCase();
+      for (const [k, v] of Object.entries(SCENE_ATTRACTIONS)) {
+        if (lower.includes(k.toLowerCase()) || k.toLowerCase().includes(lower)) {
+          attraction = v;
+          break;
+        }
+      }
+    }
+
+    let tip = attraction ? attraction.tip : "Look at your left and right to explore the beautiful scenic views, or click on navigation markers to explore!";
+    if (reason === "random") {
+      tip = "You're exploring fast! " + tip;
+    }
+    showHintBubble(tip);
+  }
+
+  // Monitor idle state and rapid disconnected navigation
+  setInterval(() => {
+    if (!window.krpano) return;
+    
+    let currentScene;
+    try {
+      currentScene = window.krpano.get('xml.scene');
+    } catch(e) { return; }
+
+    if (!currentScene) return;
+
+    const now = Date.now();
+
+    // Scene transition detection
+    if (currentScene !== lastSceneName) {
+      lastSceneName = currentScene;
+      lastActivityTime = now;
+      sceneSwitchTimes.push(now);
+      if (sceneSwitchTimes.length > 4) sceneSwitchTimes.shift();
+
+      // Check for rapid random navigation (3+ switches within 10s)
+      if (sceneSwitchTimes.length >= 3 && (now - sceneSwitchTimes[0]) < 10000) {
+        if (now - lastSpokenTipTime > 45000) {
+          lastSpokenTipTime = now;
+          triggerProactiveGuidance(currentScene, "random");
+        }
+      }
+      return;
+    }
+
+    // Inactivity / Stuck on scene detection (stuck for 45s without interaction)
+    if ((now - lastActivityTime > 45000) && (now - lastSpokenTipTime > 60000)) {
+      lastSpokenTipTime = now;
+      lastActivityTime = now;
+      triggerProactiveGuidance(currentScene, "idle");
+    }
+  }, 3000);
   
 })();
