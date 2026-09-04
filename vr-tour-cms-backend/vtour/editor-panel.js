@@ -311,6 +311,7 @@ async function loadTourData() {
 
     renderMediaScenes();
     renderMediaIcons();
+    renderMediaAssets();
     renderScenes();
     updateBadges();
 
@@ -361,6 +362,7 @@ function switchMainPage(page) {
 
     renderMediaScenes();
     renderMediaIcons();
+    renderMediaAssets();
     updateBadges();
   } else if (page === 'hotspot') {
     if (btnHotspot) btnHotspot.classList.add('active');

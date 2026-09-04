@@ -462,6 +462,37 @@ function listAssets(tourId = activeTourId) {
     }
   }
 
+  // Fallback: check vtour/assets and other data projects if list is still empty
+  if (assets.length === 0) {
+    const fallbackDirs = [
+      path.join(__dirname, '../vtour/assets'),
+      path.join(__dirname, '../data/City tour demo/assets'),
+      path.join(__dirname, '../data/City tour/assets')
+    ];
+    for (const fDir of fallbackDirs) {
+      if (fs.existsSync(fDir)) {
+        try {
+          const files = fs.readdirSync(fDir);
+          for (const file of files) {
+            const ext = path.extname(file).toLowerCase();
+            if (['.png', '.jpg', '.jpeg', '.webp', '.svg', '.gif'].includes(ext)) {
+              const exists = assets.some(a => a.name === file || a.url === `assets/${file}` || a.url === file);
+              if (!exists) {
+                assets.push({
+                  _id: generateId(),
+                  tourId: tourId || activeTourId,
+                  name: file,
+                  url: `assets/${file}`,
+                  createdAt: new Date().toISOString()
+                });
+              }
+            }
+          }
+        } catch(e) {}
+      }
+    }
+  }
+
   return assets;
 }
 

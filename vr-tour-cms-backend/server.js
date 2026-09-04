@@ -143,11 +143,24 @@ function sendStaticFile(res, filePath) {
   return res.sendFile(path.resolve(filePath));
 }
 
+function getEffectiveTourDir(req) {
+  let tourId = null;
+  if (req.query && req.query.tour) {
+    tourId = req.query.tour;
+  } else if (req.headers && req.headers.referer) {
+    try {
+      const refUrl = new URL(req.headers.referer);
+      tourId = refUrl.searchParams.get('tour');
+    } catch(e) {}
+  }
+  if (!tourId) tourId = db.getActiveTour();
+  return db.resolveTourPath(tourId);
+}
+
 // Dynamic serving for panos, src, and assets with smart fallback across all data/ projects
-app.use('/panos', (req, res, next) => {
+app.use(['/panos', '/vtour/panos', '/vtour/src/panos'], (req, res, next) => {
   const relPath = decodeURIComponent(req.path.replace(/^\//, ''));
-  const activeTourId = db.getActiveTour();
-  const tourDir = db.resolveTourPath(activeTourId);
+  const tourDir = getEffectiveTourDir(req);
 
   if (tourDir) {
     const activeFile = path.join(tourDir, 'panos', relPath);
@@ -179,10 +192,9 @@ app.use('/panos', (req, res, next) => {
   next();
 });
 
-app.use('/src', (req, res, next) => {
+app.use(['/src', '/vtour/src'], (req, res, next) => {
   const relPath = decodeURIComponent(req.path.replace(/^\//, ''));
-  const activeTourId = db.getActiveTour();
-  const tourDir = db.resolveTourPath(activeTourId);
+  const tourDir = getEffectiveTourDir(req);
 
   if (tourDir) {
     const activeFile = path.join(tourDir, 'src', relPath);
@@ -214,10 +226,9 @@ app.use('/src', (req, res, next) => {
   next();
 });
 
-app.use('/assets', (req, res, next) => {
+app.use(['/assets', '/vtour/assets', '/vtour/src/assets'], (req, res, next) => {
   const relPath = decodeURIComponent(req.path.replace(/^\//, ''));
-  const activeTourId = db.getActiveTour();
-  const tourDir = db.resolveTourPath(activeTourId);
+  const tourDir = getEffectiveTourDir(req);
 
   if (tourDir) {
     const activeFile = path.join(tourDir, 'assets', relPath);
