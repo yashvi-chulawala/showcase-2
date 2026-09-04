@@ -4,6 +4,7 @@
   let outputAudioContext = null;
   let mediaStream = null;
   let workletNode = null;
+  let isSetupComplete = false;
   
   let playbackQueue = [];
   let nextPlayTime = 0;
@@ -85,10 +86,18 @@ Keep responses concise and natural because the interaction is voice-based.`;
   async function startAgent() {
     try {
       updateState('Connecting...');
+      isSetupComplete = false;
       
       // 1. Get Microphone permission
       try {
-        mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaStream = await navigator.mediaDevices.getUserMedia({ 
+          audio: {
+            channelCount: 1,
+            sampleRate: 16000,
+            echoCancellation: true,
+            noiseSuppression: true
+          }
+        });
       } catch (e) {
         alert("Microphone access is required to use Hey 360.\nPlease allow microphone access and try again.");
         updateState('Error');
@@ -100,13 +109,19 @@ Keep responses concise and natural because the interaction is voice-based.`;
       if (!tokenRes.ok) throw new Error("Gemini token failure");
       const { token } = await tokenRes.json();
       
-      if (!token) throw new Error("Missing token");
+      if (!token || token === 'your_gemini_api_key_here') {
+        alert("Unable to connect to Hey 360.\nPlease ensure a valid GEMINI_API_KEY is configured in your Render environment.");
+        updateState('Error');
+        return;
+      }
       
-      // 3. Initialize WebSockets
-      const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${token}`;
+      // 3. Initialize WebSockets (v1beta BidiGenerateContent)
+      const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${token}`;
+      console.log('[Hey 360] Connecting to Gemini Live WebSocket...');
       ws = new WebSocket(wsUrl);
       
       ws.onopen = () => {
+        console.log('[Hey 360] WebSocket Connected! Sending setup payload...');
         // Send initial setup
         ws.send(JSON.stringify({
           setup: {
@@ -162,11 +177,11 @@ Keep responses concise and natural because the interaction is voice-based.`;
       };
       
       ws.onerror = (e) => {
-        console.error("Voice connection lost", e);
-        stopAgent();
+        console.error("[Hey 360] Voice connection error:", e);
       };
       
-      ws.onclose = () => {
+      ws.onclose = (evt) => {
+        console.warn("[Hey 360] WebSocket closed. Code:", evt.code, "Reason:", evt.reason);
         stopAgent();
       };
       
@@ -178,7 +193,8 @@ Keep responses concise and natural because the interaction is voice-based.`;
       workletNode = new AudioWorkletNode(inputAudioContext, 'pcm-processor');
       
       workletNode.port.onmessage = (e) => {
-        if (ws && ws.readyState === WebSocket.OPEN) {
+        // Only stream audio AFTER setup handshake is completed!
+        if (isSetupComplete && ws && ws.readyState === WebSocket.OPEN) {
           const pcmData = new Int16Array(e.data);
           const base64Audio = arrayBufferToBase64(pcmData.buffer);
           
@@ -200,8 +216,8 @@ Keep responses concise and natural because the interaction is voice-based.`;
       outputAudioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
       
     } catch (e) {
-      console.error(e);
-      alert("Unable to connect to Hey 360.\nPlease ensure GEMINI_API_KEY is configured.");
+      console.error("[Hey 360 Error]:", e);
+      alert("Unable to connect to Hey 360.\n" + (e.message || "Please check your network and API key."));
       updateState('Error');
     }
   }
@@ -211,10 +227,13 @@ Keep responses concise and natural because the interaction is voice-based.`;
     
     if (msg.error) {
       console.error("Gemini Error:", msg.error);
+      alert("Hey 360 Error: " + (msg.error.message || JSON.stringify(msg.error)));
       return;
     }
     
     if (msg.setupComplete) {
+      console.log("[Hey 360] Setup complete! Listening for voice input...");
+      isSetupComplete = true;
       updateState('Listening...');
     }
     
@@ -252,7 +271,7 @@ Keep responses concise and natural because the interaction is voice-based.`;
       let destinationId = funcCall.args ? funcCall.args.destination : null;
       console.log("Destination requested:", destinationId);
       
-      // Fuzzy matching to handle potential model errors
+      // Fuzzy matching to handle potential model variations
       if (destinationId && !DESTINATION_REGISTRY[destinationId]) {
         destinationId = destinationId.toLowerCase().replace(/\s+/g, '_');
       }
@@ -261,7 +280,7 @@ Keep responses concise and natural because the interaction is voice-based.`;
       let errorMessage = "Destination unavailable";
       
       const dest = DESTINATION_REGISTRY[destinationId];
-      const targetSceneId = dest ? dest.sceneId : (destinationId.startsWith('scene_') ? destinationId : `scene_${destinationId}`);
+      const targetSceneId = dest ? dest.sceneId : (destinationId && destinationId.startsWith('scene_') ? destinationId : `scene_${destinationId}`);
 
       if (window.krpano) {
         try {
@@ -349,20 +368,21 @@ Keep responses concise and natural because the interaction is voice-based.`;
   }
   
   function stopAgent() {
+    isSetupComplete = false;
     if (ws) {
-      ws.close();
+      try { ws.close(); } catch(e) {}
       ws = null;
     }
     if (workletNode) {
-      workletNode.disconnect();
+      try { workletNode.disconnect(); } catch(e) {}
       workletNode = null;
     }
     if (inputAudioContext) {
-      inputAudioContext.close();
+      try { inputAudioContext.close(); } catch(e) {}
       inputAudioContext = null;
     }
     if (outputAudioContext) {
-      outputAudioContext.close();
+      try { outputAudioContext.close(); } catch(e) {}
       outputAudioContext = null;
     }
     if (mediaStream) {
