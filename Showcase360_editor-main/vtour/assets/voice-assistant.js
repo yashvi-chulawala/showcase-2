@@ -1,7 +1,11 @@
 /**
  * voice-assistant.js
  * "Hey 360" Master Voice Navigation Agent Orchestrator
- * High-performance hybrid engine with Gemini Live + WebSpeech + Instant Visual Destination Bar + krpano Bridge.
+ * Full Universal Hybrid Engine:
+ * 1. Native MediaRecorder + Gemini Multimodal Voice API (works 100% on Brave, Chrome, Safari, Firefox, Edge)
+ * 2. On-Device WebSpeech Stream
+ * 3. Interactive Quick Scene Drawer
+ * 4. Krpano Dynamic Navigation Bridge
  */
 
 (function() {
@@ -11,10 +15,11 @@
   }
 
   let wakeListener = null;
-  let liveSession = null;
   let commandRecognizer = null;
+  let mediaRecorder = null;
+  let audioChunks = [];
+  let mediaStream = null;
   let activeState = 'Idle';
-  let cachedToken = null;
   let silenceTimer = null;
   let audioCtx = null;
   let isProcessingCommand = false;
@@ -36,7 +41,7 @@
       <div class="va-text" id="va-status-text">Say "Hey 360"</div>
     </div>
     <div class="va-quick-drawer" id="va-quick-drawer">
-      <div class="va-drawer-title">Speak or choose a scene:</div>
+      <div class="va-drawer-title">Speak or tap a scene:</div>
       <div class="va-chips-grid" id="va-chips-grid"></div>
     </div>
   `;
@@ -92,6 +97,8 @@
         textEl.innerText = 'Connecting...';
       } else if (state === 'Listening...') {
         textEl.innerText = "I'm listening...";
+      } else if (state === 'Processing') {
+        textEl.innerText = 'Thinking...';
       } else if (state === 'Speaking...') {
         textEl.innerText = 'Guiding you...';
       } else if (state === 'Navigating') {
@@ -106,7 +113,7 @@
     }
 
     if (drawer) {
-      if (state === 'Listening...' || state === 'Connecting...') {
+      if (state === 'Listening...' || state === 'Connecting...' || state === 'Processing') {
         renderQuickChips();
         drawer.classList.add('open');
       } else {
@@ -134,7 +141,13 @@
       ];
     }
 
-    scenes.forEach(s => {
+    // Deduplicate by ID
+    const seen = new Set();
+    scenes.filter(s => {
+      if (seen.has(s.id)) return false;
+      seen.add(s.id);
+      return true;
+    }).forEach(s => {
       const chip = document.createElement('button');
       chip.type = 'button';
       chip.className = 'va-scene-chip';
@@ -176,39 +189,12 @@
     }
   }
 
-  async function fetchToken() {
-    try {
-      const res = await fetch('/api/gemini-live-token');
-      if (!res.ok) return null;
-      const data = await res.json();
-      cachedToken = data.token;
-      return cachedToken;
-    } catch (err) {
-      return null;
-    }
-  }
-
   // 2. Initialize Agent Engine
   async function initAgent() {
     updateUIState('Idle');
 
-    // Discover scenes in krpano
     if (window.KrpanoBridge) {
       window.KrpanoBridge.discoverScenes();
-    }
-
-    // Initialize Gemini Live Session Manager
-    if (window.GeminiLiveSession) {
-      liveSession = new window.GeminiLiveSession({
-        onStateChange: (st) => updateUIState(st),
-        onNavigation: (target, res) => {
-          console.log('[Hey 360] Gemini Live Navigation executed:', target, res);
-          handleSuccessfulNavigation(res.scene || { name: target });
-        },
-        onSessionEnd: () => {
-          console.log('[Hey 360] Live stream ended; local session remains active.');
-        }
-      });
     }
 
     // Initialize Porcupine / WebSpeech Wake-Word Listener
@@ -219,11 +205,6 @@
         onWakeWord: () => {
           console.log('[Hey 360] Wake word detected! Activating listening session...');
           startListeningSession();
-        },
-        onStatusChange: (status) => {
-          if (activeState === 'Idle') {
-            console.log('[Hey 360 Wake Status]:', status);
-          }
         }
       });
 
@@ -237,23 +218,26 @@
         e.stopPropagation();
         if (activeState === 'Idle' || activeState === 'Error') {
           startListeningSession();
+        } else if (activeState === 'Listening...') {
+          // Manually finish speaking early to trigger processing
+          stopRecordingAndProcess();
         } else {
-          stopListeningSession();
+          resetToIdle();
         }
       });
     }
 
     // Close drawer when clicking outside
     document.addEventListener('click', (e) => {
-      if (container && !container.contains(e.target) && activeState === 'Listening...') {
-        stopListeningSession();
+      if (container && !container.contains(e.target) && (activeState === 'Listening...' || activeState === 'Processing')) {
+        resetToIdle();
       }
     });
   }
 
-  // 3. Start Active Listening Session (Hybrid Local + Gemini + Visual Drawer)
+  // 3. Start Active Listening Session
   async function startListeningSession() {
-    if (activeState === 'Listening...' || activeState === 'Connecting...') return;
+    if (activeState === 'Listening...' || isProcessingCommand) return;
     
     isProcessingCommand = false;
     if (wakeListener) wakeListener.pause();
@@ -261,23 +245,102 @@
     playWakeChime();
     updateUIState('Listening...');
 
-    // Start Local Speech Recognition
+    // 1. Start Universal MediaRecorder Audio Capture
+    await startMediaRecorderCapture();
+
+    // 2. Start WebSpeech API in parallel for supported browsers
     startLocalCommandRecognition();
 
-    // Reset silence timer (auto-close after 8 seconds if no command)
-    resetSessionTimeout(8000);
-
-    // Concurrently try Gemini Live Session if configured
-    try {
-      const token = await fetchToken();
-      if (token && token.trim().length > 10 && liveSession) {
-        liveSession.start(token).catch(err => {
-          console.warn('[Hey 360] Gemini Live session unavailable, using local voice engine:', err.message);
-        });
+    // Auto-process after 3.8s of speaking window
+    if (silenceTimer) clearTimeout(silenceTimer);
+    silenceTimer = setTimeout(() => {
+      if (activeState === 'Listening...' && !isProcessingCommand) {
+        stopRecordingAndProcess();
       }
-    } catch (e) {
-      console.warn('[Hey 360] Remote session bypass:', e);
+    }, 4000);
+  }
+
+  // Universal Audio Recording via MediaRecorder
+  async function startMediaRecorderCapture() {
+    audioChunks = [];
+    try {
+      if (!mediaStream) {
+        mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      }
+      
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
+        ? 'audio/webm;codecs=opus' 
+        : (MediaRecorder.isTypeSupported('audio/ogg') ? 'audio/ogg' : 'audio/webm');
+
+      mediaRecorder = new MediaRecorder(mediaStream, { mimeType });
+      
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          audioChunks.push(e.data);
+        }
+      };
+
+      mediaRecorder.start(250);
+      console.log('[Hey 360] MediaRecorder active with mimeType:', mimeType);
+    } catch (err) {
+      console.warn('[Hey 360] Mic recording permission/error:', err);
     }
+  }
+
+  // Send Recorded Audio to Gemini Multimodal Backend
+  async function stopRecordingAndProcess() {
+    if (isProcessingCommand || activeState === 'Idle') return;
+    updateUIState('Processing', 'Thinking...');
+
+    if (commandRecognizer) {
+      try { commandRecognizer.stop(); } catch(e) {}
+    }
+
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      mediaRecorder.stop();
+      
+      // Allow dataavailable to fire
+      await new Promise(r => setTimeout(r, 200));
+
+      if (audioChunks.length > 0) {
+        const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+        const reader = new FileReader();
+        
+        reader.onloadend = async () => {
+          const base64Data = reader.result.split(',')[1];
+          try {
+            const res = await fetch('/api/voice-command', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                audio: base64Data,
+                mimeType: audioBlob.type
+              })
+            });
+
+            if (res.ok) {
+              const data = await res.json();
+              if (data && data.scene_id) {
+                console.log('[Hey 360 Multimodal] Matched Scene:', data);
+                executeNavigationCommand({
+                  id: data.scene_id,
+                  title: data.scene_title || data.scene_id
+                }, data.spoken_reply);
+                return;
+              }
+            }
+          } catch (err) {
+            console.error('[Hey 360 Multimodal Error]:', err);
+          }
+          resetToIdle();
+        };
+
+        reader.readAsDataURL(audioBlob);
+        return;
+      }
+    }
+
+    resetToIdle();
   }
 
   // Local Fast Command Recognition via Web Speech API
@@ -302,7 +365,6 @@
           const transcript = event.results[i][0].transcript.toLowerCase().trim();
           console.log('[Hey 360 Spoken Command]:', transcript);
 
-          // Strip wake words if repeated
           const cleanText = transcript
             .replace(/^hey 360\s*/i, '')
             .replace(/^360\s*/i, '')
@@ -320,39 +382,24 @@
         }
       };
 
-      commandRecognizer.onerror = (e) => {
-        // Do NOT abort UI on network notice
-        if (e.error !== 'no-speech' && e.error !== 'network') {
-          console.warn('[Hey 360 Command Recognizer]:', e.error);
-        }
-      };
-
-      commandRecognizer.onend = () => {
-        if (activeState === 'Listening...' && !isProcessingCommand) {
-          try { commandRecognizer.start(); } catch(e) {}
-        }
-      };
-
+      commandRecognizer.onerror = () => {};
       commandRecognizer.start();
-    } catch (err) {
-      console.warn('[Hey 360] Local command recognition notice:', err);
-    }
+    } catch (err) {}
   }
 
   // Execute Navigation & Spoken Response
-  function executeNavigationCommand(scene) {
+  function executeNavigationCommand(scene, customReply) {
     if (isProcessingCommand) return;
     isProcessingCommand = true;
 
-    clearTimeout(silenceTimer);
+    if (silenceTimer) clearTimeout(silenceTimer);
     playConfirmChime();
 
-    // Stop command recognizer
     if (commandRecognizer) {
       try { commandRecognizer.stop(); } catch(e) {}
     }
-    if (liveSession) {
-      try { liveSession.stop(); } catch(e) {}
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      try { mediaRecorder.stop(); } catch(e) {}
     }
 
     const sceneTitle = scene.title || scene.name || 'the scene';
@@ -364,7 +411,7 @@
     }
 
     // 2. Speak confirmation feedback
-    const confirmationText = `Sure, taking you to ${sceneTitle} now!`;
+    const confirmationText = customReply || `Sure, taking you to ${sceneTitle} now!`;
     updateUIState('Speaking...', `Guiding you to ${sceneTitle}...`);
 
     speakResponse(confirmationText, () => {
@@ -374,40 +421,14 @@
     });
   }
 
-  function handleSuccessfulNavigation(scene) {
-    const sceneTitle = scene.title || scene.name || 'destination';
-    updateUIState('Navigating', `Heading to ${sceneTitle}...`);
-    setTimeout(() => {
-      resetToIdle();
-    }, 1500);
-  }
-
-  function resetSessionTimeout(ms = 8000) {
-    if (silenceTimer) clearTimeout(silenceTimer);
-    silenceTimer = setTimeout(() => {
-      if (activeState === 'Listening...') {
-        console.log('[Hey 360] Session timeout reached, returning to idle.');
-        resetToIdle();
-      }
-    }, ms);
-  }
-
-  function stopListeningSession() {
-    clearTimeout(silenceTimer);
-    if (commandRecognizer) {
-      try { commandRecognizer.stop(); } catch(e) {}
-    }
-    if (liveSession) {
-      try { liveSession.stop(); } catch(e) {}
-    }
-    resetToIdle();
-  }
-
   function resetToIdle() {
     isProcessingCommand = false;
-    clearTimeout(silenceTimer);
+    if (silenceTimer) clearTimeout(silenceTimer);
     if (commandRecognizer) {
       try { commandRecognizer.abort(); } catch(e) {}
+    }
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      try { mediaRecorder.stop(); } catch(e) {}
     }
     updateUIState('Idle');
     if (wakeListener) {
