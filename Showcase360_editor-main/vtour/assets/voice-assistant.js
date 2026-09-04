@@ -1,7 +1,7 @@
 /**
  * voice-assistant.js
  * "Hey 360" Master Voice Navigation Agent Orchestrator
- * High-performance hybrid engine with Gemini Live API + Native Speech Recognition + krpano Bridge.
+ * High-performance hybrid engine with Gemini Live + WebSpeech + Instant Visual Destination Bar + krpano Bridge.
  */
 
 (function() {
@@ -19,22 +19,32 @@
   let audioCtx = null;
   let isProcessingCommand = false;
 
-  // 1. Build Floating UI Pill Widget
-  const btn = document.createElement('div');
-  btn.id = 'hey-360-btn';
-  btn.className = 'hey-360-btn state-idle';
-  
-  btn.innerHTML = `
-    <div class="va-logo-wrapper">
-      <img src="assets/360 Eye Logo.png" class="va-logo" alt="360 Eye" onerror="this.style.display='none'">
+  // 1. Build Floating UI Pill & Quick Drawer Widget
+  const container = document.createElement('div');
+  container.id = 'hey-360-container';
+  container.className = 'hey-360-container';
+
+  container.innerHTML = `
+    <div class="hey-360-btn state-idle" id="hey-360-btn">
+      <div class="va-logo-wrapper">
+        <img src="assets/360 Eye Logo.png" class="va-logo" alt="360 Eye" onerror="this.style.display='none'">
+      </div>
+      <div class="va-orbital">
+        <div class="va-ring"></div>
+        <div class="va-center">360&deg;</div>
+      </div>
+      <div class="va-text" id="va-status-text">Say "Hey 360"</div>
     </div>
-    <div class="va-orbital">
-      <div class="va-ring"></div>
-      <div class="va-center">360&deg;</div>
+    <div class="va-quick-drawer" id="va-quick-drawer">
+      <div class="va-drawer-title">Speak or choose a scene:</div>
+      <div class="va-chips-grid" id="va-chips-grid"></div>
     </div>
-    <div class="va-text" id="va-status-text">Say "Hey 360"</div>
   `;
-  document.body.appendChild(btn);
+  document.body.appendChild(container);
+
+  const btn = document.getElementById('hey-360-btn');
+  const drawer = document.getElementById('va-quick-drawer');
+  const chipsGrid = document.getElementById('va-chips-grid');
 
   // Audio Chime Feedback Helper
   function playTone(freq1, freq2, duration = 0.08) {
@@ -91,7 +101,50 @@
       }
     }
     
-    btn.className = `hey-360-btn state-${state.toLowerCase().replace(/[^a-z]/g, '')}`;
+    if (btn) {
+      btn.className = `hey-360-btn state-${state.toLowerCase().replace(/[^a-z]/g, '')}`;
+    }
+
+    if (drawer) {
+      if (state === 'Listening...' || state === 'Connecting...') {
+        renderQuickChips();
+        drawer.classList.add('open');
+      } else {
+        drawer.classList.remove('open');
+      }
+    }
+  }
+
+  function renderQuickChips() {
+    if (!chipsGrid) return;
+    chipsGrid.innerHTML = '';
+    
+    let scenes = [];
+    if (window.KrpanoBridge && window.KrpanoBridge.scenes && window.KrpanoBridge.scenes.length > 0) {
+      scenes = window.KrpanoBridge.scenes;
+    } else {
+      scenes = [
+        { id: "scene_vesu_5_1", title: "Vesu 5" },
+        { id: "scene_vesu_16_1", title: "Vesu 16" },
+        { id: "scene_vesu_1_1", title: "Vesu 1" },
+        { id: "scene_vesu_7_1", title: "Vesu 7" },
+        { id: "scene_vesu_2_1", title: "Vesu 2" },
+        { id: "scene_DJI_20251222160517_0128_D_equi", title: "Left View" },
+        { id: "scene_DJI_20251222160749_0129_D_equi", title: "Back View" }
+      ];
+    }
+
+    scenes.forEach(s => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'va-scene-chip';
+      chip.innerText = `📍 ${s.title || s.name || s.id}`;
+      chip.addEventListener('click', (e) => {
+        e.stopPropagation();
+        executeNavigationCommand(s);
+      });
+      chipsGrid.appendChild(chip);
+    });
   }
 
   // Spoken TTS Confirmation Helper
@@ -153,7 +206,7 @@
           handleSuccessfulNavigation(res.scene || { name: target });
         },
         onSessionEnd: () => {
-          console.log('[Hey 360] Gemini Live stream closed; local speech recognizer active.');
+          console.log('[Hey 360] Live stream ended; local session remains active.');
         }
       });
     }
@@ -179,16 +232,26 @@
     }
 
     // Click-to-talk handler on Orb Button
-    btn.addEventListener('click', async () => {
-      if (activeState === 'Idle' || activeState === 'Error') {
-        startListeningSession();
-      } else {
+    if (btn) {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (activeState === 'Idle' || activeState === 'Error') {
+          startListeningSession();
+        } else {
+          stopListeningSession();
+        }
+      });
+    }
+
+    // Close drawer when clicking outside
+    document.addEventListener('click', (e) => {
+      if (container && !container.contains(e.target) && activeState === 'Listening...') {
         stopListeningSession();
       }
     });
   }
 
-  // 3. Start Active Listening Session (Hybrid Local + Gemini)
+  // 3. Start Active Listening Session (Hybrid Local + Gemini + Visual Drawer)
   async function startListeningSession() {
     if (activeState === 'Listening...' || activeState === 'Connecting...') return;
     
@@ -198,11 +261,11 @@
     playWakeChime();
     updateUIState('Listening...');
 
-    // Start Local Fast Speech Recognition
+    // Start Local Speech Recognition
     startLocalCommandRecognition();
 
-    // Reset silence timer (auto-close after 7 seconds if no command)
-    resetSessionTimeout(7000);
+    // Reset silence timer (auto-close after 8 seconds if no command)
+    resetSessionTimeout(8000);
 
     // Concurrently try Gemini Live Session if configured
     try {
@@ -258,7 +321,8 @@
       };
 
       commandRecognizer.onerror = (e) => {
-        if (e.error !== 'no-speech') {
+        // Do NOT abort UI on network notice
+        if (e.error !== 'no-speech' && e.error !== 'network') {
           console.warn('[Hey 360 Command Recognizer]:', e.error);
         }
       };
@@ -271,7 +335,7 @@
 
       commandRecognizer.start();
     } catch (err) {
-      console.warn('[Hey 360] Local command recognition init error:', err);
+      console.warn('[Hey 360] Local command recognition notice:', err);
     }
   }
 
@@ -318,11 +382,11 @@
     }, 1500);
   }
 
-  function resetSessionTimeout(ms = 7000) {
+  function resetSessionTimeout(ms = 8000) {
     if (silenceTimer) clearTimeout(silenceTimer);
     silenceTimer = setTimeout(() => {
       if (activeState === 'Listening...') {
-        console.log('[Hey 360] Silence timeout reached, returning to idle.');
+        console.log('[Hey 360] Session timeout reached, returning to idle.');
         resetToIdle();
       }
     }, ms);

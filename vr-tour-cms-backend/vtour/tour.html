@@ -422,47 +422,84 @@
 				let lat = krpano.get(`scene[${i}].lat`);
 				let lng = krpano.get(`scene[${i}].lng`);
 
-				if (lat !== null && lng !== null && lat !== "" && lng !== "") {
-					lat = parseFloat(lat);
-					lng = parseFloat(lng);
+			L.control.zoom({ position: 'bottomright' }).addTo(leafletMap);
 
-					if (!isNaN(lat) && !isNaN(lng)) {
-						const marker = L.marker([lat, lng], { 
-							icon: createTeardropPin('#3b82f6', false),
-							riseOnHover: true 
-						}).addTo(leafletMap);
-						
-						marker.bindTooltip(krpano.get(`scene[${i}].title`) || sceneName, { permanent: false, direction: 'top' });
+			const markerData = getCustomMarkerData();
+			const latlngs = [];
 
-						marker.on('click', () => {
-							krpano.call(`loadscene(${sceneName}, null, MERGE, BLEND(0.5))`);
-						});
+			for (const sceneName in markerData) {
+				const data = markerData[sceneName];
+				const latlng = [data.lat, data.lng];
+				latlngs.push(latlng);
 
-						leafletMarkers[sceneName] = { marker, lat, lng };
-						latLngs.push([lat, lng]);
+				const marker = L.marker(latlng, {
+					icon: createTeardropPin('#3b82f6', false),
+					title: data.title
+				}).addTo(leafletMap);
+
+				marker.bindTooltip(data.title, {
+					permanent: false,
+					direction: 'top',
+					offset: [0, -25],
+					className: 'custom-map-tooltip'
+				});
+
+				marker.on('click', () => {
+					if (window.krpano) {
+						window.krpano.call(`loadscene('${sceneName}', null, MERGE, BLEND(0.5));`);
 					}
-				}
+					toggleMapModal();
+				});
+
+				leafletMarkers[sceneName] = { marker: marker, lat: data.lat, lng: data.lng, title: data.title };
 			}
 
-			if (latLngs.length > 0) {
-				leafletMap.fitBounds(latLngs, { padding: [40, 40], maxZoom: 16 });
+			if (latlngs.length > 1) {
+				currentPolyline = L.polyline(latlngs, {
+					color: '#f59e0b',
+					weight: 3,
+					opacity: 0.7,
+					dashArray: '5, 8'
+				}).addTo(leafletMap);
 			}
-			updateActiveSceneInfo();
+
+			setTimeout(() => {
+				leafletMap.invalidateSize();
+				updateActiveSceneMarker();
+			}, 300);
 		}
 
-		function updateActiveSceneInfo() {
-			if (!krpano) return;
+		function toggleMapModal() {
+			const modal = document.getElementById('map-modal');
+			if (!modal) return;
+			isMapModalOpen = !isMapModalOpen;
+			modal.style.display = isMapModalOpen ? 'block' : 'none';
 
-			const currentSceneName = krpano.get("xml.scene");
-			const currentSceneTitle = krpano.get(`scene[${currentSceneName}].title`) || currentSceneName;
+			if (isMapModalOpen) {
+				if (!leafletMap) {
+					initLeafletMap();
+				} else {
+					setTimeout(() => {
+						leafletMap.invalidateSize();
+						centerLeafletOnActiveScene();
+					}, 200);
+				}
+			}
+		}
 
-			const titleEl = document.getElementById("top-bar-title");
+		function updateActiveSceneMarker() {
+			if (!window.krpano) return;
+			const kr = window.krpano;
+			const currentSceneName = kr.get("xml.scene");
+			const currentSceneTitle = kr.get(`scene[${currentSceneName}].title`) || currentSceneName;
+
+			const titleEl = document.getElementById('current-scene-title');
 			if (titleEl) {
 				titleEl.textContent = currentSceneTitle;
 			}
 
-			krpano.set("layer[skin_layer].visible", false);
-			krpano.set("layer[skin_control_bar].visible", false);
+			kr.set("layer[skin_layer].visible", false);
+			kr.set("layer[skin_control_bar].visible", false);
 
 			if (leafletMap) {
 				for (const sName in leafletMarkers) {
@@ -476,14 +513,13 @@
 		}
 
 		function centerLeafletOnActiveScene() {
-			if (!krpano || !leafletMap) return;
-			const currentSceneName = krpano.get("xml.scene");
+			if (!window.krpano || !leafletMap) return;
+			const currentSceneName = window.krpano.get("xml.scene");
 			if (currentSceneName && leafletMarkers[currentSceneName]) {
 				leafletMap.panTo([leafletMarkers[currentSceneName].lat, leafletMarkers[currentSceneName].lng]);
 			}
 		}
 
-		// Initialize map on first load
 		setTimeout(() => {
 			if (!leafletMap) {
 				initLeafletMap();
@@ -492,11 +528,11 @@
 	</script>
 
 	<!-- Hey 360 Voice Assistant Engine Modules -->
-	<script src="assets/modules/voice-config.js?v=15"></script>
-	<script src="assets/modules/krpano-bridge.js?v=15"></script>
-	<script src="assets/modules/porcupine-listener.js?v=15"></script>
-	<script src="assets/modules/gemini-live-session.js?v=15"></script>
-	<script src="assets/voice-assistant.js?v=15"></script>
+	<script src="assets/modules/voice-config.js?v=20"></script>
+	<script src="assets/modules/krpano-bridge.js?v=20"></script>
+	<script src="assets/modules/porcupine-listener.js?v=20"></script>
+	<script src="assets/modules/gemini-live-session.js?v=20"></script>
+	<script src="assets/voice-assistant.js?v=20"></script>
 </body>
 
 </html>
