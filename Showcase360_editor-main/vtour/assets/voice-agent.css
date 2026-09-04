@@ -1,8 +1,7 @@
 .hey-360-btn {
   position: fixed;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
+  bottom: 24px;
+  right: 24px;
   background-color: rgba(255, 255, 255, 0.95);
   color: #333;
   padding: 8px 16px 8px 12px;
@@ -19,16 +18,16 @@
   backdrop-filter: blur(10px);
   transition: all 0.3s ease;
   user-select: none;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 18px rgba(0,0,0,0.25);
 }
 
 .hey-360-btn:hover {
-  transform: translateX(-50%) scale(1.02);
-  box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
 }
 
 .hey-360-btn:active {
-  transform: translateX(-50%) scale(0.98);
+  transform: scale(0.98);
 }
 
 /* Logo */
