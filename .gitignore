@@ -1,0 +1,4 @@
+*.zip
+node_modules/
+.DS_Store
+temp_extracted_voice/
