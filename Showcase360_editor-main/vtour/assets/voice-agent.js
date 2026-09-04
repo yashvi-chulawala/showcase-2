@@ -31,6 +31,9 @@ GREETING RULES:
 - If the user greets you or says anything other than "Hey 360" (for example "Hi", "Hello", "Hey", "Hey Siri", "Hey Google", etc.), gently correct them first and say:
   "Hey, it's Hey 360! Hey there! How can I help you today? I can help you navigate between different views."
 
+PROACTIVE GUIDANCE RULES:
+- When you receive a proactive scene guidance notice indicating the user is stuck or idle, verbally say the guidance tip warmly to help them explore.
+
 Available tour destinations:
 - "Vesu 1" (ID: vesu_1)
 - "Vesu 16" (ID: vesu_16)
@@ -517,19 +520,25 @@ Keep responses friendly, warm, concise, and natural.`;
     }
   };
 
-  let lastActivityTime = Date.now();
-  let lastSpokenTipTime = 0;
+  let lastHlookat = null;
+  let lastVlookat = null;
+  let lastViewMoveTime = Date.now();
   let lastSceneName = '';
   let sceneSwitchTimes = [];
+  let lastSpokenTipTime = 0;
   let bubbleTimeout = null;
 
-  function recordActivity() {
-    lastActivityTime = Date.now();
+  // Unlock browser audio/speech on first user interaction anywhere
+  function unlockAudioEngine() {
+    if (window.speechSynthesis) {
+      try {
+        window.speechSynthesis.resume();
+      } catch (e) {}
+    }
   }
-
-  ['pointermove', 'pointerdown', 'touchstart', 'keydown', 'wheel'].forEach(evt => {
-    window.addEventListener(evt, recordActivity, { passive: true });
-  });
+  window.addEventListener('click', unlockAudioEngine, { passive: true });
+  window.addEventListener('touchstart', unlockAudioEngine, { passive: true });
+  window.addEventListener('pointerdown', unlockAudioEngine, { passive: true });
 
   function showHintBubble(text) {
     let bubble = document.getElementById('va-hint-bubble');
@@ -541,17 +550,31 @@ Keep responses friendly, warm, concise, and natural.`;
     }
     bubble.innerHTML = `<span class="va-hint-icon">💡</span> <span class="va-hint-text">${text}</span>`;
     bubble.classList.add('visible');
+
+    const textEl = document.getElementById('va-status-text');
+    const originalText = textEl ? textEl.innerText : '';
+    if (state === 'Idle' && textEl) {
+      textEl.innerText = 'Let me guide you';
+    }
     
     // Proactively speak out loud
     if (window.speechSynthesis) {
       try {
         window.speechSynthesis.cancel();
+        window.speechSynthesis.resume();
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.rate = 0.95;
         utterance.pitch = 1.05;
         const voices = window.speechSynthesis.getVoices();
-        const preferredVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Female') || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Zira')));
+        const preferredVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Female') || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Zira') || v.name.includes('Jenny') || v.name.includes('Aria')));
         if (preferredVoice) utterance.voice = preferredVoice;
+        
+        utterance.onend = () => {
+          if (state === 'Idle' && textEl) {
+            textEl.innerText = originalText;
+          }
+        };
+
         window.speechSynthesis.speak(utterance);
       } catch (e) {
         console.warn("[Hey 360] Speech synthesis error:", e);
@@ -561,6 +584,9 @@ Keep responses friendly, warm, concise, and natural.`;
     clearTimeout(bubbleTimeout);
     bubbleTimeout = setTimeout(() => {
       bubble.classList.remove('visible');
+      if (state === 'Idle' && textEl) {
+        textEl.innerText = 'Explore with me';
+      }
     }, 8500);
   }
 
@@ -576,36 +602,64 @@ Keep responses friendly, warm, concise, and natural.`;
       }
     }
 
-    let tip = attraction ? attraction.tip : "Look at your left and right to explore the beautiful scenic views, or click on navigation markers to explore!";
+    let tip = attraction ? attraction.tip : "Look at your left and right to explore the scenic views, or click on navigation markers to proceed!";
     if (reason === "random") {
-      tip = "You're exploring fast! " + tip;
+      tip = "You're exploring quickly! " + tip;
     }
-    showHintBubble(tip);
+
+    // If Gemini Live session is connected, prompt Gemini to speak in its AI voice!
+    if (ws && ws.readyState === WebSocket.OPEN && isSetupComplete) {
+      try {
+        console.log("[Hey 360] Sending proactive guidance prompt to Gemini Live:", tip);
+        ws.send(JSON.stringify({
+          clientContent: {
+            turns: [
+              {
+                role: "user",
+                parts: [{ text: `[PROACTIVE GUIDANCE: The user is in '${attraction ? attraction.name : sceneId}'. Verbally tell them this guidance tip warmly: "${tip}"]` }]
+              }
+            ],
+            turnComplete: true
+          }
+        }));
+      } catch (err) {
+        console.warn("[Hey 360] Live proactive send failed, falling back to speech synthesis:", err);
+        showHintBubble(tip);
+      }
+    } else {
+      showHintBubble(tip);
+    }
   }
 
-  // Monitor idle state and rapid disconnected navigation
+  // Monitor Krpano scene & view rotation every 2 seconds
   setInterval(() => {
     if (!window.krpano) return;
     
     let currentScene;
+    let hlookat;
+    let vlookat;
     try {
       currentScene = window.krpano.get('xml.scene');
+      hlookat = Number(window.krpano.get('view.hlookat'));
+      vlookat = Number(window.krpano.get('view.vlookat'));
     } catch(e) { return; }
 
     if (!currentScene) return;
 
     const now = Date.now();
 
-    // Scene transition detection
+    // 1. Scene Switch Detection
     if (currentScene !== lastSceneName) {
       lastSceneName = currentScene;
-      lastActivityTime = now;
+      lastViewMoveTime = now;
+      lastHlookat = hlookat;
+      lastVlookat = vlookat;
       sceneSwitchTimes.push(now);
       if (sceneSwitchTimes.length > 4) sceneSwitchTimes.shift();
 
       // Check for rapid random navigation (3+ switches within 10s)
       if (sceneSwitchTimes.length >= 3 && (now - sceneSwitchTimes[0]) < 10000) {
-        if (now - lastSpokenTipTime > 45000) {
+        if (now - lastSpokenTipTime > 25000) {
           lastSpokenTipTime = now;
           triggerProactiveGuidance(currentScene, "random");
         }
@@ -613,12 +667,27 @@ Keep responses friendly, warm, concise, and natural.`;
       return;
     }
 
-    // Inactivity / Stuck on scene detection (stuck for 45s without interaction)
-    if ((now - lastActivityTime > 45000) && (now - lastSpokenTipTime > 60000)) {
+    // 2. View Rotation Detection (user looking around)
+    if (lastHlookat !== null && lastVlookat !== null) {
+      const diffH = Math.abs(hlookat - lastHlookat);
+      const diffV = Math.abs(vlookat - lastVlookat);
+      if (diffH > 3 || diffV > 3) {
+        lastViewMoveTime = now;
+        lastHlookat = hlookat;
+        lastVlookat = vlookat;
+      }
+    } else {
+      lastHlookat = hlookat;
+      lastVlookat = vlookat;
+      lastViewMoveTime = now;
+    }
+
+    // 3. Inactivity / Stuck on scene detection (stuck for 18 seconds without rotating or exploring)
+    if ((now - lastViewMoveTime > 18000) && (now - lastSpokenTipTime > 30000)) {
       lastSpokenTipTime = now;
-      lastActivityTime = now;
+      lastViewMoveTime = now;
       triggerProactiveGuidance(currentScene, "idle");
     }
-  }, 3000);
+  }, 2000);
   
 })();
