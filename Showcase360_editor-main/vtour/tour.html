@@ -282,6 +282,36 @@
 			// Krpano object reference
 			let krpano = null;
 
+			function updateActiveSceneTitle() {
+				if (!window.krpano) return;
+				const kr = window.krpano;
+				let currentSceneName = '';
+				try {
+					currentSceneName = kr.get("xml.scene");
+				} catch(e) {}
+				if (!currentSceneName) return;
+
+				let currentSceneTitle = '';
+				try {
+					currentSceneTitle = kr.get(`scene[${currentSceneName}].title`) || currentSceneName;
+				} catch(e) {
+					currentSceneTitle = currentSceneName;
+				}
+				if (currentSceneTitle && typeof currentSceneTitle === 'string' && currentSceneTitle.startsWith('scene_')) {
+					currentSceneTitle = currentSceneTitle.replace(/^scene_/, '').replace(/_/g, ' ');
+				}
+
+				const titleEl = document.getElementById('top-bar-title');
+				if (titleEl && currentSceneTitle) {
+					titleEl.textContent = currentSceneTitle;
+				}
+			}
+
+			function updateActiveSceneInfo() {
+				updateActiveSceneTitle();
+				updateActiveSceneMarker();
+			}
+
 			function krpanoReady(krpanoInterface) {
 				krpano = krpanoInterface;
 				window.krpano = krpanoInterface; // Attach to window for voice-assistant.js
@@ -296,6 +326,10 @@
 				krpano.set("events[map_events].keep", true);
 				krpano.set("events[map_events].onxmlcomplete", "js(onKrpanoXmlReady())");
 				krpano.set("events[map_events].onnewscene", "js(onKrpanoNewScene())");
+
+				// Initial title update
+				setTimeout(updateActiveSceneInfo, 200);
+				setTimeout(updateActiveSceneInfo, 800);
 			}
 
 			function onKrpanoXmlReady() {
@@ -303,6 +337,7 @@
 					krpano.set("layer[skin_layer].visible", false);
 					krpano.set("layer[skin_control_bar].visible", false);
 				}
+				updateActiveSceneInfo();
 				if (leafletMap) {
 					plotLeafletScenes();
 				}
@@ -492,24 +527,41 @@
 		function updateActiveSceneMarker() {
 			if (!window.krpano) return;
 			const kr = window.krpano;
-			const currentSceneName = kr.get("xml.scene");
-			const currentSceneTitle = kr.get(`scene[${currentSceneName}].title`) || currentSceneName;
+			let currentSceneName = '';
+			try {
+				currentSceneName = kr.get("xml.scene");
+			} catch (e) {}
 
-			const titleEl = document.getElementById('current-scene-title');
-			if (titleEl) {
-				titleEl.textContent = currentSceneTitle;
+			if (currentSceneName) {
+				let currentSceneTitle = '';
+				try {
+					currentSceneTitle = kr.get(`scene[${currentSceneName}].title`) || currentSceneName;
+				} catch (e) {
+					currentSceneTitle = currentSceneName;
+				}
+				if (currentSceneTitle && typeof currentSceneTitle === 'string' && currentSceneTitle.startsWith('scene_')) {
+					currentSceneTitle = currentSceneTitle.replace(/^scene_/, '').replace(/_/g, ' ');
+				}
+				const titleEl = document.getElementById('top-bar-title');
+				if (titleEl && currentSceneTitle) {
+					titleEl.textContent = currentSceneTitle;
+				}
 			}
 
-			kr.set("layer[skin_layer].visible", false);
-			kr.set("layer[skin_control_bar].visible", false);
+			try {
+				kr.set("layer[skin_layer].visible", false);
+				kr.set("layer[skin_control_bar].visible", false);
+			} catch (e) {}
 
-			if (leafletMap) {
+			if (leafletMap && leafletMarkers && currentSceneName) {
 				for (const sName in leafletMarkers) {
 					const m = leafletMarkers[sName];
-					const isActive = sName === currentSceneName;
-					m.marker.setIcon(createTeardropPin(isActive ? '#FFD700' : '#3b82f6', isActive));
-					if (isActive) m.marker.setZIndexOffset(1000);
-					else m.marker.setZIndexOffset(1);
+					if (m && m.marker) {
+						const isActive = sName === currentSceneName;
+						m.marker.setIcon(createTeardropPin(isActive ? '#FFD700' : '#3b82f6', isActive));
+						if (isActive) m.marker.setZIndexOffset(1000);
+						else m.marker.setZIndexOffset(1);
+					}
 				}
 			}
 		}

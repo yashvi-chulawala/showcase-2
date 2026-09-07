@@ -95,6 +95,15 @@ Keep responses friendly, warm, concise, and natural.`;
   
   async function startAgent() {
     try {
+      // Cancel any background speech synthesis immediately
+      if (window.speechSynthesis) {
+        try { window.speechSynthesis.cancel(); } catch(e) {}
+      }
+      isGuiding = false;
+      isSpeakingTTS = false;
+      const existingBubble = document.getElementById('va-hint-bubble');
+      if (existingBubble) existingBubble.classList.remove('visible');
+
       updateState('Connecting...');
       isSetupComplete = false;
       
@@ -473,6 +482,14 @@ Keep responses friendly, warm, concise, and natural.`;
     
     stopPlayback();
     
+    if (window.speechSynthesis) {
+      try { window.speechSynthesis.cancel(); } catch(e) {}
+    }
+    isGuiding = false;
+    isSpeakingTTS = false;
+    const existingBubble = document.getElementById('va-hint-bubble');
+    if (existingBubble) existingBubble.classList.remove('visible');
+
     if (state !== 'Error') {
       updateState('Idle');
     }
@@ -489,7 +506,7 @@ Keep responses friendly, warm, concise, and natural.`;
     return window.btoa(binary);
   }
 
-  // --- Proactive Guidance for Idle / Stuck / Random Navigation ---
+  // --- Proactive Guidance for Idle Navigation ---
   const SCENE_ATTRACTIONS = {
     scene_DJI_20251222160517_0128_D_equi: {
       name: "Left View",
@@ -526,8 +543,8 @@ Keep responses friendly, warm, concise, and natural.`;
   };
 
   // Timing configuration:
-  const IDLE_TRIGGER_SECONDS = 20; // Tells the user after 20 seconds of staying still
-  const COOLDOWN_SECONDS = 45;     // 45 seconds cooldown before another guide can trigger
+  const IDLE_TRIGGER_SECONDS = 30; // Tells the user after 30 seconds of staying completely still
+  const COOLDOWN_SECONDS = 60;     // 60 seconds cooldown before another guide can trigger
 
   let isGuiding = false;
   let isSpeakingTTS = false;
@@ -535,7 +552,6 @@ Keep responses friendly, warm, concise, and natural.`;
   let lastVlookat = null;
   let lastViewMoveTime = Date.now();
   let lastSceneName = '';
-  let sceneSwitchTimes = [];
   let lastSpokenTipTime = 0;
   let bubbleTimeout = null;
 
@@ -552,7 +568,7 @@ Keep responses friendly, warm, concise, and natural.`;
   window.addEventListener('pointerdown', unlockAudioEngine, { passive: true });
 
   function showHintBubble(text) {
-    if (isSpeakingTTS) return;
+    if (state !== 'Idle' || isSpeakingTTS || isGuiding) return;
     isSpeakingTTS = true;
     isGuiding = true;
 
@@ -572,7 +588,7 @@ Keep responses friendly, warm, concise, and natural.`;
       textEl.innerText = 'Let me guide you';
     }
     
-    // Proactively speak out loud once
+    // Proactively speak out loud once safely
     if (window.speechSynthesis) {
       try {
         window.speechSynthesis.cancel();
@@ -586,7 +602,7 @@ Keep responses friendly, warm, concise, and natural.`;
         
         utterance.onend = () => {
           isSpeakingTTS = false;
-          setTimeout(() => { isGuiding = false; }, 2000);
+          setTimeout(() => { isGuiding = false; }, 1000);
           if (state === 'Idle' && textEl) {
             textEl.innerText = originalText;
           }
@@ -595,6 +611,9 @@ Keep responses friendly, warm, concise, and natural.`;
         utterance.onerror = () => {
           isSpeakingTTS = false;
           isGuiding = false;
+          if (state === 'Idle' && textEl) {
+            textEl.innerText = originalText;
+          }
         };
 
         window.speechSynthesis.speak(utterance);
@@ -618,7 +637,8 @@ Keep responses friendly, warm, concise, and natural.`;
   }
 
   function triggerProactiveGuidance(sceneId, reason) {
-    if (isGuiding || isSpeakingTTS || state === 'Speaking...') return;
+    // CRITICAL: NEVER speak or guide when Hey 360 voice agent is active or speaking!
+    if (state !== 'Idle' || isGuiding || isSpeakingTTS) return;
 
     let attraction = SCENE_ATTRACTIONS[sceneId];
     if (!attraction && sceneId) {
@@ -632,37 +652,13 @@ Keep responses friendly, warm, concise, and natural.`;
     }
 
     let tip = attraction ? attraction.tip : "Look at your left and right to explore the scenic views, or click on navigation markers to proceed!";
-    if (reason === "random") {
-      tip = "You're exploring quickly! " + tip;
-    }
-
-    // If Gemini Live session is connected, prompt Gemini to speak in its AI voice
-    if (ws && ws.readyState === WebSocket.OPEN && isSetupComplete) {
-      try {
-        isGuiding = true;
-        console.log("[Hey 360] Sending proactive guidance prompt to Gemini Live:", tip);
-        ws.send(JSON.stringify({
-          clientContent: {
-            turns: [
-              {
-                role: "user",
-                parts: [{ text: `[PROACTIVE GUIDANCE: The user is in '${attraction ? attraction.name : sceneId}'. Verbally tell them this guidance tip warmly once: "${tip}"]` }]
-              }
-            ],
-            turnComplete: true
-          }
-        }));
-      } catch (err) {
-        console.warn("[Hey 360] Live proactive send failed, falling back to speech synthesis:", err);
-        showHintBubble(tip);
-      }
-    } else {
-      showHintBubble(tip);
-    }
+    showHintBubble(tip);
   }
 
-  // Monitor Krpano scene & view rotation every 2 seconds
+  // Monitor Krpano scene & view rotation for idle guidance
   setInterval(() => {
+    // Never run or trigger guidance if Hey 360 agent is active/listening/speaking
+    if (state !== 'Idle') return;
     if (!window.krpano) return;
     
     let currentScene;
@@ -678,26 +674,16 @@ Keep responses friendly, warm, concise, and natural.`;
 
     const now = Date.now();
 
-    // 1. Scene Switch Detection
+    // Scene Switch
     if (currentScene !== lastSceneName) {
       lastSceneName = currentScene;
       lastViewMoveTime = now;
       lastHlookat = hlookat;
       lastVlookat = vlookat;
-      sceneSwitchTimes.push(now);
-      if (sceneSwitchTimes.length > 4) sceneSwitchTimes.shift();
-
-      // Check for rapid random navigation (3+ switches within 10s)
-      if (sceneSwitchTimes.length >= 3 && (now - sceneSwitchTimes[0]) < 10000) {
-        if (now - lastSpokenTipTime > 25000) {
-          lastSpokenTipTime = now;
-          triggerProactiveGuidance(currentScene, "random");
-        }
-      }
       return;
     }
 
-    // 2. View Rotation Detection (user looking around)
+    // View Rotation Detection (user looking around)
     if (lastHlookat !== null && lastVlookat !== null) {
       const diffH = Math.abs(hlookat - lastHlookat);
       const diffV = Math.abs(vlookat - lastVlookat);
@@ -712,7 +698,7 @@ Keep responses friendly, warm, concise, and natural.`;
       lastViewMoveTime = now;
     }
 
-    // 3. Inactivity / Stuck on scene detection (20 seconds without rotating or exploring)
+    // Inactivity detection (30 seconds without rotating or exploring)
     if ((now - lastViewMoveTime > IDLE_TRIGGER_SECONDS * 1000) && (now - lastSpokenTipTime > COOLDOWN_SECONDS * 1000)) {
       lastSpokenTipTime = now;
       lastViewMoveTime = now;
