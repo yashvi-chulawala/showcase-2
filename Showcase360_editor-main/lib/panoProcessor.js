@@ -117,6 +117,12 @@ function processPano(inputImagePath, tilesFolderName, tourId) {
       }
     }
 
+    // Ensure license is registered for current process
+    try {
+      const { execFileSync } = require('child_process');
+      execFileSync(KRPANOTOOLS_BIN, ['register', KRPANO_LICENSE_KEY], { stdio: 'ignore' });
+    } catch (e) {}
+
     const krpanoTilesPath = tilesPath.replace(/\\/g, '/');
     const args = [
       'makepano',
@@ -128,7 +134,8 @@ function processPano(inputImagePath, tilesFolderName, tourId) {
       inputImagePath
     ];
 
-    execFile(KRPANOTOOLS_BIN, args, { timeout: 5 * 60 * 1000, maxBuffer: 1024 * 1024 * 50 }, (err, stdout, stderr) => {
+    const childEnv = { ...process.env, HOME: os.homedir() || '/tmp' };
+    execFile(KRPANOTOOLS_BIN, args, { timeout: 5 * 60 * 1000, maxBuffer: 1024 * 1024 * 50, env: childEnv }, (err, stdout, stderr) => {
       if (err) return reject(new Error(`krpanotools makepano failed: ${err.message}\n${stderr}`));
       if (!fs.existsSync(tilesPath)) {
         return reject(new Error(`Pano processing failed. Output not found at ${tilesPath}. \nStdout: ${stdout}\nStderr: ${stderr}`));
