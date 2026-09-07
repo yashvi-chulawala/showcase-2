@@ -421,41 +421,41 @@
 				const sceneName = krpano.get(`scene[${i}].name`);
 				let lat = krpano.get(`scene[${i}].lat`);
 				let lng = krpano.get(`scene[${i}].lng`);
+				let title = krpano.get(`scene[${i}].title`) || sceneName;
 
-			L.control.zoom({ position: 'bottomright' }).addTo(leafletMap);
+				if (lat && lng) {
+					lat = parseFloat(lat);
+					lng = parseFloat(lng);
+					if (!isNaN(lat) && !isNaN(lng)) {
+						const latlng = [lat, lng];
+						latLngs.push(latlng);
 
-			const markerData = getCustomMarkerData();
-			const latlngs = [];
+						const marker = L.marker(latlng, {
+							icon: createTeardropPin('#3b82f6', false),
+							title: title
+						}).addTo(leafletMap);
 
-			for (const sceneName in markerData) {
-				const data = markerData[sceneName];
-				const latlng = [data.lat, data.lng];
-				latlngs.push(latlng);
+						marker.bindTooltip(title, {
+							permanent: false,
+							direction: 'top',
+							offset: [0, -25],
+							className: 'custom-map-tooltip'
+						});
 
-				const marker = L.marker(latlng, {
-					icon: createTeardropPin('#3b82f6', false),
-					title: data.title
-				}).addTo(leafletMap);
+						marker.on('click', () => {
+							if (window.krpano) {
+								window.krpano.call(`loadscene('${sceneName}', null, MERGE, BLEND(0.5));`);
+							}
+							toggleMap();
+						});
 
-				marker.bindTooltip(data.title, {
-					permanent: false,
-					direction: 'top',
-					offset: [0, -25],
-					className: 'custom-map-tooltip'
-				});
-
-				marker.on('click', () => {
-					if (window.krpano) {
-						window.krpano.call(`loadscene('${sceneName}', null, MERGE, BLEND(0.5));`);
+						leafletMarkers[sceneName] = { marker: marker, lat: lat, lng: lng, title: title };
 					}
-					toggleMapModal();
-				});
-
-				leafletMarkers[sceneName] = { marker: marker, lat: data.lat, lng: data.lng, title: data.title };
+				}
 			}
 
-			if (latlngs.length > 1) {
-				currentPolyline = L.polyline(latlngs, {
+			if (latLngs.length > 1) {
+				currentPolyline = L.polyline(latLngs, {
 					color: '#f59e0b',
 					weight: 3,
 					opacity: 0.7,
@@ -464,8 +464,10 @@
 			}
 
 			setTimeout(() => {
-				leafletMap.invalidateSize();
-				updateActiveSceneMarker();
+				if (leafletMap) {
+					leafletMap.invalidateSize();
+					updateActiveSceneMarker();
+				}
 			}, 300);
 		}
 
