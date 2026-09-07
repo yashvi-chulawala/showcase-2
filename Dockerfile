@@ -8,13 +8,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
     (chmod -R +x /opt/krpano || true) && \
     rm -rf /var/lib/apt/lists/*
 
-# Copy registered krpano license to system paths
-COPY .krpanolicense /root/.krpanolicense
-COPY .krpanolicense /root/.krpano/.krpanolicense
-COPY .krpanolicense /opt/krpano/.krpanolicense
-
-# Test registration inside container
-RUN /opt/krpano/krpanotools register show || true
+# Register krpano license natively on Linux
+ENV KRPANO_LICENSE_KEY="vR36fDXTMcEEdJ6j1G8G+xh72yjEJlyU2W4BpP3Ld6Ho0uFkAZPCTK6SdktN2+Pa50hWEa9kVfhTmMX7UqhxGFl1C9kFzYoRRSKBODWJtElJmBbe89Rs1hWP5AZN3amgpHJU48G+8UM4tJe+YV42PsFTZVSsp9nF3bCMDWsNqakos3nuqCqAH5odemYkp1pkGledN+XNNSRCBgURghtte7JnghQev2E0qk9oFkIBSFOj62+U6sL0QPBUSkJ8xABSUCW9MM2V1QZu5m6BDhBGwlR0qTR512DE15Zw5CnR9DSHrc/UEJKNcwSk0cVXF4nTcZPv0Bg4DlbW3mz04uS2xsHmT+tehwm6BfyBsA=="
+RUN /opt/krpano/krpanotools register "$KRPANO_LICENSE_KEY" && \
+    /opt/krpano/krpanotools register show
 
 WORKDIR /app
 

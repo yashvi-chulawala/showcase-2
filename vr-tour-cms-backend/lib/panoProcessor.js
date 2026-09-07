@@ -12,8 +12,20 @@ const PANOS_DIR = process.env.PANOS_DIR || path.resolve(__dirname, '../vtour/pan
 const KRPANOTOOLS_DIR = path.dirname(KRPANOTOOLS_BIN);
 const CONFIG_PATH = path.join(KRPANOTOOLS_DIR, 'templates', 'vtour-multires.config');
 
-// Automatically ensure .krpanolicense is available in user home, /opt/krpano, and binary directory
+const KRPANO_LICENSE_KEY = process.env.KRPANO_LICENSE_KEY || "vR36fDXTMcEEdJ6j1G8G+xh72yjEJlyU2W4BpP3Ld6Ho0uFkAZPCTK6SdktN2+Pa50hWEa9kVfhTmMX7UqhxGFl1C9kFzYoRRSKBODWJtElJmBbe89Rs1hWP5AZN3amgpHJU48G+8UM4tJe+YV42PsFTZVSsp9nF3bCMDWsNqakos3nuqCqAH5odemYkp1pkGledN+XNNSRCBgURghtte7JnghQev2E0qk9oFkIBSFOj62+U6sL0QPBUSkJ8xABSUCW9MM2V1QZu5m6BDhBGwlR0qTR512DE15Zw5CnR9DSHrc/UEJKNcwSk0cVXF4nTcZPv0Bg4DlbW3mz04uS2xsHmT+tehwm6BfyBsA==";
+
+// Automatically register license and ensure .krpanolicense is available in all system paths
 function ensureKrpanoLicense() {
+  if (fs.existsSync(KRPANOTOOLS_BIN)) {
+    try {
+      const { execFileSync } = require('child_process');
+      execFileSync(KRPANOTOOLS_BIN, ['register', KRPANO_LICENSE_KEY], { stdio: 'ignore' });
+      console.log('[krpano] Successfully registered license code with krpanotools binary.');
+    } catch (e) {
+      console.warn('[krpano] Failed to execute register code:', e.message);
+    }
+  }
+
   const possibleSourceLocations = [
     path.resolve(__dirname, '../.krpanolicense'),
     path.resolve(__dirname, '../../.krpanolicense'),
