@@ -462,34 +462,28 @@ function listAssets(tourId = activeTourId) {
     }
   }
 
-  // Fallback: check vtour/assets and other data projects if list is still empty
-  if (assets.length === 0) {
-    const fallbackDirs = [
-      path.join(__dirname, '../vtour/assets'),
-      path.join(__dirname, '../data/City tour demo/assets'),
-      path.join(__dirname, '../data/City tour/assets')
-    ];
-    for (const fDir of fallbackDirs) {
-      if (fs.existsSync(fDir)) {
-        try {
-          const files = fs.readdirSync(fDir);
-          for (const file of files) {
-            const ext = path.extname(file).toLowerCase();
-            if (['.png', '.jpg', '.jpeg', '.webp', '.svg', '.gif'].includes(ext)) {
-              const exists = assets.some(a => a.name === file || a.url === `assets/${file}` || a.url === file);
-              if (!exists) {
-                assets.push({
-                  _id: generateId(),
-                  tourId: tourId || activeTourId,
-                  name: file,
-                  url: `assets/${file}`,
-                  createdAt: new Date().toISOString()
-                });
-              }
+  // Only fall back to vtour/assets if this is the legacy default tour and assets is empty
+  if (assets.length === 0 && (!tourId || tourId === 'default')) {
+    const defaultAssetsDir = path.join(__dirname, '../vtour/assets');
+    if (fs.existsSync(defaultAssetsDir)) {
+      try {
+        const files = fs.readdirSync(defaultAssetsDir);
+        for (const file of files) {
+          const ext = path.extname(file).toLowerCase();
+          if (['.png', '.jpg', '.jpeg', '.webp', '.svg', '.gif'].includes(ext)) {
+            const exists = assets.some(a => a.name === file || a.url === `assets/${file}` || a.url === file);
+            if (!exists) {
+              assets.push({
+                _id: generateId(),
+                tourId: 'default',
+                name: file,
+                url: `assets/${file}`,
+                createdAt: new Date().toISOString()
+              });
             }
           }
-        } catch(e) {}
-      }
+        }
+      } catch(e) {}
     }
   }
 
@@ -506,22 +500,61 @@ function createAsset({ tourId, name, url }) {
   return asset;
 }
 
-function deleteAsset(assetId) {
-  const dbData = readDB();
-  if (dbData.assets) {
-    dbData.assets = dbData.assets.filter(a => a._id !== assetId);
-    writeDB(dbData);
+function deleteAsset(assetId, tourId = activeTourId) {
+  const dbData = readDB(tourId);
+  if (dbData && dbData.assets) {
+    const asset = dbData.assets.find(a => a._id === assetId);
+    if (asset) {
+      const tourDir = resolveTourPath(tourId);
+      if (tourDir && asset.name) {
+        const filePath = path.join(tourDir, 'assets', asset.name);
+        if (fs.existsSync(filePath)) {
+          try { fs.unlinkSync(filePath); } catch (e) {}
+        }
+      }
+      dbData.assets = dbData.assets.filter(a => a._id !== assetId);
+      writeDB(dbData, tourId);
+      return;
+    }
+  }
+  // Search other project folders if needed
+  const dataDir = path.join(__dirname, '../data');
+  if (fs.existsSync(dataDir)) {
+    try {
+      const dirs = fs.readdirSync(dataDir, { withFileTypes: true });
+      for (const dir of dirs) {
+        if (dir.isDirectory()) {
+          const pDir = path.join(dataDir, dir.name);
+          const pDb = readDB(pDir);
+          if (pDb && pDb.assets && pDb.assets.some(a => a._id === assetId)) {
+            const asset = pDb.assets.find(a => a._id === assetId);
+            if (asset && asset.name) {
+              const filePath = path.join(pDir, 'assets', asset.name);
+              if (fs.existsSync(filePath)) {
+                try { fs.unlinkSync(filePath); } catch (e) {}
+              }
+            }
+            pDb.assets = pDb.assets.filter(a => a._id !== assetId);
+            writeDB(pDb, pDir);
+            break;
+          }
+        }
+      }
+    } catch (e) {}
   }
 }
 
-function updateAsset(assetId, patch) {
-  const dbData = readDB();
-  if (!dbData.assets) return null;
-  const asset = dbData.assets.find(a => a._id === assetId);
-  if (!asset) return null;
-  Object.assign(asset, patch);
-  writeDB(dbData);
-  return asset;
+function updateAsset(assetId, patch, tourId = activeTourId) {
+  const dbData = readDB(tourId);
+  if (dbData && dbData.assets) {
+    const asset = dbData.assets.find(a => a._id === assetId);
+    if (asset) {
+      Object.assign(asset, patch);
+      writeDB(dbData, tourId);
+      return asset;
+    }
+  }
+  return null;
 }
 
 module.exports = {
