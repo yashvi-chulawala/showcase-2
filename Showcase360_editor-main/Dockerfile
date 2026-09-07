@@ -2,11 +2,19 @@ FROM node:18-bullseye
 
 # 1. Install system utilities and Linux krpanotools
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl tar unzip zip && \
-    mkdir -p /opt/krpano && \
+    mkdir -p /opt/krpano /root/.krpano && \
     (curl -fsSL "https://krpano.com/download/files/krpano-1.20.12-linux64.tar.gz" | tar -xz -C /opt/krpano --strip-components=1 || \
      curl -fsSL "https://krpano.com/download/12012/krpano-1.20.12-linux64.tar.gz" | tar -xz -C /opt/krpano --strip-components=1 || true) && \
     (chmod -R +x /opt/krpano || true) && \
     rm -rf /var/lib/apt/lists/*
+
+# Copy registered krpano license to system paths
+COPY .krpanolicense /root/.krpanolicense
+COPY .krpanolicense /root/.krpano/.krpanolicense
+COPY .krpanolicense /opt/krpano/.krpanolicense
+
+# Test registration inside container
+RUN /opt/krpano/krpanotools register show || true
 
 WORKDIR /app
 

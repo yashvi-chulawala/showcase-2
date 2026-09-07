@@ -2,19 +2,66 @@ const { execFile } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
+const os = require('os');
 const defaultBin = process.platform === 'win32' ? 'C:\\Users\\Yashvi Chulawala\\Downloads\\krpano-1.20.12\\krpanotools.exe' : '/opt/krpano/krpanotools';
 const KRPANOTOOLS_BIN = process.env.KRPANOTOOLS_BIN || defaultBin;
 const db = require('./db');
 const PANOS_DIR = process.env.PANOS_DIR || path.resolve(__dirname, '../vtour/panos');
 
 // The .config file lives next to krpanotools.exe itself, in a "templates" subfolder.
-// krpanotools resolves -config= relative to its OWN working directory at the time
-// it's spawned, not relative to this project — so a bare "templates/..." path only
-// works if node's cwd happens to be the krpanotools folder. It isn't. We build an
-// absolute path from KRPANOTOOLS_BIN's own folder instead, which always works
-// regardless of where the backend process is running from.
 const KRPANOTOOLS_DIR = path.dirname(KRPANOTOOLS_BIN);
 const CONFIG_PATH = path.join(KRPANOTOOLS_DIR, 'templates', 'vtour-multires.config');
+
+// Automatically ensure .krpanolicense is available in user home, /opt/krpano, and binary directory
+function ensureKrpanoLicense() {
+  const possibleSourceLocations = [
+    path.resolve(__dirname, '../.krpanolicense'),
+    path.resolve(__dirname, '../../.krpanolicense'),
+    path.resolve(__dirname, '.krpanolicense'),
+    path.join(process.env.APPDATA || '', 'krpano', '.krpanolicense')
+  ];
+
+  let licenseBuffer = null;
+  for (const src of possibleSourceLocations) {
+    if (src && fs.existsSync(src)) {
+      try {
+        licenseBuffer = fs.readFileSync(src);
+        break;
+      } catch (e) {}
+    }
+  }
+
+  if (licenseBuffer) {
+    const targetDirs = [
+      os.homedir(),
+      path.join(os.homedir(), '.krpano'),
+      '/root',
+      '/root/.krpano',
+      '/opt/krpano',
+      KRPANOTOOLS_DIR
+    ];
+
+    for (const dir of targetDirs) {
+      if (!dir) continue;
+      try {
+        if (!fs.existsSync(dir)) {
+          fs.mkdirSync(dir, { recursive: true });
+        }
+        const targetFile = path.join(dir, '.krpanolicense');
+        if (!fs.existsSync(targetFile)) {
+          fs.writeFileSync(targetFile, licenseBuffer);
+          console.log(`[krpano] Placed .krpanolicense into ${targetFile}`);
+        }
+      } catch (e) {}
+    }
+  }
+}
+
+try {
+  ensureKrpanoLicense();
+} catch (err) {
+  console.warn('[krpano] ensureKrpanoLicense error:', err.message);
+}
 
 function resolveTourDir(tourId) {
   return db.resolveTourPath(tourId) || path.resolve(__dirname, '../vtour');
