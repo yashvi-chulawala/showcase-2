@@ -3014,10 +3014,17 @@ window.addPresetPinHotspot = async function(type) {
     color = '#f59e0b';
   }
 
-  const hlookat = Number(krpano.get('view.hlookat') || 0);
-  const vlookat = Number(krpano.get('view.vlookat') || 0);
-  const ath = Number(hlookat.toFixed(2));
-  const atv = Number(vlookat.toFixed(2));
+  let ath = Number(Number(krpano.get('view.hlookat') || 0).toFixed(2));
+  let atv = Number(Number(krpano.get('view.vlookat') || 0).toFixed(2));
+
+  // If pins already exist right at this exact angle in this scene, offset slightly so new pin is clearly visible
+  const existingHs = hotspots.filter(h => String(h.sceneId) === String(activeSceneId));
+  let attempts = 0;
+  while (existingHs.some(h => Math.abs(Number(h.ath) - ath) < 3.5 && Math.abs(Number(h.atv) - atv) < 3.5) && attempts < 10) {
+    ath = Number((ath + 5.5).toFixed(2));
+    if (ath > 180) ath -= 360;
+    attempts++;
+  }
 
   try {
     const res = await fetch('/api/hotspots', {
@@ -3045,7 +3052,7 @@ window.addPresetPinHotspot = async function(type) {
     selectImageHotspot(newHotspot._id);
     krpano.call(`lookto(${ath}, ${atv}, get(view.fov), smooth(100, 100, 200))`);
     publishTourSilent();
-    showToast(`✓ Added ${styleName} at current view!`);
+    showToast(`✓ Added ${styleName}!`);
   } catch (err) {
     console.error('Error creating preset pin:', err);
     showToast(`Error: ${err.message}`);

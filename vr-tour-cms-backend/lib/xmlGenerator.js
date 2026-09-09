@@ -379,11 +379,6 @@ ${dynamicStylesXml}
       }
     }
 
-    // Standard krpano generated multires folders are cube panoramas
-    if (!hasCubeFaces && tiles && tiles.endsWith('.tiles')) {
-      hasCubeFaces = true;
-    }
-
     let imageXML = '';
     if (!hasCubeFaces) {
       imageXML = `\t\t<image>\n\t\t\t<sphere url="../panos/${tiles}/preview.jpg" />\n\t\t</image>`;
