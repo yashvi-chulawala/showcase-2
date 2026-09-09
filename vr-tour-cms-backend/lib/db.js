@@ -106,6 +106,7 @@ function generateId() {
 function listScenes(tourId = activeTourId) {
   let dbData = readDB(tourId);
   let scenes = dbData.scenes || [];
+  let deletedTiles = dbData.deletedTiles || [];
   if (getDbPath(tourId) === LEGACY_DB_FILE) {
     scenes = scenes.filter(s => (s.tourId || 'default') === tourId);
   }
@@ -122,7 +123,8 @@ function listScenes(tourId = activeTourId) {
           if (entry.isDirectory() && entry.name.endsWith('.tiles')) {
             const folderName = entry.name;
             const exists = scenes.some(s => s.tilesFolder === folderName || `${s.slug}.tiles` === folderName);
-            if (!exists) {
+            const isDeleted = deletedTiles.includes(folderName) || deletedTiles.includes(folderName.replace(/\.tiles$/, ''));
+            if (!exists && !isDeleted) {
               const baseName = folderName.replace(/\.tiles$/, '');
               // Clean up title (e.g. vesu_1_1 -> Vesu 1)
               let cleanTitle = baseName.replace(/_/g, ' ');
@@ -175,11 +177,29 @@ function updateScene(sceneId, patch) {
   return scene;
 }
 
-function deleteScene(sceneId) {
-  const db = readDB();
+function deleteScene(sceneId, tourId = activeTourId) {
+  const db = readDB(tourId);
+  const sc = db.scenes.find(s => s._id === sceneId);
+  if (sc) {
+    if (!db.deletedTiles) db.deletedTiles = [];
+    if (sc.tilesFolder && !db.deletedTiles.includes(sc.tilesFolder)) {
+      db.deletedTiles.push(sc.tilesFolder);
+    }
+    if (sc.slug && !db.deletedTiles.includes(sc.slug)) {
+      db.deletedTiles.push(sc.slug);
+    }
+
+    const tourDir = resolveTourPath(tourId);
+    if (tourDir && sc.tilesFolder) {
+      const tilesPath = path.join(tourDir, 'panos', sc.tilesFolder);
+      if (fs.existsSync(tilesPath)) {
+        try { fs.rmSync(tilesPath, { recursive: true, force: true }); } catch (e) {}
+      }
+    }
+  }
   db.scenes = db.scenes.filter(s => s._id !== sceneId);
   db.hotspots = db.hotspots.filter(h => h.sceneId !== sceneId && h.targetSceneId !== sceneId);
-  writeDB(db);
+  writeDB(db, tourId);
 }
 
 function reorderScenes(orderedSceneIds, tourId = activeTourId) {
@@ -427,7 +447,9 @@ function listAssets(tourId = activeTourId) {
     assets = assets.filter(a => (a.tourId || 'default') === tourId);
   }
 
-  // Auto-scan physical assets on disk
+  let deletedAssets = dbData.deletedAssets || [];
+
+  // Auto-scan project assets directory
   const tourDir = resolveTourPath(tourId);
   if (tourDir) {
     const assetsDir = path.join(tourDir, 'assets');
@@ -439,7 +461,8 @@ function listAssets(tourId = activeTourId) {
           const ext = path.extname(file).toLowerCase();
           if (['.png', '.jpg', '.jpeg', '.webp', '.svg', '.gif'].includes(ext)) {
             const exists = assets.some(a => a.name === file || a.url === `assets/${file}` || a.url === file);
-            if (!exists) {
+            const isDeleted = deletedAssets.includes(file);
+            if (!exists && !isDeleted) {
               const newAsset = {
                 _id: generateId(),
                 tourId: tourId || activeTourId,
@@ -472,7 +495,8 @@ function listAssets(tourId = activeTourId) {
           const ext = path.extname(file).toLowerCase();
           if (['.png', '.jpg', '.jpeg', '.webp', '.svg', '.gif'].includes(ext)) {
             const exists = assets.some(a => a.name === file || a.url === `assets/${file}` || a.url === file);
-            if (!exists) {
+            const isDeleted = deletedAssets.includes(file);
+            if (!exists && !isDeleted) {
               assets.push({
                 _id: generateId(),
                 tourId: 'default',
@@ -505,6 +529,10 @@ function deleteAsset(assetId, tourId = activeTourId) {
   if (dbData && dbData.assets) {
     const asset = dbData.assets.find(a => a._id === assetId);
     if (asset) {
+      if (!dbData.deletedAssets) dbData.deletedAssets = [];
+      if (asset.name && !dbData.deletedAssets.includes(asset.name)) {
+        dbData.deletedAssets.push(asset.name);
+      }
       const tourDir = resolveTourPath(tourId);
       if (tourDir && asset.name) {
         const filePath = path.join(tourDir, 'assets', asset.name);

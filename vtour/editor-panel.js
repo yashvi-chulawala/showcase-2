@@ -2321,10 +2321,34 @@ function addHotspotToKrpano(hotspot, targetScene) {
   krpano.set(`hotspot[${name}].ondown`, '');
 }
 
-// Hotspot single-click handler: Selects hotspot & opens its property tab immediately without shifting position
+// Hotspot single-click & double-click handler
+let _lastClickTime = 0;
+let _lastClickedId = null;
+let _isRepositioning = false;
+
 window.onHotspotClicked = function (hotspotId) {
-  window._lastHotspotClickTime = Date.now();
-  console.log("Hotspot clicked:", hotspotId);
+  const now = Date.now();
+  window._lastHotspotClickTime = now;
+
+  if (_isRepositioning) return;
+
+  // Check for Double Click within 380ms
+  if (_lastClickedId === hotspotId && (now - _lastClickTime < 380)) {
+    _lastClickedId = null;
+    _lastClickTime = 0;
+    startHotspotReposition(hotspotId);
+    return;
+  }
+
+  _lastClickedId = hotspotId;
+  _lastClickTime = now;
+
+  // Execute single-click selection immediately without moving pin
+  executeHotspotSelection(hotspotId);
+};
+
+function executeHotspotSelection(hotspotId) {
+  console.log("Hotspot selected:", hotspotId);
   const hs = hotspots.find(h => String(h._id) === String(hotspotId));
   if (hs) {
     showToast(`Selected: "${hs.title || 'Hotspot'}"`);
@@ -2343,49 +2367,60 @@ window.onHotspotClicked = function (hotspotId) {
     }
     renderHotspotList();
   }
-};
+}
 
-// Hotspot double-click handler: Repositions pin smoothly
-window.onHotspotDoubleClicked = function (hotspotId) {
-  window._lastHotspotClickTime = Date.now();
-  console.log("Hotspot double-clicked for repositioning:", hotspotId);
+// Reposition pin on double-click
+function startHotspotReposition(hotspotId) {
   const hs = hotspots.find(h => String(h._id) === String(hotspotId));
   if (!hs || hs.locked) return;
 
-  // Make sure it's selected in the sidebar
-  window.onHotspotClicked(hotspotId);
+  _isRepositioning = true;
+  executeHotspotSelection(hotspotId);
 
   const name = "hs_" + hotspotId;
-  showToast("📌 Move mouse to new position and click to place");
+  showToast("📌 Move cursor to new location and click to place pin");
 
-  // In krpano, make hotspot track mouse cursor until next click
-  if (krpano && typeof krpano.call === 'function') {
+  const panoContainer = document.getElementById('pano-container');
+  if (panoContainer) panoContainer.style.cursor = 'crosshair';
+
+  if (krpano) {
     krpano.set('reposition_active', true);
+    krpano.set('active_drag_hs', name);
     krpano.call(`
       asyncloop(reposition_active,
-        screentosphere(mouse.stagex, mouse.stagey, hotspot[${name}].ath, hotspot[${name}].atv);
+        screentosphere(mouse.stagex, mouse.stagey, cur_ath, cur_atv);
+        set(hotspot[get(active_drag_hs)].ath, get(cur_ath));
+        set(hotspot[get(active_drag_hs)].atv, get(cur_atv));
       );
     `);
   }
 
-  const panoContainer = document.getElementById('pano-container');
-  if (!panoContainer) return;
-
-  const onPlacePin = function (e) {
+  const onPlaceDrop = function (e) {
     e.stopPropagation();
-    panoContainer.removeEventListener('click', onPlacePin, true);
-    if (!krpano) return;
-
-    krpano.set('reposition_active', false);
-    const newAth = Number(krpano.get(`hotspot[${name}].ath`)).toFixed(2);
-    const newAtv = Number(krpano.get(`hotspot[${name}].atv`)).toFixed(2);
-    window.onHotspotDragEnd(name, newAth, newAtv);
+    e.preventDefault();
+    if (panoContainer) {
+      panoContainer.removeEventListener('click', onPlaceDrop, true);
+      panoContainer.style.cursor = '';
+    }
+    
+    if (krpano) {
+      krpano.set('reposition_active', false);
+      const newAth = Number(krpano.get(`hotspot[${name}].ath`)).toFixed(2);
+      const newAtv = Number(krpano.get(`hotspot[${name}].atv`)).toFixed(2);
+      window.onHotspotDragEnd(name, newAth, newAtv);
+    }
+    
+    setTimeout(() => {
+      _isRepositioning = false;
+    }, 200);
   };
 
   setTimeout(() => {
-    panoContainer.addEventListener('click', onPlacePin, { capture: true, once: true });
-  }, 300);
-};
+    if (panoContainer) {
+      panoContainer.addEventListener('click', onPlaceDrop, { capture: true, once: true });
+    }
+  }, 250);
+}
 
 function setupPanoBackgroundClickListener() {
   const panoContainer = document.getElementById('pano-container');
