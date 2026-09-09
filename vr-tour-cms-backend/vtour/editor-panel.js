@@ -2310,8 +2310,9 @@ function addHotspotToKrpano(hotspot, targetScene) {
   krpano.set(`hotspot[${name}].zorder`, 100);
   krpano.set(`hotspot[${name}].enabled`, true);
   krpano.set(`hotspot[${name}].capture`, true);
+  krpano.set(`hotspot[${name}].onclick`, `js(onHotspotClicked(${name}))`);
 
-  const isPole = String(styleName).toLowerCase() === 'pole pin' || String(styleName).toLowerCase() === 'landmark pin' || String(styleName).toLowerCase() === 'pole_pin' || String(styleName).toLowerCase() === 'landmark';
+  const isPole = String(styleName).toLowerCase().includes('residential') || String(styleName).toLowerCase().includes('commercial') || String(styleName).toLowerCase() === 'pole pin' || String(styleName).toLowerCase() === 'landmark pin' || String(styleName).toLowerCase() === 'pole_pin' || String(styleName).toLowerCase() === 'landmark';
   if (isPole) {
     krpano.set(`hotspot[${name}].edge`, 'bottomleft');
     krpano.set(`hotspot[${name}].ox`, -22);
@@ -2918,13 +2919,19 @@ function selectImageHotspot(hotspotId) {
   if (typeof renderHotspotList === 'function') renderHotspotList();
 }
 
+// Active state for preset pins in modal
+let _selectedPresetPinType = 'residential';
+let _currentImageModalTab = 'pins';
+
 // Modal tab switcher for Add Pin / Image Modal
 window.switchImageModalTab = function(tab) {
+  _currentImageModalTab = tab;
   const tabPins = document.getElementById('image-modal-tab-pins');
   const tabMedia = document.getElementById('image-modal-tab-media');
   const btnPins = document.getElementById('tab-btn-pins');
   const btnMedia = document.getElementById('tab-btn-media');
   const selectBtn = document.getElementById('modal-image-asset-select-btn');
+  const statusText = document.getElementById('modal-image-status-text');
 
   if (tab === 'pins') {
     if (tabPins) tabPins.style.display = 'flex';
@@ -2937,7 +2944,12 @@ window.switchImageModalTab = function(tab) {
       btnMedia.style.background = 'transparent';
       btnMedia.style.color = '#94a3b8';
     }
-    if (selectBtn) selectBtn.style.display = 'none';
+    if (statusText) statusText.textContent = 'Select a pin to place in the current panorama view';
+    if (selectBtn) {
+      selectBtn.style.opacity = '1';
+      selectBtn.style.cursor = 'pointer';
+    }
+    selectPresetPinCard(_selectedPresetPinType || 'residential');
   } else {
     if (tabPins) tabPins.style.display = 'none';
     if (tabMedia) tabMedia.style.display = 'flex';
@@ -2949,8 +2961,59 @@ window.switchImageModalTab = function(tab) {
       btnMedia.style.background = '#10b981';
       btnMedia.style.color = '#fff';
     }
-    if (selectBtn) selectBtn.style.display = 'inline-block';
+    if (statusText) statusText.textContent = 'Choose an uploaded image asset to add to the tour';
     renderModalImageAssetGrid();
+  }
+};
+
+// Select preset pin card in modal
+window.selectPresetPinCard = function(type) {
+  _selectedPresetPinType = type;
+  const cardRes = document.getElementById('pin-card-residential');
+  const cardComm = document.getElementById('pin-card-commercial');
+  const selectBtn = document.getElementById('modal-image-asset-select-btn');
+
+  if (cardRes) {
+    if (type === 'residential') {
+      cardRes.style.borderColor = '#10b981';
+      cardRes.classList.add('selected');
+    } else {
+      cardRes.style.borderColor = 'transparent';
+      cardRes.classList.remove('selected');
+    }
+  }
+
+  if (cardComm) {
+    if (type === 'commercial') {
+      cardComm.style.borderColor = '#10b981';
+      cardComm.classList.add('selected');
+    } else {
+      cardComm.style.borderColor = 'transparent';
+      cardComm.classList.remove('selected');
+    }
+  }
+
+  if (selectBtn) {
+    selectBtn.style.opacity = '1';
+    selectBtn.style.cursor = 'pointer';
+  }
+};
+
+// Double click or Select button confirmation
+window.confirmPresetPinSelection = function() {
+  addPresetPinHotspot(_selectedPresetPinType || 'residential');
+};
+
+// Unified modal select action
+window.confirmImageModalSelection = function() {
+  if (_currentImageModalTab === 'pins') {
+    addPresetPinHotspot(_selectedPresetPinType || 'residential');
+  } else {
+    if (window._selectedImageAsset) {
+      addImageHotspotFromAsset(window._selectedImageAsset.name, window._selectedImageAsset.url);
+    } else {
+      showToast('Please select an image asset first');
+    }
   }
 };
 
