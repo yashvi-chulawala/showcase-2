@@ -65,61 +65,6 @@
       "lat": null,
       "lng": null,
       "createdAt": "2026-09-07T12:35:23.232Z"
-    },
-    {
-      "_id": "mttnz4bdvoumj7",
-      "tourId": "C:\\Users\\Yashvi Chulawala\\Downloads\\Showcase360_editor-main\\vr-tour-cms-backend\\data\\Karma City Tour",
-      "title": "Vesu 16 1",
-      "slug": "vesu_16_1",
-      "tilesFolder": "vesu_16_1.tiles",
-      "order": 10,
-      "lat": null,
-      "lng": null,
-      "createdAt": "2026-09-09T05:34:46.681Z"
-    },
-    {
-      "_id": "mtto1giqudwtu0",
-      "tourId": "C:\\Users\\Yashvi Chulawala\\Downloads\\Showcase360_editor-main\\vr-tour-cms-backend\\data\\Karma City Tour",
-      "title": "Vesu 1",
-      "slug": "vesu_1",
-      "tilesFolder": "vesu_1.tiles",
-      "order": 10,
-      "lat": null,
-      "lng": null,
-      "createdAt": "2026-09-09T05:36:35.810Z"
-    },
-    {
-      "_id": "mtto1ya7tjqphh",
-      "tourId": "C:\\Users\\Yashvi Chulawala\\Downloads\\Showcase360_editor-main\\vr-tour-cms-backend\\data\\Karma City Tour",
-      "title": "Vesu 7",
-      "slug": "vesu_7",
-      "tilesFolder": "vesu_7.tiles",
-      "order": 10,
-      "lat": null,
-      "lng": null,
-      "createdAt": "2026-09-09T05:36:58.831Z"
-    },
-    {
-      "_id": "mtto2nae8vwu9l",
-      "tourId": "C:\\Users\\Yashvi Chulawala\\Downloads\\Showcase360_editor-main\\vr-tour-cms-backend\\data\\Karma City Tour",
-      "title": "Vesu 2",
-      "slug": "vesu_2",
-      "tilesFolder": "vesu_2.tiles",
-      "order": 10,
-      "lat": null,
-      "lng": null,
-      "createdAt": "2026-09-09T05:37:31.238Z"
-    },
-    {
-      "_id": "mtto2w1s5fyesk",
-      "tourId": "C:\\Users\\Yashvi Chulawala\\Downloads\\Showcase360_editor-main\\vr-tour-cms-backend\\data\\Karma City Tour",
-      "title": "Vesu 5",
-      "slug": "vesu_5",
-      "tilesFolder": "vesu_5.tiles",
-      "order": 10,
-      "lat": null,
-      "lng": null,
-      "createdAt": "2026-09-09T05:37:42.592Z"
     }
   ],
   "hotspots": [
@@ -239,5 +184,17 @@
       "badgeLetter": "R"
     }
   ],
-  "assets": []
+  "assets": [],
+  "deletedTiles": [
+    "vesu_2.tiles",
+    "vesu_2",
+    "vesu_5.tiles",
+    "vesu_5",
+    "vesu_7.tiles",
+    "vesu_7",
+    "vesu_1.tiles",
+    "vesu_1",
+    "vesu_16_1.tiles",
+    "vesu_16_1"
+  ]
 }

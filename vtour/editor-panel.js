@@ -295,15 +295,38 @@ function onKrpanoReady(krpanoInterface) {
   console.log("krpano interface ready:", krpano);
 
   const dragActionCode = `
+    copy(drag_start_ath, ath);
+    copy(drag_start_atv, atv);
+    copy(drag_start_mx, mouse.stagex);
+    copy(drag_start_my, mouse.stagey);
+    
     spheretoscreen(ath, atv, hotspotcenterx, hotspotcentery);
     sub(drag_dx, mouse.stagex, hotspotcenterx);
     sub(drag_dy, mouse.stagey, hotspotcentery);
+    
+    set(has_actually_dragged, false);
+    
     asyncloop(pressed,
-      sub(dx, mouse.stagex, drag_dx);
-      sub(dy, mouse.stagey, drag_dy);
-      screentosphere(dx, dy, ath, atv);
+      sub(moved_x, mouse.stagex, drag_start_mx);
+      sub(moved_y, mouse.stagey, drag_start_my);
+      Math.abs(moved_x, abs_x);
+      Math.abs(moved_y, abs_y);
+      add(total_moved, abs_x, abs_y);
+      
+      if(total_moved GT 6,
+        set(has_actually_dragged, true);
+        sub(dx, mouse.stagex, drag_dx);
+        sub(dy, mouse.stagey, drag_dy);
+        screentosphere(dx, dy, ath, atv);
+      );
     ,
-      js(onHotspotDragEnd(get(name), get(ath), get(atv)));
+      if(has_actually_dragged,
+        js(window.onHotspotDragEnd(get(name), get(ath), get(atv)));
+      ,
+        copy(ath, drag_start_ath);
+        copy(atv, drag_start_atv);
+        js(window.onHotspotClicked(get(name)));
+      );
     );
   `;
   krpano.set("action[draghotspot].content", dragActionCode);
@@ -2256,9 +2279,7 @@ function addHotspotToKrpano(hotspot, targetScene) {
     krpano.set(`hotspot[${name}].width`, hotspot.width || 150);
     krpano.set(`hotspot[${name}].height`, hotspot.height || 150);
     krpano.set(`hotspot[${name}].zoom`, false);
-    krpano.set(`hotspot[${name}].ondown`, '');
-    krpano.set(`hotspot[${name}].onclick`, `js(window.onHotspotClicked('${hotspot._id}'))`);
-    krpano.set(`hotspot[${name}].ondblclick`, hotspot.locked ? '' : `js(window.onHotspotDoubleClicked('${hotspot._id}'))`);
+    krpano.set(`hotspot[${name}].ondown`, hotspot.locked ? '' : 'draghotspot()');
     return;
   }
 
@@ -2316,9 +2337,7 @@ function addHotspotToKrpano(hotspot, targetScene) {
     krpano.set(`hotspot[${name}].url`, svgBase64);
   }
 
-  krpano.set(`hotspot[${name}].onclick`, `js(window.onHotspotClicked('${hotspot._id}'))`);
-  krpano.set(`hotspot[${name}].ondblclick`, hotspot.locked ? '' : `js(window.onHotspotDoubleClicked('${hotspot._id}'))`);
-  krpano.set(`hotspot[${name}].ondown`, '');
+  krpano.set(`hotspot[${name}].ondown`, hotspot.locked ? '' : 'draghotspot()');
 }
 
 // Hotspot single-click & double-click handler
@@ -2601,8 +2620,7 @@ async function toggleHotspotLock(hotspotId) {
       }
       if (krpano && typeof krpano.set === 'function') {
         const name = `hs_${hotspotId}`;
-        krpano.set(`hotspot[${name}].ondown`, '');
-        krpano.set(`hotspot[${name}].ondblclick`, newLockedState ? '' : `js(window.onHotspotDoubleClicked('${hotspotId}'))`);
+        krpano.set(`hotspot[${name}].ondown`, newLockedState ? '' : 'draghotspot()');
       }
       showToast(newLockedState ? "Hotspot Locked" : "Hotspot Unlocked");
     }
