@@ -114,7 +114,7 @@ window.ICON_LIBRARY_ITEMS = [
   { name: 'Pole Pin', family: 'Pin', type: 'Navigation', svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 80" width="48" height="48"><g><line x1="20" y1="36" x2="20" y2="76" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round"/><circle cx="20" cy="76" r="3" fill="#ffffff"/><rect x="28" y="8" width="38" height="24" rx="5" fill="#d9f2fd" stroke="#b9e6fe" stroke-width="1.2"/><rect x="4" y="4" width="30" height="30" rx="7" fill="#00a6e0" stroke="#ffffff" stroke-width="1.8"/><text x="19" y="24" text-anchor="middle" fill="#ffffff" font-family="Outfit, sans-serif" font-weight="900" font-size="15">R</text></g></svg>' }
 ];
 
-// Custom hotspot icons stored in localStorage
+// Custom hotspot icons stored in localStorage & synced with backend
 function getCustomIcons() {
   try {
     const raw = localStorage.getItem('custom_hotspot_icons');
@@ -124,16 +124,62 @@ function getCustomIcons() {
   }
 }
 
+async function syncCustomIconsWithBackend() {
+  try {
+    const localIcons = getCustomIcons();
+    const res = await fetch('/api/custom-icons/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ icons: localIcons })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && Array.isArray(data.icons)) {
+        const map = new Map();
+        localIcons.forEach(i => map.set(i.id || i.name, i));
+        data.icons.forEach(i => map.set(i.id || i.name, i));
+        const merged = Array.from(map.values());
+        localStorage.setItem('custom_hotspot_icons', JSON.stringify(merged));
+        if (typeof renderMediaIcons === 'function') renderMediaIcons();
+        if (typeof updatePopoverIconGrid === 'function') updatePopoverIconGrid();
+        if (typeof updateBadges === 'function') updateBadges();
+      }
+    }
+  } catch (err) {
+    console.warn('Failed to sync custom icons with backend:', err);
+  }
+}
+
+// Automatically sync custom icons on load
+syncCustomIconsWithBackend();
+
 function saveCustomIcon(iconObj) {
   const list = getCustomIcons();
-  list.push(iconObj);
+  const idx = list.findIndex(x => String(x.id) === String(iconObj.id) || String(x.name).toLowerCase() === String(iconObj.name).toLowerCase());
+  if (idx >= 0) {
+    list[idx] = iconObj;
+  } else {
+    list.push(iconObj);
+  }
   localStorage.setItem('custom_hotspot_icons', JSON.stringify(list));
+  try {
+    fetch('/api/custom-icons', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(iconObj)
+    }).catch(e => console.warn(e));
+  } catch (e) {}
 }
 
 function removeCustomIcon(iconId) {
   let list = getCustomIcons();
-  list = list.filter(x => String(x.id) !== String(iconId));
+  list = list.filter(x => String(x.id) !== String(iconId) && String(x.name).toLowerCase() !== String(iconId).toLowerCase());
   localStorage.setItem('custom_hotspot_icons', JSON.stringify(list));
+  try {
+    fetch('/api/custom-icons/' + encodeURIComponent(iconId), {
+      method: 'DELETE'
+    }).catch(e => console.warn(e));
+  } catch (e) {}
 }
 
 // Helper: case-sensitive original basename

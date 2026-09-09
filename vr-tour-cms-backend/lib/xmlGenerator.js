@@ -73,7 +73,7 @@ const ICON_LIBRARY_ITEMS = [
 /**
  * Generates Base64 data URI for SVG icon styles or standalone Text style.
  */
-function getHotspotSvgBase64(style, labelText, color, badgeLetter) {
+function getHotspotSvgBase64(style, labelText, color, badgeLetter, customIcons = []) {
   const s = String(style || 'Arrow').toLowerCase();
   const fillCol = color || '#00a6e0';
 
@@ -82,6 +82,13 @@ function getHotspotSvgBase64(style, labelText, color, badgeLetter) {
   }
   if (style && String(style).startsWith('assets/')) {
     return '../' + style;
+  }
+
+  if (Array.isArray(customIcons)) {
+    const foundCustom = customIcons.find(x => String(x.name).toLowerCase() === s || String(x.id) === s);
+    if (foundCustom && foundCustom.dataUrl) {
+      return foundCustom.dataUrl;
+    }
   }
 
   if (s === 'pole pin' || s === 'landmark pin' || s === 'pole_pin' || s === 'landmark') {
@@ -159,8 +166,9 @@ function getHotspotSvgBase64(style, labelText, color, badgeLetter) {
 /**
  * @param {Array} scenes   [{ _id, title, slug, tilesFolder, order }]
  * @param {Array} hotspots [{ _id, sceneId, targetSceneId, ath, atv, style, kind, info }]
+ * @param {Array} customIcons [{ id, name, dataUrl }]
  */
-function generateScenesXML(scenes, hotspots) {
+function generateScenesXML(scenes, hotspots, customIcons = []) {
   const sorted = [...scenes].sort((a, b) => {
     if (a.isStartScene && !b.isStartScene) return -1;
     if (!a.isStartScene && b.isStartScene) return 1;
@@ -188,10 +196,11 @@ function generateScenesXML(scenes, hotspots) {
   const dynamicStylesXml = Array.from(knownStyles).map(s => {
     const sLow = String(s).toLowerCase();
     const isText = sLow === 'text';
-    const svgUrl = getHotspotSvgBase64(s);
-    if (isText) {
+    const isGif = sLow.includes('gif') || (Array.isArray(customIcons) && customIcons.some(c => (c.name.toLowerCase() === sLow || c.id === s) && c.dataUrl && (c.dataUrl.startsWith('data:image/gif') || c.dataUrl.toLowerCase().includes('.gif'))));
+    if (isText || isGif) {
       return `\t<style name="${esc(s)}" scale="1.0" alpha="1.0" visible="true" zorder="100" enabled="true" capture="false" />`;
     }
+    const svgUrl = getHotspotSvgBase64(s, '', '', '', customIcons);
     return `\t<style name="${esc(s)}" url="${esc(svgUrl)}" scale="0.85" alpha="1.0" visible="true" zorder="100" enabled="true" capture="false" />`;
   }).join('\n');
 
@@ -222,10 +231,17 @@ ${dynamicStylesXml}
       const style = h.style || 'Arrow';
       const isPole = String(style).toLowerCase() === 'pole pin' || String(style).toLowerCase() === 'landmark pin' || String(style).toLowerCase() === 'pole_pin' || String(style).toLowerCase() === 'landmark';
       
+      const customIcon = Array.isArray(customIcons) ? customIcons.find(x => String(x.name).toLowerCase() === String(style).toLowerCase() || String(x.id) === String(style)) : null;
+      const customDataUrl = customIcon ? customIcon.dataUrl : (style && (String(style).startsWith('data:image/') || String(style).startsWith('http') || String(style).startsWith('assets/')) ? style : null);
+
+      const isGif = (customDataUrl && (String(customDataUrl).startsWith('data:image/gif') || String(customDataUrl).toLowerCase().includes('.gif'))) ||
+                    String(style).toLowerCase().includes('gif') ||
+                    String(style).toLowerCase().endsWith('.gif');
+
       let widthAttr = h.width ? `width="${h.width}"` : '';
       let heightAttr = h.height ? `height="${h.height}"` : '';
       // If explicit px dimensions are set, normalize scale to 1 so they fully control the size.
-      let scaleAttr = `scale="${(h.width || h.height) ? 1.0 : (h.scale !== undefined ? h.scale : 0.85)}"`;
+      let scaleAttr = `scale="${(h.width || h.height || isGif) ? 1.0 : (h.scale !== undefined ? h.scale : 0.85)}"`;
       
       let baseAttrs = `ath="${h.ath}" atv="${h.atv}" ${widthAttr} ${heightAttr} ${scaleAttr} visible="true" zorder="100" enabled="true" capture="false"`;
       
@@ -268,16 +284,19 @@ ${dynamicStylesXml}
         
         const cssStr = `font-family:${font}; font-size:${fontSize}px; color:${color}; font-weight:${fw}; font-style:${fs}; text-decoration:${td}; text-align:center;`;
         baseAttrs += ` css="${esc(cssStr)}" padding="4 8"`;
+      } else if (isGif) {
+        let gifSrc = customDataUrl || (style.startsWith('http') || style.startsWith('data:') ? style : (style.startsWith('assets/') ? `../${style}` : style));
+        const w = h.width || 130;
+        const hgt = h.height || 130;
+        baseAttrs += ` type="text" renderer="css3d" distorted="false" bg="false" bgalpha="0.0" bgborder="0 0x000000 0" padding="0" width="${w}" height="${hgt}" html="${esc(`<img src="${gifSrc}" style="width:100%; height:100%; object-fit:contain; pointer-events:none; display:block;" />`)}" alpha="1.0"`;
       } else {
-        const isGif = String(style).toLowerCase().endsWith('.gif') || String(style).toLowerCase().includes('.gif');
-        if (isGif) {
-          const imgUrl = style.startsWith('http') || style.startsWith('data:') ? style : (style.startsWith('assets/') ? `../${style}` : style);
-          baseAttrs += ` type="text" renderer="css3d" distorted="false" bg="false" bgalpha="0.0" bgborder="0 0x000000 0" padding="0" html="${esc(`<img src="${imgUrl}" style="width:100%; height:100%; object-fit:contain; pointer-events:none; display:block;" />`)}" alpha="1.0"`;
+        if (customIcon && customIcon.dataUrl) {
+          baseAttrs += ` url="${esc(customIcon.dataUrl)}" alpha="1.0"`;
         } else {
           if (isPole) {
             baseAttrs += ` edge="bottomleft" ox="-22" oy="0"`;
           }
-          const svgUrl = getHotspotSvgBase64(style, h.title, h.color, h.badgeLetter);
+          const svgUrl = getHotspotSvgBase64(style, h.title, h.color, h.badgeLetter, customIcons);
           baseAttrs += ` url="${esc(svgUrl)}" alpha="1.0"`;
         }
       }

@@ -16,9 +16,10 @@ const { seedInitialScenesIfEmpty } = require('./seeder');
 function publishTour(tourId) {
   const scenes = db.listScenes(tourId);
   const hotspots = db.listHotspots(tourId);
+  const customIcons = db.getCustomIcons(tourId);
   // Allow publishing 0 scenes to clear out the previous scenes.xml
 
-  const xml = generateScenesXML(scenes, hotspots);
+  const xml = generateScenesXML(scenes, hotspots, customIcons);
   
   const tourDir = db.resolveTourPath(tourId) || path.resolve(__dirname, '../vtour');
   const TOUR_SRC_DIR = path.join(tourDir, 'src');

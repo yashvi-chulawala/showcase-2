@@ -75,7 +75,7 @@ function ensureFile(dbPath) {
   const dir = path.dirname(dbPath);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   if (!fs.existsSync(dbPath)) {
-    fs.writeFileSync(dbPath, JSON.stringify({ scenes: [], hotspots: [], assets: [] }, null, 2));
+    fs.writeFileSync(dbPath, JSON.stringify({ scenes: [], hotspots: [], assets: [], customIcons: [] }, null, 2));
   }
 }
 
@@ -87,9 +87,10 @@ function readDB(tourId = activeTourId) {
     if (!db.assets) db.assets = [];
     if (!db.scenes) db.scenes = [];
     if (!db.hotspots) db.hotspots = [];
+    if (!db.customIcons) db.customIcons = [];
     return db;
   } catch(e) {
-    return { scenes: [], hotspots: [], assets: [] };
+    return { scenes: [], hotspots: [], assets: [], customIcons: [] };
   }
 }
 
@@ -585,6 +586,37 @@ function updateAsset(assetId, patch, tourId = activeTourId) {
   return null;
 }
 
+function getCustomIcons(tourId = activeTourId) {
+  const data = readDB(tourId);
+  return data.customIcons || [];
+}
+
+function saveCustomIcon(iconObj, tourId = activeTourId) {
+  const data = readDB(tourId);
+  if (!data.customIcons) data.customIcons = [];
+  const existingIdx = data.customIcons.findIndex(x => String(x.id) === String(iconObj.id) || String(x.name).toLowerCase() === String(iconObj.name).toLowerCase());
+  if (existingIdx >= 0) {
+    data.customIcons[existingIdx] = Object.assign({}, data.customIcons[existingIdx], iconObj);
+  } else {
+    data.customIcons.push(iconObj);
+  }
+  writeDB(data, tourId);
+  return iconObj;
+}
+
+function deleteCustomIcon(iconId, tourId = activeTourId) {
+  const data = readDB(tourId);
+  if (!data.customIcons) data.customIcons = [];
+  data.customIcons = data.customIcons.filter(x => String(x.id) !== String(iconId) && String(x.name).toLowerCase() !== String(iconId).toLowerCase());
+  writeDB(data, tourId);
+}
+
+function setCustomIcons(icons, tourId = activeTourId) {
+  const data = readDB(tourId);
+  data.customIcons = Array.isArray(icons) ? icons : [];
+  writeDB(data, tourId);
+}
+
 module.exports = {
   DB_FILE: LEGACY_DB_FILE,
   setActiveTour,
@@ -611,4 +643,8 @@ module.exports = {
   createAsset,
   deleteAsset,
   updateAsset,
+  getCustomIcons,
+  saveCustomIcon,
+  deleteCustomIcon,
+  setCustomIcons,
 };

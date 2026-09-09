@@ -112,6 +112,7 @@ app.use('/api', scenesRouter);
 app.use('/api', hotspotsRouter);
 app.use('/api/project', projectRouter);
 app.use('/api', publishRouter);
+app.use('/api', require('./routes/custom-icons'));
 app.use('/api', require('./routes/gemini-voice'));
 
 app.get('/api/tours/:tourId/thumbnail', (req, res) => {
