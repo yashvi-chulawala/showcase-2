@@ -261,14 +261,14 @@
       "badgeLetter": "R"
     },
     {
-      "_id": "mttq3bcv0mkjh0",
+      "_id": "mttq8sa30j1sb6",
       "sceneId": "msyf9d69l48lr0",
       "title": "Vesu 2",
       "kind": "scene",
       "targetSceneId": "msyfb2xrwrypbc",
       "info": "",
-      "ath": -56.57,
-      "atv": -16.59,
+      "ath": -55.8,
+      "atv": -26.41,
       "style": "Aerial Gif 1",
       "color": "#ffffff",
       "transition": "BLEND(0.5)",
@@ -276,17 +276,17 @@
       "textProps": {},
       "width": null,
       "height": null,
-      "createdAt": "2026-09-09T06:34:01.663Z"
+      "createdAt": "2026-09-09T06:38:16.875Z"
     },
     {
-      "_id": "mttq3fq7fdgzia",
+      "_id": "mttq91fnitp8ho",
       "sceneId": "msyfb2xrwrypbc",
       "title": "GO TO VESU 1",
       "kind": "scene",
       "targetSceneId": "msyf9d69l48lr0",
       "info": "",
-      "ath": -5.61,
-      "atv": 1.63,
+      "ath": -32.45,
+      "atv": -31.93,
       "style": "Aerial Gif 1",
       "color": "#00a6e0",
       "transition": "BLEND(0.5)",
@@ -294,7 +294,7 @@
       "textProps": {},
       "width": null,
       "height": null,
-      "createdAt": "2026-09-09T06:34:07.327Z"
+      "createdAt": "2026-09-09T06:38:28.739Z"
     }
   ],
   "assets": [],
