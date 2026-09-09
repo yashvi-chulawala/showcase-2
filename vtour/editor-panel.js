@@ -231,29 +231,18 @@ function getHotspotSvgBase64(style, labelText, color, bgColor, textStyle, badgeL
     const defaultText = 'Add text';
     const textStr = String(labelText || defaultText).trim() || defaultText;
     const letter = (isRes ? 'R' : (isComm ? 'C' : String(badgeLetter || (labelText ? labelText.trim().charAt(0) : 'R') || 'R'))).toUpperCase().slice(0, 3);
-    const fillCol = isRes ? '#3b82f6' : (isComm ? '#f59e0b' : (color || '#00a6e0'));
+    const fillCol = isRes ? '#3b82f6' : (isComm ? '#f59e0b' : (color || '#3b82f6'));
     const textLen = textStr.length;
     const bannerWidth = Math.max(84, Math.round(textLen * 8.8 + 26));
     const totalW = Math.round(44 + bannerWidth + 14);
 
     const poleSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalW} 115" width="${totalW}" height="115">
-      <defs>
-        <filter id="poleShadow" x="-30%" y="-20%" width="160%" height="150%">
-          <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000000" flood-opacity="0.5"/>
-        </filter>
-      </defs>
-      <g filter="url(#poleShadow)">
-        <line x1="22" y1="42" x2="22" y2="108" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round"/>
-        <circle cx="22" cy="108" r="3.5" fill="#ffffff"/>
-      </g>
-      <g filter="url(#poleShadow)">
-        <rect x="36" y="6" width="${bannerWidth}" height="34" rx="7" fill="#d9f2fd" stroke="#b9e6fe" stroke-width="1.5"/>
-        <text x="46" y="28" fill="#0f172a" font-family="'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="800" font-size="14.5" letter-spacing="0.2">${textStr.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</text>
-      </g>
-      <g filter="url(#poleShadow)">
-        <rect x="2" y="3" width="40" height="40" rx="9" fill="${fillCol}" stroke="#ffffff" stroke-width="2"/>
-        <text x="22" y="30" text-anchor="middle" fill="#ffffff" font-family="'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="20">${letter.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</text>
-      </g>
+      <line x1="22" y1="42" x2="22" y2="108" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round"/>
+      <circle cx="22" cy="108" r="3.5" fill="#ffffff"/>
+      <rect x="36" y="6" width="${bannerWidth}" height="34" rx="7" fill="#f0f9ff" stroke="#bae6fd" stroke-width="1.5"/>
+      <text x="46" y="28" fill="#0f172a" font-family="'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="800" font-size="14.5" letter-spacing="0.2">${textStr.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</text>
+      <rect x="2" y="3" width="40" height="40" rx="9" fill="${fillCol}" stroke="#ffffff" stroke-width="2"/>
+      <text x="22" y="30" text-anchor="middle" fill="#ffffff" font-family="'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="20">${letter.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</text>
     </svg>`;
 
     return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(poleSvg)))}`;

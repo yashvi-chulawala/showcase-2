@@ -18,7 +18,7 @@ router.post('/hotspots', (req, res) => {
   if (!title || !title.trim()) return res.status(400).json({ error: 'title is required' });
   if (!Number.isFinite(ath) || !Number.isFinite(atv)) return res.status(400).json({ error: 'ath and atv must be valid finite numbers' });
 
-  const isPole = style && (String(style).toLowerCase() === 'pole pin' || String(style).toLowerCase() === 'landmark pin' || String(style).toLowerCase() === 'pole_pin' || String(style).toLowerCase() === 'landmark');
+  const isPole = style && (String(style).toLowerCase().includes('residential') || String(style).toLowerCase().includes('commercial') || String(style).toLowerCase() === 'pole pin' || String(style).toLowerCase() === 'landmark pin' || String(style).toLowerCase() === 'pole_pin' || String(style).toLowerCase() === 'landmark');
   const resolvedKind = ['info', 'image'].includes(kind) || isPole ? (kind || 'image') : 'scene'; // default to scene-link for backward compatibility
   const resolvedInfo = (info && String(info).trim()) ? info : (title || 'INFO');
 

@@ -96,29 +96,18 @@ function getHotspotSvgBase64(style, labelText, color, badgeLetter, customIcons =
   if (isPole) {
     const textStr = esc(String(labelText || 'Add text').trim() || 'Add text');
     const letter = esc(String(isRes ? 'R' : (isComm ? 'C' : (badgeLetter || (labelText ? labelText.trim().charAt(0) : 'R') || 'R'))).toUpperCase().slice(0, 3));
-    const fillCol = isRes ? '#3b82f6' : (isComm ? '#f59e0b' : (color || '#00a6e0'));
+    const fillCol = isRes ? '#3b82f6' : (isComm ? '#f59e0b' : (color || '#3b82f6'));
     const textLen = textStr.length;
     const bannerWidth = Math.max(84, Math.round(textLen * 8.8 + 26));
     const totalW = Math.round(44 + bannerWidth + 14);
 
     const poleSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalW} 115" width="${totalW}" height="115">
-      <defs>
-        <filter id="poleShadow" x="-30%" y="-20%" width="160%" height="150%">
-          <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000000" flood-opacity="0.5"/>
-        </filter>
-      </defs>
-      <g filter="url(#poleShadow)">
-        <line x1="22" y1="42" x2="22" y2="108" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round"/>
-        <circle cx="22" cy="108" r="3.5" fill="#ffffff"/>
-      </g>
-      <g filter="url(#poleShadow)">
-        <rect x="36" y="6" width="${bannerWidth}" height="34" rx="7" fill="#d9f2fd" stroke="#b9e6fe" stroke-width="1.5"/>
-        <text x="46" y="28" fill="#0f172a" font-family="'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="800" font-size="14.5" letter-spacing="0.2">${textStr}</text>
-      </g>
-      <g filter="url(#poleShadow)">
-        <rect x="2" y="3" width="40" height="40" rx="9" fill="${fillCol}" stroke="#ffffff" stroke-width="2"/>
-        <text x="22" y="30" text-anchor="middle" fill="#ffffff" font-family="'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="20">${letter}</text>
-      </g>
+      <line x1="22" y1="42" x2="22" y2="108" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round"/>
+      <circle cx="22" cy="108" r="3.5" fill="#ffffff"/>
+      <rect x="36" y="6" width="${bannerWidth}" height="34" rx="7" fill="#f0f9ff" stroke="#bae6fd" stroke-width="1.5"/>
+      <text x="46" y="28" fill="#0f172a" font-family="'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="800" font-size="14.5" letter-spacing="0.2">${textStr}</text>
+      <rect x="2" y="3" width="40" height="40" rx="9" fill="${fillCol}" stroke="#ffffff" stroke-width="2"/>
+      <text x="22" y="30" text-anchor="middle" fill="#ffffff" font-family="'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="20">${letter}</text>
     </svg>`;
 
     return `data:image/svg+xml;base64,${Buffer.from(poleSvg).toString('base64')}`;
@@ -186,7 +175,7 @@ function generateScenesXML(scenes, hotspots, customIcons = []) {
     'Arrow 02 Left', 'Arrow 02 Left Up', 'Arrow 02 Right Up', 'Arrow 02 Right',
     'Arrow 03 Up', 'Arrow 03 Down', 'Arrow 03 Left', 'Arrow 03 Right', 'Arrow Circle',
     'Pin Red', 'Pin Blue', 'Pin Green', 'Pin Yellow', 'Dot Green', 'Dot Blue',
-    'Dot Red', 'Dot White', 'Portal', 'Info Badge'
+    'Dot Red', 'Dot White', 'Portal', 'Info Badge', 'Residential Pin', 'Commercial Pin'
   ]);
   if (Array.isArray(hotspots)) {
     hotspots.forEach(h => {
@@ -231,6 +220,7 @@ ${dynamicStylesXml}
     const sceneHotspots = hotspots.filter(h => String(h.sceneId) === String(scene._id));
     const hotspotXML = sceneHotspots.map(h => {
       const hsName = h._id ? `hs_${h._id}` : `hs_${slugify(scene.title)}_${Math.random().toString(36).substring(2, 7)}`;
+      const style = h.style || 'Arrow';
       const sLower = String(style).toLowerCase();
       const isPole = sLower.includes('residential') || sLower.includes('commercial') || sLower === 'pole pin' || sLower === 'landmark pin' || sLower === 'pole_pin' || sLower === 'landmark';
       
