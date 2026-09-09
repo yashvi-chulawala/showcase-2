@@ -193,12 +193,35 @@ function getSceneKrpanoName(scene) {
   return 'scene_' + getOriginalBaseName(scene);
 }
 
+// Returns true if a hotspot is a landmark pole pin
+function isLandmarkPin(hs) {
+  if (!hs) return false;
+  const s = String(hs.style || '').toLowerCase();
+  return s.includes('residential') || s.includes('commercial') || s.includes('education') || s.includes('health') || s.includes('park') || s.includes('shop') || s.includes('pole') || s.includes('landmark') || !!hs.badgeLetter;
+}
+
+// Returns the normalized badge letter for a landmark pin
+function getPinBadgeLetter(hs) {
+  if (!hs) return 'R';
+  if (hs.badgeLetter) return String(hs.badgeLetter).trim().toUpperCase().slice(0, 3);
+  const s = String(hs.style || '').toLowerCase();
+  if (s.includes('residential') || s === 'res') return 'R';
+  if (s.includes('commercial') || s === 'comm') return 'C';
+  if (s.includes('education') || s.includes('school')) return 'E';
+  if (s.includes('health') || s.includes('hospital')) return 'H';
+  if (s.includes('park') || s.includes('nature')) return 'P';
+  if (s.includes('shop') || s.includes('mall') || s.includes('store')) return 'S';
+  if (hs.title && hs.title.trim()) return hs.title.trim().charAt(0).toUpperCase();
+  return 'R';
+}
+
 // Returns true if a hotspot should be treated as an image overlay or landmark pin
 function isImageHotspot(hs) {
   if (!hs) return false;
   if (hs.kind === 'image') return true;
+  if (isLandmarkPin(hs)) return true;
   const s = String(hs.style || '').toLowerCase();
-  return s.includes('residential') || s.includes('commercial') || s === 'pole pin' || s === 'landmark pin' || s === 'pole_pin' || s === 'landmark' || s.startsWith('assets/') || s.startsWith('http') || (s.startsWith('data:image/') && !s.includes('text'));
+  return s.startsWith('assets/') || s.startsWith('http') || (s.startsWith('data:image/') && !s.includes('text'));
 }
 
 // Returns true if a hotspot should be treated as a text label
@@ -2830,31 +2853,22 @@ function selectImageHotspot(hotspotId) {
   }
   imgPanel.style.display = 'block';
 
-  const s = String(hs.style || '').toLowerCase();
-  const isRes = s.includes('residential') || s === 'res';
-  const isComm = s.includes('commercial') || s === 'comm';
-  const isPole = isRes || isComm || s === 'pole pin' || s === 'landmark pin' || s === 'pole_pin' || s === 'landmark';
+  const isPole = isLandmarkPin(hs);
 
   const titleEl = document.getElementById('prop-hs-active-title');
   if (titleEl) {
-    const defaultName = isRes ? 'Residential Pin' : (isComm ? 'Commercial Pin' : (isPole ? 'Landmark Pin' : 'Image Hotspot'));
-    titleEl.innerHTML = `<span style="color:#94a3b8; font-weight:700;">${isPole ? 'LANDMARK PIN:' : 'IMAGE:'}</span> <span style="color:#fff; font-weight:800; margin-left:4px;">"${hs.title || defaultName}"</span>`;
+    const defaultName = hs.title || (isPole ? 'Landmark Pin' : 'Image Hotspot');
+    titleEl.innerHTML = `<span style="color:#94a3b8; font-weight:700;">${isPole ? 'LANDMARK PIN:' : 'IMAGE:'}</span> <span style="color:#fff; font-weight:800; margin-left:4px;">"${defaultName}"</span>`;
   }
 
   const isLocked = !!(hs.locked === true || hs.locked === 'true');
 
   if (isPole) {
-    let currentLetter = hs.badgeLetter;
-    if (!currentLetter) {
-      if (isRes) currentLetter = 'R';
-      else if (isComm) currentLetter = 'C';
-      else if (s.includes('education') || s.includes('school')) currentLetter = 'E';
-      else if (s.includes('health') || s.includes('hospital')) currentLetter = 'H';
-      else if (s.includes('park')) currentLetter = 'P';
-      else if (s.includes('shop')) currentLetter = 'S';
-      else currentLetter = hs.title ? hs.title.trim().charAt(0).toUpperCase() : 'R';
-    }
-    currentLetter = String(currentLetter || 'R').toUpperCase().slice(0, 3);
+    const currentLetter = getPinBadgeLetter(hs);
+
+    const s = String(hs.style || '').toLowerCase();
+    const isRes = s.includes('residential') || s === 'res';
+    const isComm = s.includes('commercial') || s === 'comm';
 
     let currentColor = hs.color;
     if (!currentColor) {
@@ -2918,15 +2932,15 @@ function selectImageHotspot(hotspotId) {
         </div>
       </div>
 
-      <!-- Sync Color to All Pins Options -->
+      <!-- Sync Color to Matching Badge Letter Pins Options -->
       <div style="background: rgba(116, 184, 67, 0.06); border: 1px solid rgba(116, 184, 67, 0.2); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 8px;">
         <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: #cbd5e1; cursor: pointer;">
           <input type="checkbox" id="sync-pin-color-toggle" ${window._syncAllPinColors ? 'checked' : ''} onchange="window._syncAllPinColors = this.checked;" style="accent-color: #74b843; width: 16px; height: 16px; cursor: pointer;">
-          <span>Auto-sync color changes to all landmark pins</span>
+          <span id="sync-pin-color-text">Auto-sync color to all "${currentLetter}" pins</span>
         </label>
-        <button onclick="applyCurrentPinColorToAll('${hs._id}')" class="property-btn-outline" style="border-color: #74b843; color: #74b843; padding: 7px 12px; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; border-radius: 8px; background: rgba(116, 184, 67, 0.1); cursor: pointer; transition: all 0.2s;">
+        <button id="apply-color-badge-btn" onclick="applyCurrentPinColorToAll('${hs._id}')" class="property-btn-outline" style="border-color: #74b843; color: #74b843; padding: 7px 12px; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; border-radius: 8px; background: rgba(116, 184, 67, 0.1); cursor: pointer; transition: all 0.2s;">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
-          Apply This Color to All Landmark Pins
+          Apply This Color to All "${currentLetter}" Pins
         </button>
       </div>
 
@@ -3201,10 +3215,19 @@ window.onLandmarkPinBadgeChange = function(val) {
   const upper = String(val || '').toUpperCase().slice(0, 3);
   hs.badgeLetter = upper;
 
-  const previewIcon = document.getElementById('pin-badge-preview-icon');
-  if (previewIcon) previewIcon.textContent = upper || 'R';
+  const currentBadge = getPinBadgeLetter(hs);
 
-  const svgBase64 = getHotspotSvgBase64(hs.style || 'Residential Pin', hs.title, hs.color, null, null, hs.badgeLetter);
+  const previewIcon = document.getElementById('pin-badge-preview-icon');
+  if (previewIcon) previewIcon.textContent = currentBadge;
+
+  const syncLabelText = document.getElementById('sync-pin-color-text');
+  if (syncLabelText) syncLabelText.textContent = `Auto-sync color to all "${currentBadge}" pins`;
+  const syncBtn = document.getElementById('apply-color-badge-btn');
+  if (syncBtn) {
+    syncBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg> Apply This Color to All "${currentBadge}" Pins`;
+  }
+
+  const svgBase64 = getHotspotSvgBase64(hs.style || 'Residential Pin', hs.title, hs.color, null, null, currentBadge);
   if (krpano) {
     krpano.set(`hotspot[hs_${selectedHotspotId}].url`, svgBase64);
   }
@@ -3238,7 +3261,8 @@ window.onLandmarkPinColorChange = function(col) {
   if (hex) hex.value = col;
   if (previewIcon) previewIcon.style.background = col;
 
-  const svgBase64 = getHotspotSvgBase64(hs.style || 'Residential Pin', hs.title, hs.color, null, null, hs.badgeLetter);
+  const currentBadge = getPinBadgeLetter(hs);
+  const svgBase64 = getHotspotSvgBase64(hs.style || 'Residential Pin', hs.title, hs.color, null, null, currentBadge);
   if (krpano) {
     krpano.set(`hotspot[hs_${selectedHotspotId}].url`, svgBase64);
   }
@@ -3263,19 +3287,23 @@ window.onLandmarkPinColorChange = function(col) {
   }, 400);
 };
 
-// Apply active pin color to all landmark pins across the tour
+// Apply active pin color ONLY to landmark pins with the same badge letter across the tour
 window.applyCurrentPinColorToAll = async function(sourceHotspotId, customColor) {
   const hs = hotspots.find(h => String(h._id) === String(sourceHotspotId || selectedHotspotId));
-  const targetColor = customColor || (hs ? hs.color : null);
+  if (!hs) return;
+  const targetLetter = getPinBadgeLetter(hs);
+  const targetColor = customColor || hs.color;
   if (!targetColor) return;
 
-  const landmarkPins = hotspots.filter(h => isImageHotspot(h));
-  if (landmarkPins.length === 0) return;
+  // Filter ONLY pins with matching badge letter
+  const matchingPins = hotspots.filter(h => isLandmarkPin(h) && getPinBadgeLetter(h) === targetLetter);
+  if (matchingPins.length === 0) return;
 
-  landmarkPins.forEach(h => {
+  matchingPins.forEach(h => {
     h.color = targetColor;
     if (krpano && String(h.sceneId) === String(activeSceneId)) {
-      const svg = getHotspotSvgBase64(h.style || 'Residential Pin', h.title, targetColor, null, null, h.badgeLetter);
+      const bLetter = getPinBadgeLetter(h);
+      const svg = getHotspotSvgBase64(h.style || 'Residential Pin', h.title, targetColor, null, null, bLetter);
       krpano.set(`hotspot[hs_${h._id}].url`, svg);
     }
   });
@@ -3288,7 +3316,7 @@ window.applyCurrentPinColorToAll = async function(sourceHotspotId, customColor) 
   if (previewIcon) previewIcon.style.background = targetColor;
 
   try {
-    await Promise.all(landmarkPins.map(h => 
+    await Promise.all(matchingPins.map(h => 
       fetch(`/api/hotspots/${h._id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -3296,10 +3324,10 @@ window.applyCurrentPinColorToAll = async function(sourceHotspotId, customColor) 
       })
     ));
     publishTourSilent();
-    showToast(`✓ Applied color ${targetColor} to all landmark pins!`);
+    showToast(`✓ Applied color ${targetColor} to all "${targetLetter}" pins (${matchingPins.length})!`);
   } catch (err) {
-    console.error("Error applying color to all pins:", err);
-    showToast("Error updating all pin colors");
+    console.error("Error applying color to matching pins:", err);
+    showToast("Error updating pin colors");
   }
 };
 
