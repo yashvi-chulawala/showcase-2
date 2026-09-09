@@ -3045,13 +3045,12 @@
 
       <!-- Tab Content: Landmark Pins -->
       <div id="image-modal-tab-pins" style="flex: 1; overflow-y: auto; background: #1c2027; padding: 24px; display: flex; flex-direction: column; gap: 20px;">
-        <div style="font-size: 13px; color: #94a3b8;">Choose a fixed-color pin type for your panorama. You can edit the text/label directly in the property editor.</div>
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; max-width: 700px; margin: 0 auto; width: 100%;">
           
           <!-- Residential Pin Card -->
-          <div class="preset-pin-card" onclick="addPresetPinHotspot('residential')" style="background: #16181d; border: 1.5px solid #2d3748; border-radius: 12px; padding: 18px; display: flex; flex-direction: column; align-items: center; gap: 12px; cursor: pointer; transition: all 0.2s;" onmouseenter="this.style.borderColor='#3b82f6'; this.style.transform='translateY(-2px)'" onmouseleave="this.style.borderColor='#2d3748'; this.style.transform='none'">
-            <div style="width: 100%; height: 95px; background: rgba(59, 130, 246, 0.05); border-radius: 8px; display: flex; align-items: center; justify-content: center; padding: 8px;">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 190 115" width="160" height="95">
+          <div class="preset-pin-card" onclick="addPresetPinHotspot('residential')" style="background: #16181d; border: 1.5px solid #2d3748; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 14px; cursor: pointer; transition: all 0.2s;" onmouseenter="this.style.borderColor='#3b82f6'; this.style.transform='translateY(-2px)'" onmouseleave="this.style.borderColor='#2d3748'; this.style.transform='none'">
+            <div style="width: 100%; height: 110px; background: rgba(59, 130, 246, 0.05); border-radius: 8px; display: flex; align-items: center; justify-content: center; padding: 8px;">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 115" width="150" height="100">
                 <defs>
                   <filter id="resShadow" x="-30%" y="-20%" width="160%" height="150%">
                     <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000000" flood-opacity="0.5"/>
@@ -3062,8 +3061,8 @@
                   <circle cx="22" cy="108" r="3.5" fill="#ffffff"/>
                 </g>
                 <g filter="url(#resShadow)">
-                  <rect x="36" y="6" width="140" height="34" rx="7" fill="#d9f2fd" stroke="#b9e6fe" stroke-width="1.5"/>
-                  <text x="46" y="28" fill="#0f172a" font-family="'Outfit', sans-serif" font-weight="800" font-size="14">Happy Residency</text>
+                  <rect x="36" y="6" width="105" height="34" rx="7" fill="#d9f2fd" stroke="#b9e6fe" stroke-width="1.5"/>
+                  <text x="46" y="28" fill="#0f172a" font-family="'Outfit', sans-serif" font-weight="800" font-size="14.5">Add text</text>
                 </g>
                 <g filter="url(#resShadow)">
                   <rect x="2" y="3" width="40" height="40" rx="9" fill="#3b82f6" stroke="#ffffff" stroke-width="2"/>
@@ -3072,16 +3071,15 @@
               </svg>
             </div>
             <div style="text-align: center;">
-              <div style="font-size: 15px; font-weight: 800; color: #60a5fa;">Residential Pin</div>
-              <div style="font-size: 12px; color: #94a3b8; margin-top: 3px;">Fixed "R" Badge &bull; Royal Blue</div>
+              <div style="font-size: 16px; font-weight: 800; color: #60a5fa;">Residential Pin</div>
             </div>
-            <button class="btn-upload-center" style="margin: 0; width: 100%; padding: 8px 0; font-size: 13px; font-weight: 700; background: #3b82f6; border: none;" onclick="event.stopPropagation(); addPresetPinHotspot('residential')">+ Add Residential Pin</button>
+            <button class="btn-upload-center" style="margin: 0; width: 100%; padding: 10px 0; font-size: 13px; font-weight: 700; background: #3b82f6; border: none;" onclick="event.stopPropagation(); addPresetPinHotspot('residential')">+ Add Residential Pin</button>
           </div>
 
           <!-- Commercial Pin Card (Amber) -->
-          <div class="preset-pin-card" onclick="addPresetPinHotspot('commercial')" style="background: #16181d; border: 1.5px solid #2d3748; border-radius: 12px; padding: 18px; display: flex; flex-direction: column; align-items: center; gap: 12px; cursor: pointer; transition: all 0.2s;" onmouseenter="this.style.borderColor='#f59e0b'; this.style.transform='translateY(-2px)'" onmouseleave="this.style.borderColor='#2d3748'; this.style.transform='none'">
-            <div style="width: 100%; height: 95px; background: rgba(245, 158, 11, 0.05); border-radius: 8px; display: flex; align-items: center; justify-content: center; padding: 8px;">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 190 115" width="160" height="95">
+          <div class="preset-pin-card" onclick="addPresetPinHotspot('commercial')" style="background: #16181d; border: 1.5px solid #2d3748; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 14px; cursor: pointer; transition: all 0.2s;" onmouseenter="this.style.borderColor='#f59e0b'; this.style.transform='translateY(-2px)'" onmouseleave="this.style.borderColor='#2d3748'; this.style.transform='none'">
+            <div style="width: 100%; height: 110px; background: rgba(245, 158, 11, 0.05); border-radius: 8px; display: flex; align-items: center; justify-content: center; padding: 8px;">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 115" width="150" height="100">
                 <defs>
                   <filter id="commShadow" x="-30%" y="-20%" width="160%" height="150%">
                     <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000000" flood-opacity="0.5"/>
@@ -3092,8 +3090,8 @@
                   <circle cx="22" cy="108" r="3.5" fill="#ffffff"/>
                 </g>
                 <g filter="url(#commShadow)">
-                  <rect x="36" y="6" width="140" height="34" rx="7" fill="#d9f2fd" stroke="#b9e6fe" stroke-width="1.5"/>
-                  <text x="46" y="28" fill="#0f172a" font-family="'Outfit', sans-serif" font-weight="800" font-size="14">Surana Supremus</text>
+                  <rect x="36" y="6" width="105" height="34" rx="7" fill="#d9f2fd" stroke="#b9e6fe" stroke-width="1.5"/>
+                  <text x="46" y="28" fill="#0f172a" font-family="'Outfit', sans-serif" font-weight="800" font-size="14.5">Add text</text>
                 </g>
                 <g filter="url(#commShadow)">
                   <rect x="2" y="3" width="40" height="40" rx="9" fill="#f59e0b" stroke="#ffffff" stroke-width="2"/>
@@ -3102,40 +3100,9 @@
               </svg>
             </div>
             <div style="text-align: center;">
-              <div style="font-size: 15px; font-weight: 800; color: #fbbf24;">Commercial Pin</div>
-              <div style="font-size: 12px; color: #94a3b8; margin-top: 3px;">Fixed "C" Badge &bull; Amber Orange</div>
+              <div style="font-size: 16px; font-weight: 800; color: #fbbf24;">Commercial Pin</div>
             </div>
-            <button class="btn-upload-center" style="margin: 0; width: 100%; padding: 8px 0; font-size: 13px; font-weight: 700; background: #f59e0b; border: none;" onclick="event.stopPropagation(); addPresetPinHotspot('commercial')">+ Add Commercial Pin</button>
-          </div>
-
-          <!-- Commercial Pin (Cyan) -->
-          <div class="preset-pin-card" onclick="addPresetPinHotspot('commercial_cyan')" style="background: #16181d; border: 1.5px solid #2d3748; border-radius: 12px; padding: 18px; display: flex; flex-direction: column; align-items: center; gap: 12px; cursor: pointer; transition: all 0.2s;" onmouseenter="this.style.borderColor='#00a6e0'; this.style.transform='translateY(-2px)'" onmouseleave="this.style.borderColor='#2d3748'; this.style.transform='none'">
-            <div style="width: 100%; height: 95px; background: rgba(0, 166, 224, 0.05); border-radius: 8px; display: flex; align-items: center; justify-content: center; padding: 8px;">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 190 115" width="160" height="95">
-                <defs>
-                  <filter id="cyanShadow" x="-30%" y="-20%" width="160%" height="150%">
-                    <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000000" flood-opacity="0.5"/>
-                  </filter>
-                </defs>
-                <g filter="url(#cyanShadow)">
-                  <line x1="22" y1="42" x2="22" y2="108" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round"/>
-                  <circle cx="22" cy="108" r="3.5" fill="#ffffff"/>
-                </g>
-                <g filter="url(#cyanShadow)">
-                  <rect x="36" y="6" width="140" height="34" rx="7" fill="#d9f2fd" stroke="#b9e6fe" stroke-width="1.5"/>
-                  <text x="46" y="28" fill="#0f172a" font-family="'Outfit', sans-serif" font-weight="800" font-size="14">Sns Arista</text>
-                </g>
-                <g filter="url(#cyanShadow)">
-                  <rect x="2" y="3" width="40" height="40" rx="9" fill="#00a6e0" stroke="#ffffff" stroke-width="2"/>
-                  <text x="22" y="30" text-anchor="middle" fill="#ffffff" font-family="'Outfit', sans-serif" font-weight="900" font-size="20">C</text>
-                </g>
-              </svg>
-            </div>
-            <div style="text-align: center;">
-              <div style="font-size: 15px; font-weight: 800; color: #38bdf8;">Commercial Pin (Cyan)</div>
-              <div style="font-size: 12px; color: #94a3b8; margin-top: 3px;">Fixed "C" Badge &bull; Cyan Sky</div>
-            </div>
-            <button class="btn-upload-center" style="margin: 0; width: 100%; padding: 8px 0; font-size: 13px; font-weight: 700; background: #00a6e0; border: none;" onclick="event.stopPropagation(); addPresetPinHotspot('commercial_cyan')">+ Add Commercial (Cyan)</button>
+            <button class="btn-upload-center" style="margin: 0; width: 100%; padding: 10px 0; font-size: 13px; font-weight: 700; background: #f59e0b; border: none;" onclick="event.stopPropagation(); addPresetPinHotspot('commercial')">+ Add Commercial Pin</button>
           </div>
 
         </div>

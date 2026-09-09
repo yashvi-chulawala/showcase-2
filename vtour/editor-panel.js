@@ -225,14 +225,13 @@ function getHotspotSvgBase64(style, labelText, color, bgColor, textStyle, badgeL
 
   const isRes = s === 'residential pin' || s === 'residential' || s === 'res' || s.includes('residential');
   const isComm = s === 'commercial pin' || s === 'commercial' || s === 'comm' || s.includes('commercial');
-  const isCyanComm = s.includes('cyan');
   const isPole = isRes || isComm || s === 'pole pin' || s === 'landmark pin' || s === 'pole_pin' || s === 'landmark';
 
   if (isPole) {
-    const defaultText = isRes ? 'Happy Residency' : (isCyanComm ? 'Sns Arista' : (isComm ? 'Surana Supremus' : 'Prince Palace'));
+    const defaultText = 'Add text';
     const textStr = String(labelText || defaultText).trim() || defaultText;
     const letter = (isRes ? 'R' : (isComm ? 'C' : String(badgeLetter || (labelText ? labelText.trim().charAt(0) : 'R') || 'R'))).toUpperCase().slice(0, 3);
-    const fillCol = isRes ? '#3b82f6' : (isCyanComm ? '#00a6e0' : (isComm ? '#f59e0b' : (color || '#00a6e0')));
+    const fillCol = isRes ? '#3b82f6' : (isComm ? '#f59e0b' : (color || '#00a6e0'));
     const textLen = textStr.length;
     const bannerWidth = Math.max(84, Math.round(textLen * 8.8 + 26));
     const totalW = Math.round(44 + bannerWidth + 14);
@@ -2839,7 +2838,6 @@ function selectImageHotspot(hotspotId) {
   const s = String(hs.style || '').toLowerCase();
   const isRes = s.includes('residential') || s === 'res';
   const isComm = s.includes('commercial') || s === 'comm';
-  const isCyanComm = s.includes('cyan');
   const isPole = isRes || isComm || s === 'pole pin' || s === 'landmark pin' || s === 'pole_pin' || s === 'landmark';
 
   const titleEl = document.getElementById('prop-hs-active-title');
@@ -2851,10 +2849,10 @@ function selectImageHotspot(hotspotId) {
   const isLocked = !!(hs.locked === true || hs.locked === 'true');
 
   if (isPole) {
-    const badgeLetter = isRes ? 'R' : (isComm ? 'C' : (hs.badgeLetter || 'R'));
-    const badgeColor = isRes ? '#3b82f6' : (isCyanComm ? '#00a6e0' : (isComm ? '#f59e0b' : (hs.color || '#00a6e0')));
-    const badgeLabel = isRes ? 'Residential Pin (R)' : (isCyanComm ? 'Commercial Pin (Cyan)' : (isComm ? 'Commercial Pin (C)' : 'Landmark Pin'));
-    const defaultPlaceholder = isRes ? 'Happy Residency' : (isCyanComm ? 'Sns Arista' : (isComm ? 'Surana Supremus' : 'Landmark Name'));
+    const badgeLetter = isRes ? 'R' : 'C';
+    const badgeColor = isRes ? '#3b82f6' : '#f59e0b';
+    const badgeLabel = isRes ? 'Residential Pin' : 'Commercial Pin';
+    const defaultPlaceholder = 'Add text';
 
     imgPanel.innerHTML = `
       <!-- Fixed Pin Type Badge Info -->
@@ -2865,17 +2863,15 @@ function selectImageHotspot(hotspotId) {
           </div>
           <div>
             <div style="font-size: 13px; font-weight: 700; color: #fff;">${badgeLabel}</div>
-            <div style="font-size: 11px; color: #94a3b8;">Color & Badge: <span style="color: ${badgeColor}; font-weight: 700;">Fixed Preset</span></div>
           </div>
         </div>
         <span style="font-size: 10px; font-weight: 700; background: rgba(255,255,255,0.08); color: #cbd5e1; padding: 3px 8px; border-radius: 12px;">PRESET</span>
       </div>
 
-      <!-- Editable Pin Text / Landmark Name ONLY -->
+      <!-- Editable Pin Text ONLY -->
       <div class="property-group" style="margin-top: 4px;">
-        <label class="property-label" style="font-size: 12px; font-weight: 700; color: #cbd5e1;">Pin Text / Landmark Name</label>
+        <label class="property-label" style="font-size: 12px; font-weight: 700; color: #cbd5e1;">Pin Text</label>
         <input id="img-hs-title" type="text" class="property-input" style="width: 100%; font-weight: 600; font-size: 14px;" value="${hs.title || defaultPlaceholder}" placeholder="${defaultPlaceholder}" ${isLocked ? 'disabled' : ''} oninput="onHotspotTitleInput(this.value)">
-        <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Edit the landmark name to display on the pin banner in the 360 tour.</div>
       </div>
 
       <!-- Size Settings -->
@@ -2967,7 +2963,7 @@ window.openImageHotspotTool = function() {
   }
 };
 
-// Add preset landmark pin (Residential / Commercial / Commercial Cyan)
+// Add preset landmark pin (Residential / Commercial)
 window.addPresetPinHotspot = async function(type) {
   const modal = document.getElementById('modal-select-image-asset');
   if (modal) modal.style.display = 'none';
@@ -2978,20 +2974,15 @@ window.addPresetPinHotspot = async function(type) {
   }
 
   let styleName = 'Residential Pin';
-  let defaultTitle = 'Happy Residency';
+  let defaultTitle = 'Add text';
   let badgeLetter = 'R';
   let color = '#3b82f6';
 
   if (type === 'commercial') {
     styleName = 'Commercial Pin';
-    defaultTitle = 'Surana Supremus';
+    defaultTitle = 'Add text';
     badgeLetter = 'C';
     color = '#f59e0b';
-  } else if (type === 'commercial_cyan') {
-    styleName = 'Commercial Pin (Cyan)';
-    defaultTitle = 'Sns Arista';
-    badgeLetter = 'C';
-    color = '#00a6e0';
   }
 
   const ath = Number(Number(krpano.get('view.hlookat') || 0).toFixed(2));
