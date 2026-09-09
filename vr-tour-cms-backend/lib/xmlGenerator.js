@@ -91,12 +91,38 @@ function getHotspotSvgBase64(style, labelText, color, badgeLetter, customIcons =
 
   const isRes = s === 'residential pin' || s === 'residential' || s === 'res' || s.includes('residential');
   const isComm = s === 'commercial pin' || s === 'commercial' || s === 'comm' || s.includes('commercial');
-  const isPole = isRes || isComm || s === 'pole pin' || s === 'landmark pin' || s === 'pole_pin' || s === 'landmark';
-  const fillCol = isRes ? '#3b82f6' : (isComm ? '#f59e0b' : (color || '#3b82f6'));
+  const isEdu = s.includes('education') || s.includes('school');
+  const isHealth = s.includes('health') || s.includes('hospital');
+  const isPark = s.includes('park') || s.includes('nature');
+  const isShop = s.includes('shop') || s.includes('mall');
+  const isCustomLandmark = s.includes('custom pin') || s.includes('custom landmark');
+  const isPole = isRes || isComm || isEdu || isHealth || isPark || isShop || isCustomLandmark || s.includes('landmark') || s.includes('pole') || (s.endsWith('pin') && !s.startsWith('pin red') && !s.startsWith('pin blue') && !s.startsWith('pin green') && !s.startsWith('pin yellow') && s !== 'pin');
+
+  let fillCol = color;
+  if (!fillCol) {
+    if (isRes) fillCol = '#3b82f6';
+    else if (isComm) fillCol = '#f59e0b';
+    else if (isEdu) fillCol = '#8b5cf6';
+    else if (isHealth) fillCol = '#ef4444';
+    else if (isPark) fillCol = '#10b981';
+    else if (isShop) fillCol = '#ec4899';
+    else fillCol = '#3b82f6';
+  }
 
   if (isPole) {
     const textStr = esc(String(labelText || 'Add text').trim() || 'Add text');
-    const letter = esc(String(isRes ? 'R' : (isComm ? 'C' : (badgeLetter || (labelText ? labelText.trim().charAt(0) : 'R') || 'R'))).toUpperCase().slice(0, 3));
+    let letter = badgeLetter;
+    if (!letter) {
+      if (isRes) letter = 'R';
+      else if (isComm) letter = 'C';
+      else if (isEdu) letter = 'E';
+      else if (isHealth) letter = 'H';
+      else if (isPark) letter = 'P';
+      else if (isShop) letter = 'S';
+      else letter = (labelText ? labelText.trim().charAt(0) : 'R') || 'R';
+    }
+    letter = esc(String(letter).toUpperCase().slice(0, 3));
+
     const textLen = textStr.length;
     const bannerWidth = Math.max(84, Math.round(textLen * 8.8 + 26));
     const totalW = Math.round(44 + bannerWidth + 14);

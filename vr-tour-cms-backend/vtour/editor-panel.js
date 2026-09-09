@@ -225,13 +225,39 @@ function getHotspotSvgBase64(style, labelText, color, bgColor, textStyle, badgeL
 
   const isRes = s === 'residential pin' || s === 'residential' || s === 'res' || s.includes('residential');
   const isComm = s === 'commercial pin' || s === 'commercial' || s === 'comm' || s.includes('commercial');
-  const isPole = isRes || isComm || s === 'pole pin' || s === 'landmark pin' || s === 'pole_pin' || s === 'landmark';
-  const fillCol = isRes ? '#3b82f6' : (isComm ? '#f59e0b' : (color || '#3b82f6'));
+  const isEdu = s.includes('education') || s.includes('school');
+  const isHealth = s.includes('health') || s.includes('hospital');
+  const isPark = s.includes('park') || s.includes('nature');
+  const isShop = s.includes('shop') || s.includes('mall');
+  const isCustomLandmark = s.includes('custom pin') || s.includes('custom landmark');
+  const isPole = isRes || isComm || isEdu || isHealth || isPark || isShop || isCustomLandmark || s.includes('landmark') || s.includes('pole') || (s.endsWith('pin') && !s.startsWith('pin red') && !s.startsWith('pin blue') && !s.startsWith('pin green') && !s.startsWith('pin yellow') && s !== 'pin');
+
+  let fillCol = color;
+  if (!fillCol) {
+    if (isRes) fillCol = '#3b82f6';
+    else if (isComm) fillCol = '#f59e0b';
+    else if (isEdu) fillCol = '#8b5cf6';
+    else if (isHealth) fillCol = '#ef4444';
+    else if (isPark) fillCol = '#10b981';
+    else if (isShop) fillCol = '#ec4899';
+    else fillCol = '#3b82f6';
+  }
 
   if (isPole) {
     const defaultText = 'Add text';
     const textStr = String(labelText || defaultText).trim() || defaultText;
-    const letter = (isRes ? 'R' : (isComm ? 'C' : String(badgeLetter || (labelText ? labelText.trim().charAt(0) : 'R') || 'R'))).toUpperCase().slice(0, 3);
+    let letter = badgeLetter;
+    if (!letter) {
+      if (isRes) letter = 'R';
+      else if (isComm) letter = 'C';
+      else if (isEdu) letter = 'E';
+      else if (isHealth) letter = 'H';
+      else if (isPark) letter = 'P';
+      else if (isShop) letter = 'S';
+      else letter = (labelText ? labelText.trim().charAt(0) : 'R') || 'R';
+    }
+    letter = String(letter).toUpperCase().slice(0, 3);
+
     const textLen = textStr.length;
     const bannerWidth = Math.max(84, Math.round(textLen * 8.8 + 26));
     const totalW = Math.round(44 + bannerWidth + 14);
@@ -2818,29 +2844,90 @@ function selectImageHotspot(hotspotId) {
   const isLocked = !!(hs.locked === true || hs.locked === 'true');
 
   if (isPole) {
-    const badgeLetter = isRes ? 'R' : 'C';
-    const badgeColor = isRes ? '#3b82f6' : '#f59e0b';
-    const badgeLabel = isRes ? 'Residential Pin' : 'Commercial Pin';
+    let currentLetter = hs.badgeLetter;
+    if (!currentLetter) {
+      if (isRes) currentLetter = 'R';
+      else if (isComm) currentLetter = 'C';
+      else if (s.includes('education') || s.includes('school')) currentLetter = 'E';
+      else if (s.includes('health') || s.includes('hospital')) currentLetter = 'H';
+      else if (s.includes('park')) currentLetter = 'P';
+      else if (s.includes('shop')) currentLetter = 'S';
+      else currentLetter = hs.title ? hs.title.trim().charAt(0).toUpperCase() : 'R';
+    }
+    currentLetter = String(currentLetter || 'R').toUpperCase().slice(0, 3);
+
+    let currentColor = hs.color;
+    if (!currentColor) {
+      if (isRes) currentColor = '#3b82f6';
+      else if (isComm) currentColor = '#f59e0b';
+      else if (s.includes('education')) currentColor = '#8b5cf6';
+      else if (s.includes('health')) currentColor = '#ef4444';
+      else if (s.includes('park')) currentColor = '#10b981';
+      else if (s.includes('shop')) currentColor = '#ec4899';
+      else currentColor = '#3b82f6';
+    }
+
     const defaultPlaceholder = 'Add text';
 
     imgPanel.innerHTML = `
-      <!-- Fixed Pin Type Badge Info -->
-      <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between;">
+      <!-- Live Badge Preview & Header -->
+      <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between;">
         <div style="display: flex; align-items: center; gap: 10px;">
-          <div style="width: 32px; height: 32px; border-radius: 7px; background: ${badgeColor}; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 16px; color: #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
-            ${badgeLetter}
+          <div id="pin-badge-preview-icon" style="width: 34px; height: 34px; border-radius: 8px; background: ${currentColor}; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 17px; color: #ffffff; box-shadow: 0 2px 10px rgba(0,0,0,0.35); transition: background 0.2s;">
+            ${currentLetter}
           </div>
           <div>
-            <div style="font-size: 13px; font-weight: 700; color: #fff;">${badgeLabel}</div>
+            <div id="pin-badge-preview-title" style="font-size: 13.5px; font-weight: 700; color: #fff;">${hs.title || 'Landmark Pin'}</div>
+            <div style="font-size: 11px; font-weight: 600; color: #94a3b8;">${hs.style || 'Landmark Pin'}</div>
           </div>
         </div>
-        <span style="font-size: 10px; font-weight: 700; background: rgba(255,255,255,0.08); color: #cbd5e1; padding: 3px 8px; border-radius: 12px;">PRESET</span>
+        <span style="font-size: 10px; font-weight: 700; background: rgba(116, 184, 67, 0.15); color: #74b843; padding: 3px 9px; border-radius: 12px;">LANDMARK</span>
       </div>
 
-      <!-- Editable Pin Text ONLY -->
+      <!-- Editable Pin Text -->
       <div class="property-group" style="margin-top: 4px;">
         <label class="property-label" style="font-size: 12px; font-weight: 700; color: #cbd5e1;">Pin Text</label>
-        <input id="img-hs-title" type="text" class="property-input" style="width: 100%; font-weight: 600; font-size: 14px;" value="${hs.title || defaultPlaceholder}" placeholder="${defaultPlaceholder}" ${isLocked ? 'disabled' : ''} oninput="onHotspotTitleInput(this.value)">
+        <input id="img-hs-title" type="text" class="property-input" style="width: 100%; font-weight: 600; font-size: 14px;" value="${hs.title || defaultPlaceholder}" placeholder="${defaultPlaceholder}" ${isLocked ? 'disabled' : ''} oninput="onLandmarkPinTextChange(this.value)">
+      </div>
+
+      <!-- Editable Badge Letter & Pin Color in 2 columns -->
+      <div style="display: flex; gap: 12px;">
+        <!-- Badge Letter -->
+        <div class="property-group" style="flex: 1;">
+          <label class="property-label" style="font-size: 12px; font-weight: 700; color: #cbd5e1;">Badge Letter</label>
+          <input id="img-hs-badge" type="text" maxlength="3" class="property-input" style="width: 100%; font-weight: 800; font-size: 15px; text-align: center; text-transform: uppercase;" value="${currentLetter}" ${isLocked ? 'disabled' : ''} oninput="onLandmarkPinBadgeChange(this.value)">
+        </div>
+
+        <!-- Pin Color Picker -->
+        <div class="property-group" style="flex: 1.5;">
+          <label class="property-label" style="font-size: 12px; font-weight: 700; color: #cbd5e1;">Pin Color</label>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <input id="img-hs-color-picker" type="color" value="${currentColor}" ${isLocked ? 'disabled' : ''} style="width: 36px; height: 36px; border: none; border-radius: 8px; cursor: pointer; background: transparent;" oninput="onLandmarkPinColorChange(this.value)">
+            <input id="img-hs-color-hex" type="text" class="property-input" style="flex: 1; font-weight: 700; font-size: 13px; font-family: monospace;" value="${currentColor}" ${isLocked ? 'disabled' : ''} onchange="onLandmarkPinColorChange(this.value)">
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Color Swatches Palette -->
+      <div class="property-group">
+        <label class="property-label" style="font-size: 11px; font-weight: 600; color: #94a3b8; margin-bottom: 6px;">Color Presets</label>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+          ${['#3b82f6', '#f59e0b', '#8b5cf6', '#ef4444', '#10b981', '#ec4899', '#74b843', '#06b6d4', '#f97316', '#64748b'].map(c => `
+            <div onclick="onLandmarkPinColorChange('${c}')" style="width: 24px; height: 24px; border-radius: 6px; background: ${c}; cursor: pointer; border: 2px solid ${c === currentColor ? '#ffffff' : 'transparent'}; box-shadow: 0 2px 6px rgba(0,0,0,0.3); transition: transform 0.15s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'"></div>
+          `).join('')}
+        </div>
+      </div>
+
+      <!-- Sync Color to All Pins Options -->
+      <div style="background: rgba(116, 184, 67, 0.06); border: 1px solid rgba(116, 184, 67, 0.2); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+        <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: #cbd5e1; cursor: pointer;">
+          <input type="checkbox" id="sync-pin-color-toggle" ${window._syncAllPinColors ? 'checked' : ''} onchange="window._syncAllPinColors = this.checked;" style="accent-color: #74b843; width: 16px; height: 16px; cursor: pointer;">
+          <span>Auto-sync color changes to all landmark pins</span>
+        </label>
+        <button onclick="applyCurrentPinColorToAll('${hs._id}')" class="property-btn-outline" style="border-color: #74b843; color: #74b843; padding: 7px 12px; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; border-radius: 8px; background: rgba(116, 184, 67, 0.1); cursor: pointer; transition: all 0.2s;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+          Apply This Color to All Landmark Pins
+        </button>
       </div>
 
       <!-- Size Settings -->
@@ -2858,7 +2945,7 @@ function selectImageHotspot(hotspotId) {
         </div>
       </div>
 
-      <button onclick="deleteSelectedHotspotAction()" class="property-btn-outline" style="color:#ef4444;border-color:#ef4444;width:100%;padding:10px; margin-top: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px;">
+      <button onclick="deleteSelectedHotspotAction()" class="property-btn-outline" style="color:#ef4444;border-color:#ef4444;width:100%;padding:10px; margin-top: 6px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px;">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
         Delete This Pin
       </button>
@@ -2949,42 +3036,27 @@ window.switchImageModalTab = function(tab) {
 // Select preset pin card in modal
 window.selectPresetPinCard = function(type) {
   _selectedPresetPinType = type;
-  const cardRes = document.getElementById('pin-card-residential');
-  const cardComm = document.getElementById('pin-card-commercial');
+  const pinTypes = ['residential', 'commercial', 'education', 'healthcare', 'park', 'shopping'];
+  
+  pinTypes.forEach(t => {
+    const card = document.getElementById(`pin-card-${t}`);
+    if (!card) return;
+    if (t === type) {
+      card.style.borderColor = '#74b843';
+      card.style.background = 'linear-gradient(180deg, rgba(116, 184, 67, 0.12) 0%, #161a22 100%)';
+      card.style.boxShadow = '0 0 0 1px #74b843, 0 8px 24px -4px rgba(116, 184, 67, 0.35)';
+      card.style.transform = 'translateY(-2px)';
+      card.classList.add('selected');
+    } else {
+      card.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+      card.style.background = 'linear-gradient(180deg, #1a1d26 0%, #151720 100%)';
+      card.style.boxShadow = '0 4px 16px rgba(0,0,0,0.25)';
+      card.style.transform = 'translateY(0px)';
+      card.classList.remove('selected');
+    }
+  });
+
   const selectBtn = document.getElementById('modal-image-asset-select-btn');
-
-  if (cardRes) {
-    if (type === 'residential') {
-      cardRes.style.borderColor = '#74b843';
-      cardRes.style.background = 'linear-gradient(180deg, rgba(116, 184, 67, 0.12) 0%, #161a22 100%)';
-      cardRes.style.boxShadow = '0 0 0 1px #74b843, 0 8px 24px -4px rgba(116, 184, 67, 0.35)';
-      cardRes.style.transform = 'translateY(-2px)';
-      cardRes.classList.add('selected');
-    } else {
-      cardRes.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-      cardRes.style.background = 'linear-gradient(180deg, #1a1d26 0%, #151720 100%)';
-      cardRes.style.boxShadow = '0 4px 16px rgba(0,0,0,0.25)';
-      cardRes.style.transform = 'translateY(0px)';
-      cardRes.classList.remove('selected');
-    }
-  }
-
-  if (cardComm) {
-    if (type === 'commercial') {
-      cardComm.style.borderColor = '#74b843';
-      cardComm.style.background = 'linear-gradient(180deg, rgba(116, 184, 67, 0.12) 0%, #161a22 100%)';
-      cardComm.style.boxShadow = '0 0 0 1px #74b843, 0 8px 24px -4px rgba(116, 184, 67, 0.35)';
-      cardComm.style.transform = 'translateY(-2px)';
-      cardComm.classList.add('selected');
-    } else {
-      cardComm.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-      cardComm.style.background = 'linear-gradient(180deg, #1a1d26 0%, #151720 100%)';
-      cardComm.style.boxShadow = '0 4px 16px rgba(0,0,0,0.25)';
-      cardComm.style.transform = 'translateY(0px)';
-      cardComm.classList.remove('selected');
-    }
-  }
-
   if (selectBtn && _currentImageModalTab === 'pins') {
     selectBtn.disabled = false;
     selectBtn.style.opacity = '1';
@@ -3020,7 +3092,7 @@ window.openImageHotspotTool = function() {
   }
 };
 
-// Add preset landmark pin (Residential / Commercial)
+// Add preset landmark pin (Residential / Commercial / Education / Healthcare / Park / Shopping)
 window.addPresetPinHotspot = async function(type) {
   const modal = document.getElementById('modal-select-image-asset');
   if (modal) modal.style.display = 'none';
@@ -3030,17 +3102,20 @@ window.addPresetPinHotspot = async function(type) {
     return;
   }
 
-  let styleName = 'Residential Pin';
-  let defaultTitle = 'Add text';
-  let badgeLetter = 'R';
-  let color = '#3b82f6';
+  const presets = {
+    residential: { styleName: 'Residential Pin', badgeLetter: 'R', color: '#3b82f6', defaultTitle: 'Add text' },
+    commercial: { styleName: 'Commercial Pin', badgeLetter: 'C', color: '#f59e0b', defaultTitle: 'Add text' },
+    education: { styleName: 'Education Pin', badgeLetter: 'E', color: '#8b5cf6', defaultTitle: 'Add text' },
+    healthcare: { styleName: 'Healthcare Pin', badgeLetter: 'H', color: '#ef4444', defaultTitle: 'Add text' },
+    park: { styleName: 'Park Pin', badgeLetter: 'P', color: '#10b981', defaultTitle: 'Add text' },
+    shopping: { styleName: 'Shopping Pin', badgeLetter: 'S', color: '#ec4899', defaultTitle: 'Add text' }
+  };
 
-  if (type === 'commercial') {
-    styleName = 'Commercial Pin';
-    defaultTitle = 'Add text';
-    badgeLetter = 'C';
-    color = '#f59e0b';
-  }
+  const preset = presets[type] || presets.residential;
+  let styleName = preset.styleName;
+  let defaultTitle = preset.defaultTitle;
+  let badgeLetter = preset.badgeLetter;
+  let color = preset.color;
 
   let ath = Number(Number(krpano.get('view.hlookat') || 0).toFixed(2));
   let atv = Number(Number(krpano.get('view.vlookat') || 0).toFixed(2));
@@ -3084,6 +3159,147 @@ window.addPresetPinHotspot = async function(type) {
   } catch (err) {
     console.error('Error creating preset pin:', err);
     showToast(`Error: ${err.message}`);
+  }
+};
+
+// Handlers for landmark pin properties live editing & syncing
+let _landmarkTitleDebounce = null;
+window.onLandmarkPinTextChange = function(val) {
+  if (!selectedHotspotId) return;
+  const hs = hotspots.find(h => String(h._id) === String(selectedHotspotId));
+  if (!hs) return;
+  hs.title = val;
+
+  const previewTitle = document.getElementById('pin-badge-preview-title');
+  if (previewTitle) previewTitle.textContent = val || 'Landmark Pin';
+
+  const svgBase64 = getHotspotSvgBase64(hs.style || 'Residential Pin', hs.title, hs.color, null, null, hs.badgeLetter);
+  if (krpano) {
+    krpano.set(`hotspot[hs_${selectedHotspotId}].url`, svgBase64);
+  }
+
+  clearTimeout(_landmarkTitleDebounce);
+  _landmarkTitleDebounce = setTimeout(async () => {
+    try {
+      await fetch(`/api/hotspots/${selectedHotspotId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: hs.title })
+      });
+      publishTourSilent();
+    } catch (e) {
+      console.error(e);
+    }
+  }, 400);
+};
+
+let _landmarkBadgeDebounce = null;
+window.onLandmarkPinBadgeChange = function(val) {
+  if (!selectedHotspotId) return;
+  const hs = hotspots.find(h => String(h._id) === String(selectedHotspotId));
+  if (!hs) return;
+  const upper = String(val || '').toUpperCase().slice(0, 3);
+  hs.badgeLetter = upper;
+
+  const previewIcon = document.getElementById('pin-badge-preview-icon');
+  if (previewIcon) previewIcon.textContent = upper || 'R';
+
+  const svgBase64 = getHotspotSvgBase64(hs.style || 'Residential Pin', hs.title, hs.color, null, null, hs.badgeLetter);
+  if (krpano) {
+    krpano.set(`hotspot[hs_${selectedHotspotId}].url`, svgBase64);
+  }
+
+  clearTimeout(_landmarkBadgeDebounce);
+  _landmarkBadgeDebounce = setTimeout(async () => {
+    try {
+      await fetch(`/api/hotspots/${selectedHotspotId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ badgeLetter: hs.badgeLetter })
+      });
+      publishTourSilent();
+    } catch (e) {
+      console.error(e);
+    }
+  }, 400);
+};
+
+let _landmarkColorDebounce = null;
+window.onLandmarkPinColorChange = function(col) {
+  if (!selectedHotspotId || !col) return;
+  const hs = hotspots.find(h => String(h._id) === String(selectedHotspotId));
+  if (!hs) return;
+  hs.color = col;
+
+  const picker = document.getElementById('img-hs-color-picker');
+  const hex = document.getElementById('img-hs-color-hex');
+  const previewIcon = document.getElementById('pin-badge-preview-icon');
+  if (picker) picker.value = col;
+  if (hex) hex.value = col;
+  if (previewIcon) previewIcon.style.background = col;
+
+  const svgBase64 = getHotspotSvgBase64(hs.style || 'Residential Pin', hs.title, hs.color, null, null, hs.badgeLetter);
+  if (krpano) {
+    krpano.set(`hotspot[hs_${selectedHotspotId}].url`, svgBase64);
+  }
+
+  if (window._syncAllPinColors) {
+    applyCurrentPinColorToAll(selectedHotspotId, col);
+    return;
+  }
+
+  clearTimeout(_landmarkColorDebounce);
+  _landmarkColorDebounce = setTimeout(async () => {
+    try {
+      await fetch(`/api/hotspots/${selectedHotspotId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ color: hs.color })
+      });
+      publishTourSilent();
+    } catch (e) {
+      console.error(e);
+    }
+  }, 400);
+};
+
+// Apply active pin color to all landmark pins across the tour
+window.applyCurrentPinColorToAll = async function(sourceHotspotId, customColor) {
+  const hs = hotspots.find(h => String(h._id) === String(sourceHotspotId || selectedHotspotId));
+  const targetColor = customColor || (hs ? hs.color : null);
+  if (!targetColor) return;
+
+  const landmarkPins = hotspots.filter(h => isImageHotspot(h));
+  if (landmarkPins.length === 0) return;
+
+  landmarkPins.forEach(h => {
+    h.color = targetColor;
+    if (krpano && String(h.sceneId) === String(activeSceneId)) {
+      const svg = getHotspotSvgBase64(h.style || 'Residential Pin', h.title, targetColor, null, null, h.badgeLetter);
+      krpano.set(`hotspot[hs_${h._id}].url`, svg);
+    }
+  });
+
+  const picker = document.getElementById('img-hs-color-picker');
+  const hex = document.getElementById('img-hs-color-hex');
+  const previewIcon = document.getElementById('pin-badge-preview-icon');
+  if (picker) picker.value = targetColor;
+  if (hex) hex.value = targetColor;
+  if (previewIcon) previewIcon.style.background = targetColor;
+
+  try {
+    await Promise.all(landmarkPins.map(h => 
+      fetch(`/api/hotspots/${h._id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ color: targetColor })
+      })
+    ));
+    publishTourSilent();
+    showToast(`✓ Applied color ${targetColor} to all landmark pins!`);
+  } catch (err) {
+    console.error("Error applying color to all pins:", err);
+    showToast("Error updating all pin colors");
   }
 };
 
