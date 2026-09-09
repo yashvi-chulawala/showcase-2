@@ -12,18 +12,107 @@
   
   let state = 'Idle'; // Idle, Connecting..., Listening..., Speaking..., Error
   
-  const DESTINATION_REGISTRY = {
-    vesu_1: { sceneId: "scene_vesu_1_1", name: "Vesu 1" },
-    vesu_16: { sceneId: "scene_vesu_16_1", name: "Vesu 16" },
-    vesu_5: { sceneId: "scene_vesu_5_1", name: "Vesu 5" },
-    vesu_7: { sceneId: "scene_vesu_7_1", name: "Vesu 7" },
-    vesu_2: { sceneId: "scene_vesu_2_1", name: "Vesu 2" },
-    left_view: { sceneId: "scene_DJI_20251222160517_0128_D_equi", name: "Left View" },
-    back_view: { sceneId: "scene_DJI_20251222160749_0129_D_equi", name: "Back View" },
-    right_view: { sceneId: "scene_DJI_20251222162034_0135_D_equi", name: "Right View" }
-  };
+  let dynamicRegistry = {};
+  let dynamicScenesList = [];
 
-  const INSTRUCTION = `You are Hey 360, a friendly voice assistant for a 360-degree virtual tour website.
+  /**
+   * Dynamically discovers all scenes available in the currently open tour.
+   * Pulls directly from the embedded Krpano instance or falls back to the backend API.
+   */
+  async function loadActiveTourScenes() {
+    let scenes = [];
+    
+    // 1. Query krpano directly if loaded
+    if (window.krpano) {
+      try {
+        const count = parseInt(window.krpano.get("scene.count") || 0, 10);
+        for (let i = 0; i < count; i++) {
+          const sName = window.krpano.get(`scene[${i}].name`);
+          let sTitle = window.krpano.get(`scene[${i}].title`) || sName;
+          if (sTitle && typeof sTitle === 'string' && sTitle.startsWith('scene_')) {
+            sTitle = sTitle.replace(/^scene_/, '').replace(/_/g, ' ');
+          }
+          if (sName) {
+            scenes.push({
+              sceneId: sName,
+              name: String(sTitle || sName).trim(),
+              index: i
+            });
+          }
+        }
+      } catch (e) {
+        console.warn("[Hey 360] Krpano scene query error:", e);
+      }
+    }
+
+    // 2. Fallback to API if krpano has no scenes yet
+    if (scenes.length === 0) {
+      try {
+        const tourParam = new URLSearchParams(window.location.search).get('tour') || 'default';
+        const res = await fetch(`/api/tours/${encodeURIComponent(tourParam)}/scenes`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && Array.isArray(data.scenes) && data.scenes.length > 0) {
+            scenes = data.scenes.map((s, idx) => {
+              const baseName = s.tilesFolder ? String(s.tilesFolder).replace(/\.tiles$/i, '') : (s.title || `scene_${idx}`);
+              return {
+                sceneId: `scene_${baseName}`,
+                name: String(s.title || baseName).trim(),
+                index: idx
+              };
+            });
+          }
+        }
+      } catch (e) {
+        console.warn("[Hey 360] Backend scene fetch error:", e);
+      }
+    }
+
+    // Build registry and clean scene list
+    dynamicRegistry = {};
+    dynamicScenesList = [];
+
+    scenes.forEach((s, idx) => {
+      // Clean ID for Gemini tool enum (e.g. vesu_1, living_room, etc.)
+      let cleanId = s.name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+      if (!cleanId) cleanId = `view_${idx + 1}`;
+      
+      // Prevent duplicates in ID
+      if (dynamicRegistry[cleanId]) {
+        cleanId = `${cleanId}_${idx + 1}`;
+      }
+
+      const item = {
+        id: cleanId,
+        sceneId: s.sceneId,
+        name: s.name,
+        index: idx
+      };
+
+      dynamicScenesList.push(item);
+      dynamicRegistry[cleanId] = item;
+      dynamicRegistry[s.name.toLowerCase()] = item;
+      dynamicRegistry[s.sceneId.toLowerCase()] = item;
+      dynamicRegistry[s.sceneId] = item;
+      dynamicRegistry[`view_${idx + 1}`] = item;
+      dynamicRegistry[`scene_${idx + 1}`] = item;
+      dynamicRegistry[`number_${idx + 1}`] = item;
+      dynamicRegistry[String(idx + 1)] = item;
+    });
+
+    console.log("[Hey 360] Dynamically loaded scenes for active tour:", dynamicScenesList);
+    return dynamicScenesList;
+  }
+
+  function generateDynamicInstruction(scenesList) {
+    const destinationsListText = scenesList.length > 0
+      ? scenesList.map(s => `- "${s.name}" (ID: ${s.id})`).join('\n')
+      : '- "Main View" (ID: main_view)';
+
+    const sampleScene = scenesList.length > 0 ? scenesList[0].name : "the main view";
+    const availableNames = scenesList.map(s => s.name).join(', ') || 'available views';
+
+    return `You are Hey 360, a friendly voice assistant for this 360-degree virtual tour.
 
 GREETING RULES:
 - If the user says "Hey 360", respond with:
@@ -34,19 +123,13 @@ GREETING RULES:
 PROACTIVE GUIDANCE RULES:
 - When you receive a proactive scene guidance notice indicating the user is stuck or idle, verbally say the guidance tip warmly to help them explore.
 
-Available tour destinations:
-- "Vesu 1" (ID: vesu_1)
-- "Vesu 16" (ID: vesu_16)
-- "Vesu 5" (ID: vesu_5)
-- "Vesu 7" (ID: vesu_7)
-- "Vesu 2" (ID: vesu_2)
-- "Left View" (ID: left_view)
-- "Back View" (ID: back_view)
-- "Right View" (ID: right_view)
+Available tour destinations for this tour:
+${destinationsListText}
 
-When the user asks to go somewhere or view any scene (e.g. "take me to Vesu 5", "show me left view", "go to Vesu 16", "navigate to back view"), call the navigate_scene tool with the exact destination ID and verbally confirm warmly that you are taking them there (e.g. "Sure, taking you to Vesu 5 now!").
-If they ask for a location that does not exist, politely tell them it isn't available and mention available options.
+When the user asks to go somewhere or view any scene (e.g. "take me to ${sampleScene}", "show me ${sampleScene}", "go to ${sampleScene}"), call the navigate_scene tool with the exact destination ID and verbally confirm warmly that you are taking them there (e.g. "Sure, taking you to ${sampleScene} now!").
+If they ask for a location that does not exist in this tour, politely tell them it is not available in this tour and mention which of the available views they can visit (${availableNames}).
 Keep responses friendly, warm, concise, and natural.`;
+  }
 
   // UI Setup
   const btn = document.createElement('div');
@@ -140,23 +223,28 @@ Keep responses friendly, warm, concise, and natural.`;
       const { token } = await tokenRes.json();
       
       if (!token || token === 'your_gemini_api_key_here') {
-        alert("Unable to connect to Hey 360.\nPlease ensure a valid GEMINI_API_KEY is configured in your Render environment.");
+        alert("Unable to connect to Hey 360.\nPlease add a valid GEMINI_API_KEY in your vr-tour-cms-backend/.env file (or your hosting environment variables) and restart the server.");
         updateState('Error');
         return;
       }
+
+      // 4. Discover current active tour scenes dynamically
+      const activeScenes = await loadActiveTourScenes();
+      const dynamicInstruction = generateDynamicInstruction(activeScenes);
+      const enumDestinations = activeScenes.map(s => s.id);
       
-      // 4. Initialize WebSockets with Gemini Live model
+      // 5. Initialize WebSockets with Gemini Live model
       const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${token}`;
       console.log('[Hey 360] Connecting to Gemini Live WebSocket...');
       ws = new WebSocket(wsUrl);
       
       ws.onopen = () => {
-        console.log('[Hey 360] WebSocket Connected! Sending setup payload...');
+        console.log('[Hey 360] WebSocket Connected! Sending dynamic setup payload...');
         ws.send(JSON.stringify({
           setup: {
             model: "models/gemini-2.5-flash-native-audio-latest",
             systemInstruction: {
-              parts: [{ text: INSTRUCTION }]
+              parts: [{ text: dynamicInstruction }]
             },
             tools: [
               {
@@ -170,7 +258,7 @@ Keep responses friendly, warm, concise, and natural.`;
                         destination: {
                           type: "STRING",
                           description: "The exact ID of the destination",
-                          enum: ["vesu_1", "vesu_16", "vesu_5", "vesu_7", "vesu_2", "left_view", "back_view", "right_view"]
+                          enum: enumDestinations.length > 0 ? enumDestinations : ["main_view"]
                         }
                       },
                       required: ["destination"]
@@ -214,7 +302,7 @@ Keep responses friendly, warm, concise, and natural.`;
         stopAgent();
       };
       
-      // 5. Initialize Audio Input Streaming (16kHz PCM)
+      // 6. Initialize Audio Input Streaming (16kHz PCM)
       const source = inputAudioContext.createMediaStreamSource(mediaStream);
       
       const workletCode = `
@@ -254,7 +342,7 @@ Keep responses friendly, warm, concise, and natural.`;
         workletNode = new AudioWorkletNode(inputAudioContext, 'pcm-processor');
         workletNode.port.onmessage = (e) => {
           if (isSetupComplete && ws && ws.readyState === WebSocket.OPEN) {
-            // Mute mic streaming while assistant is speaking to prevent echo & double speaking
+            // Mute mic streaming while assistant is speaking to prevent echo & feedback
             if (state === 'Speaking...' || isGuiding || isSpeakingTTS) return;
 
             const base64Audio = arrayBufferToBase64(e.data);
@@ -351,22 +439,34 @@ Keep responses friendly, warm, concise, and natural.`;
     
     if (funcCall.name === "navigate_scene") {
       let destinationId = funcCall.args ? funcCall.args.destination : null;
-      console.log("Destination requested:", destinationId);
+      console.log("[Hey 360] Destination requested:", destinationId);
       
-      // Fuzzy matching to handle potential model variations
-      if (destinationId && !DESTINATION_REGISTRY[destinationId]) {
-        destinationId = destinationId.toLowerCase().replace(/\s+/g, '_');
+      let dest = null;
+      if (destinationId) {
+        const dNorm = String(destinationId).toLowerCase().trim();
+        const dClean = dNorm.replace(/\s+/g, '_');
+        dest = dynamicRegistry[destinationId] || dynamicRegistry[dNorm] || dynamicRegistry[dClean];
+        
+        if (!dest) {
+          // Fuzzy search across dynamicScenesList
+          dest = dynamicScenesList.find(s => 
+            s.name.toLowerCase() === dNorm || 
+            s.id === dClean ||
+            s.sceneId.toLowerCase() === dNorm ||
+            dNorm.includes(s.name.toLowerCase()) ||
+            s.name.toLowerCase().includes(dNorm)
+          );
+        }
       }
       
       let success = false;
-      let errorMessage = "Destination unavailable";
+      let errorMessage = "Destination unavailable in this tour";
       
-      const dest = DESTINATION_REGISTRY[destinationId];
       const targetSceneId = dest ? dest.sceneId : (destinationId && destinationId.startsWith('scene_') ? destinationId : `scene_${destinationId}`);
 
       if (window.krpano) {
         try {
-          console.log("Calling krpano loadscene:", targetSceneId);
+          console.log("[Hey 360] Calling krpano loadscene:", targetSceneId);
           window.krpano.call(`loadscene('${targetSceneId}', null, MERGE, BLEND(0.5))`);
           success = true;
         } catch (e) {
@@ -378,7 +478,7 @@ Keep responses friendly, warm, concise, and natural.`;
         errorMessage = "Krpano engine not found";
       }
       
-      // Send response back
+      // Send toolResponse back to Gemini so it confirms warmly
       const functionResponseMsg = {
         toolResponse: {
           functionResponses: [
@@ -387,7 +487,8 @@ Keep responses friendly, warm, concise, and natural.`;
               name: "navigate_scene",
               response: {
                 success: success,
-                destination: destinationId,
+                destination: dest ? dest.name : destinationId,
+                targetSceneId: targetSceneId,
                 ...(success ? {} : { error: errorMessage })
               }
             }
@@ -506,45 +607,9 @@ Keep responses friendly, warm, concise, and natural.`;
     return window.btoa(binary);
   }
 
-  // --- Proactive Guidance for Idle Navigation ---
-  const SCENE_ATTRACTIONS = {
-    scene_DJI_20251222160517_0128_D_equi: {
-      name: "Left View",
-      tip: "Look at your left, it's a beautiful lake view you can explore! You can also check out the connected central viewpoints."
-    },
-    scene_DJI_20251222160749_0129_D_equi: {
-      name: "Back View",
-      tip: "Take a look around to your right to see the main property layout and connected vistas."
-    },
-    scene_DJI_20251222162034_0135_D_equi: {
-      name: "Right View",
-      tip: "Look ahead and to your left to explore the scenic surroundings, or click the navigation markers to move ahead!"
-    },
-    scene_vesu_1_1: {
-      name: "Vesu 1",
-      tip: "Here at Vesu 1, glance over to your left to see the scenic landscape, or follow the path ahead!"
-    },
-    scene_vesu_16_1: {
-      name: "Vesu 16",
-      tip: "At Vesu 16, look around at the open courtyard area and connected pathways."
-    },
-    scene_vesu_5_1: {
-      name: "Vesu 5",
-      tip: "Look to your left at the beautiful surrounding views, or tap on the navigation markers to proceed."
-    },
-    scene_vesu_7_1: {
-      name: "Vesu 7",
-      tip: "Here at Vesu 7, take in the wide open perspective, or move towards the adjacent views."
-    },
-    scene_vesu_2_1: {
-      name: "Vesu 2",
-      tip: "At Vesu 2, look to your side to explore the lush landscape and panoramic views."
-    }
-  };
-
-  // Timing configuration:
-  const IDLE_TRIGGER_SECONDS = 30; // Tells the user after 30 seconds of staying completely still
-  const COOLDOWN_SECONDS = 60;     // 60 seconds cooldown before another guide can trigger
+  // --- Dynamic Proactive Guidance for Idle Navigation ---
+  const IDLE_TRIGGER_SECONDS = 30; // Triggers after 30 seconds of staying still
+  const COOLDOWN_SECONDS = 60;     // 60 seconds cooldown between tips
 
   let isGuiding = false;
   let isSpeakingTTS = false;
@@ -637,21 +702,22 @@ Keep responses friendly, warm, concise, and natural.`;
   }
 
   function triggerProactiveGuidance(sceneId, reason) {
-    // CRITICAL: NEVER speak or guide when Hey 360 voice agent is active or speaking!
     if (state !== 'Idle' || isGuiding || isSpeakingTTS) return;
 
-    let attraction = SCENE_ATTRACTIONS[sceneId];
-    if (!attraction && sceneId) {
-      const lower = sceneId.toLowerCase();
-      for (const [k, v] of Object.entries(SCENE_ATTRACTIONS)) {
-        if (lower.includes(k.toLowerCase()) || k.toLowerCase().includes(lower)) {
-          attraction = v;
-          break;
-        }
-      }
+    let sceneTitle = '';
+    if (window.krpano) {
+      try {
+        sceneTitle = window.krpano.get(`scene[${sceneId}].title`);
+      } catch (e) {}
+    }
+    if (!sceneTitle && dynamicRegistry[sceneId]) {
+      sceneTitle = dynamicRegistry[sceneId].name;
+    }
+    if (!sceneTitle) {
+      sceneTitle = String(sceneId).replace(/^scene_/, '').replace(/_/g, ' ');
     }
 
-    let tip = attraction ? attraction.tip : "Look at your left and right to explore the scenic views, or click on navigation markers to proceed!";
+    let tip = `Here at ${sceneTitle}, feel free to look around to explore, or ask me to take you to any other view!`;
     showHintBubble(tip);
   }
 
