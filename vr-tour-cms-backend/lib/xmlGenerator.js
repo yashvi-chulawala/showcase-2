@@ -220,6 +220,7 @@ ${dynamicStylesXml}
     const hotspotXML = sceneHotspots.map(h => {
       const hsName = h._id ? `hs_${h._id}` : `hs_${slugify(scene.title)}_${Math.random().toString(36).substring(2, 7)}`;
       const style = h.style || 'Arrow';
+      const isPole = String(style).toLowerCase() === 'pole pin' || String(style).toLowerCase() === 'landmark pin' || String(style).toLowerCase() === 'pole_pin' || String(style).toLowerCase() === 'landmark';
       
       let widthAttr = h.width ? `width="${h.width}"` : '';
       let heightAttr = h.height ? `height="${h.height}"` : '';
@@ -268,7 +269,6 @@ ${dynamicStylesXml}
         const cssStr = `font-family:${font}; font-size:${fontSize}px; color:${color}; font-weight:${fw}; font-style:${fs}; text-decoration:${td}; text-align:center;`;
         baseAttrs += ` css="${esc(cssStr)}" padding="4 8"`;
       } else {
-        const isPole = String(style).toLowerCase() === 'pole pin' || String(style).toLowerCase() === 'landmark pin' || String(style).toLowerCase() === 'pole_pin' || String(style).toLowerCase() === 'landmark';
         if (isPole) {
           baseAttrs += ` edge="bottomleft" ox="-22" oy="0"`;
         }

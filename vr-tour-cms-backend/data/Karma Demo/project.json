@@ -1,0 +1,61 @@
+{
+  "scenes": [
+    {
+      "_id": "mtsw8av60pcefc",
+      "tourId": "C:\\Users\\Yashvi Chulawala\\Downloads\\Showcase360_editor-main\\vr-tour-cms-backend\\data\\Karma Demo",
+      "title": "Vesu 1",
+      "slug": "vesu_1",
+      "tilesFolder": "vesu_1.tiles",
+      "order": 0,
+      "lat": 21.146001333333334,
+      "lng": 72.76514441666667,
+      "createdAt": "2026-09-08T16:38:05.826Z"
+    },
+    {
+      "_id": "mtsw99sxrzhqx8",
+      "tourId": "C:\\Users\\Yashvi Chulawala\\Downloads\\Showcase360_editor-main\\vr-tour-cms-backend\\data\\Karma Demo",
+      "title": "Vesu 5",
+      "slug": "vesu_5",
+      "tilesFolder": "vesu_5.tiles",
+      "order": 1,
+      "lat": 21.130257055,
+      "lng": 72.77455075,
+      "createdAt": "2026-09-08T16:38:51.105Z"
+    },
+    {
+      "_id": "mtswa3upuurhhm",
+      "tourId": "C:\\Users\\Yashvi Chulawala\\Downloads\\Showcase360_editor-main\\vr-tour-cms-backend\\data\\Karma Demo",
+      "title": "Vesu 2",
+      "slug": "vesu_2",
+      "tilesFolder": "vesu_2.tiles",
+      "order": 2,
+      "lat": 21.147721971666666,
+      "lng": 72.772278,
+      "createdAt": "2026-09-08T16:39:30.049Z"
+    },
+    {
+      "_id": "mtsway1ig9iaw4",
+      "tourId": "C:\\Users\\Yashvi Chulawala\\Downloads\\Showcase360_editor-main\\vr-tour-cms-backend\\data\\Karma Demo",
+      "title": "Vesu 3",
+      "slug": "vesu_3",
+      "tilesFolder": "vesu_3.tiles",
+      "order": 3,
+      "lat": 21.135326528333334,
+      "lng": 72.77415483333333,
+      "createdAt": "2026-09-08T16:40:09.174Z"
+    },
+    {
+      "_id": "mtswbqg63oz229",
+      "tourId": "C:\\Users\\Yashvi Chulawala\\Downloads\\Showcase360_editor-main\\vr-tour-cms-backend\\data\\Karma Demo",
+      "title": "Vesu 4",
+      "slug": "vesu_4",
+      "tilesFolder": "vesu_4.tiles",
+      "order": 4,
+      "lat": 21.141596333333332,
+      "lng": 72.78366888833334,
+      "createdAt": "2026-09-08T16:40:45.990Z"
+    }
+  ],
+  "hotspots": [],
+  "assets": []
+}

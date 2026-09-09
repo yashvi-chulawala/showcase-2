@@ -66,16 +66,16 @@ const ICON_LIBRARY_ITEMS = [
   { name: 'Dot Blue', svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="48" height="48"><circle cx="32" cy="32" r="24" fill="#3b82f6" stroke="#ffffff" stroke-width="6"/><circle cx="32" cy="32" r="10" fill="#ffffff"/></svg>' },
   { name: 'Dot Red', svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="48" height="48"><circle cx="32" cy="32" r="24" fill="#ef4444" stroke="#ffffff" stroke-width="6"/><circle cx="32" cy="32" r="10" fill="#ffffff"/></svg>' },
   { name: 'Dot White', svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="48" height="48"><circle cx="32" cy="32" r="24" fill="#ffffff" stroke="#333333" stroke-width="6"/><circle cx="32" cy="32" r="10" fill="#3b82f6"/></svg>' },
-
-  { name: 'Info Badge', svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="48" height="48"><circle cx="32" cy="32" r="28" fill="#3b82f6" stroke="#ffffff" stroke-width="4"/><text x="32" y="44" text-anchor="middle" fill="#ffffff" font-family="Outfit, sans-serif" font-weight="900" font-size="34">i</text></svg>' }
+  { name: 'Info Badge', svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="48" height="48"><circle cx="32" cy="32" r="28" fill="#3b82f6" stroke="#ffffff" stroke-width="4"/><text x="32" y="44" text-anchor="middle" fill="#ffffff" font-family="Outfit, sans-serif" font-weight="900" font-size="34">i</text></svg>' },
+  { name: 'Pole Pin', svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 80" width="48" height="48"><g><line x1="20" y1="36" x2="20" y2="76" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round"/><circle cx="20" cy="76" r="3" fill="#ffffff"/><rect x="28" y="8" width="38" height="24" rx="5" fill="#d9f2fd" stroke="#b9e6fe" stroke-width="1.2"/><rect x="4" y="4" width="30" height="30" rx="7" fill="#00a6e0" stroke="#ffffff" stroke-width="1.8"/><text x="19" y="24" text-anchor="middle" fill="#ffffff" font-family="Outfit, sans-serif" font-weight="900" font-size="15">R</text></g></svg>' }
 ];
 
 /**
  * Generates Base64 data URI for SVG icon styles or standalone Text style.
  */
-function getHotspotSvgBase64(style, labelText, color) {
+function getHotspotSvgBase64(style, labelText, color, badgeLetter) {
   const s = String(style || 'Arrow').toLowerCase();
-  const fillCol = color || '#ffffff';
+  const fillCol = color || '#00a6e0';
 
   if (style && (String(style).startsWith('data:image/') || String(style).startsWith('http'))) {
     return style;
@@ -83,6 +83,37 @@ function getHotspotSvgBase64(style, labelText, color) {
   if (style && String(style).startsWith('assets/')) {
     return '../' + style;
   }
+
+  if (s === 'pole pin' || s === 'landmark pin' || s === 'pole_pin' || s === 'landmark') {
+    const textStr = esc(String(labelText || 'Prince Palace').trim() || 'Prince Palace');
+    const letter = esc(String(badgeLetter || (labelText ? labelText.trim().charAt(0) : 'R') || 'R').toUpperCase().slice(0, 3));
+    const textLen = textStr.length;
+    const bannerWidth = Math.max(84, Math.round(textLen * 8.8 + 26));
+    const totalW = Math.round(44 + bannerWidth + 14);
+
+    const poleSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalW} 115" width="${totalW}" height="115">
+      <defs>
+        <filter id="poleShadow" x="-30%" y="-20%" width="160%" height="150%">
+          <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000000" flood-opacity="0.5"/>
+        </filter>
+      </defs>
+      <g filter="url(#poleShadow)">
+        <line x1="22" y1="42" x2="22" y2="108" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round"/>
+        <circle cx="22" cy="108" r="3.5" fill="#ffffff"/>
+      </g>
+      <g filter="url(#poleShadow)">
+        <rect x="36" y="6" width="${bannerWidth}" height="34" rx="7" fill="#d9f2fd" stroke="#b9e6fe" stroke-width="1.5"/>
+        <text x="46" y="28" fill="#0f172a" font-family="'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="800" font-size="14.5" letter-spacing="0.2">${textStr}</text>
+      </g>
+      <g filter="url(#poleShadow)">
+        <rect x="2" y="3" width="40" height="40" rx="9" fill="${fillCol}" stroke="#ffffff" stroke-width="2"/>
+        <text x="22" y="30" text-anchor="middle" fill="#ffffff" font-family="'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="20">${letter}</text>
+      </g>
+    </svg>`;
+
+    return `data:image/svg+xml;base64,${Buffer.from(poleSvg).toString('base64')}`;
+  }
+
   const foundLib = ICON_LIBRARY_ITEMS.find(x => String(x.name).toLowerCase() === s);
   if (foundLib && foundLib.svg) {
     return `data:image/svg+xml;base64,${Buffer.from(foundLib.svg).toString('base64')}`;
@@ -189,6 +220,7 @@ ${dynamicStylesXml}
     const hotspotXML = sceneHotspots.map(h => {
       const hsName = h._id ? `hs_${h._id}` : `hs_${slugify(scene.title)}_${Math.random().toString(36).substring(2, 7)}`;
       const style = h.style || 'Arrow';
+      const isPole = String(style).toLowerCase() === 'pole pin' || String(style).toLowerCase() === 'landmark pin' || String(style).toLowerCase() === 'pole_pin' || String(style).toLowerCase() === 'landmark';
       
       let widthAttr = h.width ? `width="${h.width}"` : '';
       let heightAttr = h.height ? `height="${h.height}"` : '';
@@ -237,11 +269,21 @@ ${dynamicStylesXml}
         const cssStr = `font-family:${font}; font-size:${fontSize}px; color:${color}; font-weight:${fw}; font-style:${fs}; text-decoration:${td}; text-align:center;`;
         baseAttrs += ` css="${esc(cssStr)}" padding="4 8"`;
       } else {
-        const svgUrl = getHotspotSvgBase64(style, h.title, h.color);
+        if (isPole) {
+          baseAttrs += ` edge="bottomleft" ox="-22" oy="0"`;
+        }
+        const svgUrl = getHotspotSvgBase64(style, h.title, h.color, h.badgeLetter);
         baseAttrs += ` url="${esc(svgUrl)}" alpha="1.0"`;
       }
 
-      if (h.kind === 'info') {
+      if (h.kind === 'image' || isPole) {
+        if (h.info) {
+          const jsSafeText = String(h.info).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n');
+          return `\t\t<hotspot name="${esc(hsName)}" ${baseAttrs}\n` +
+            `\t\t         onclick="js(alert('${jsSafeText}'));" />`;
+        }
+        return `\t\t<hotspot name="${esc(hsName)}" ${baseAttrs} />`;
+      } else if (h.kind === 'info') {
         const rawText = String(h.info || h.title || '');
         const jsSafeText = rawText.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n');
         return `\t\t<hotspot name="${esc(hsName)}" ${baseAttrs}\n` +

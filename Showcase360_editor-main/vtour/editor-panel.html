@@ -748,23 +748,21 @@
       overflow: hidden;
       cursor: pointer;
       transition: all 0.2s ease;
-      display: flex;
-      flex-direction: column;
       position: relative;
-      flex-shrink: 0;
-      height: 110px;
+      aspect-ratio: 16 / 9;
+      width: 100%;
     }
 
     .editor-scene-card:hover {
-      background: #232332;
-      border-color: rgba(255, 255, 255, 0.2);
+      border-color: rgba(16, 185, 129, 0.6);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
     }
 
     /* Wireframe match: blue rounded border on active scene card */
     .editor-scene-card.active {
-      border-color: var(--accent-green);
-      box-shadow: 0 0 14px rgba(16, 185, 129, 0.4);
-      background: #232334;
+      border-color: #3b82f6; /* Premium Blue border for active scene in editor */
+      box-shadow: 0 0 12px rgba(59, 130, 246, 0.5);
     }
 
     .editor-scene-thumb-wrap {
@@ -778,15 +776,14 @@
     }
 
     .editor-scene-thumb {
-      display: block !important;
-      width: 100% !important;
-      height: 100% !important;
-      object-fit: cover !important;
-      object-position: center !important;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
     }
 
-    .editor-scene-name {
-      padding: 8px 10px;
+    .editor-scene-title-overlay {
+      padding: 6px 8px;
       font-size: 13px;
       font-weight: 400;
       color: #ffffff;
@@ -945,6 +942,53 @@
     }
 
     .prop-tab-btn svg {
+      flex-shrink: 0;
+      stroke: currentColor;
+    }
+
+    .prop-quick-add-group {
+      display: flex;
+      gap: 8px;
+      padding: 10px 16px;
+      background: #14141d;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .prop-quick-btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 6px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #cbd5e1;
+      background: #1c1c28;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    .prop-quick-btn:hover {
+      color: #fff;
+      background: #252536;
+      border-color: var(--accent-green);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+    }
+
+    .prop-quick-btn.active {
+      color: #fff;
+      background: #232334;
+      border-color: var(--accent-green);
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.25);
+    }
+
+    .prop-quick-btn svg {
       flex-shrink: 0;
       stroke: currentColor;
     }
@@ -2357,6 +2401,34 @@
             <!-- Part below Icon: hidden when clicking anywhere other than a hotspot pin -->
             <div id="prop-hs-details-section" style="display: none;">
               
+              <!-- Hotspot Text / Label Section -->
+              <div class="property-group" id="prop-hs-text-group">
+                <label class="property-label">Hotspot Text / Label</label>
+                <div style="display: flex; gap: 8px;">
+                  <input type="text" id="prop-hs-title" class="property-input" style="flex: 1;" placeholder="e.g. Prince Palace" oninput="onHotspotTitleInput(this.value)">
+                  <div id="prop-hs-badge-letter-container" style="display: none; width: 70px;">
+                    <input type="text" id="prop-hs-badge-letter" class="property-input" maxlength="3" style="text-align: center; font-weight: 800; text-transform: uppercase;" placeholder="R" title="Badge Letter / Symbol" oninput="onHotspotBadgeLetterInput(this.value)">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Hotspot Color & Swatches Section -->
+              <div class="property-group" id="prop-hs-color-group">
+                <label class="property-label">Hotspot Color</label>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <input type="color" id="prop-hs-color" class="property-color-picker" style="width: 38px; height: 38px; border-radius: 6px; padding: 2px; cursor: pointer; border: 1px solid #334155; background: #1e293b;" onchange="onHotspotColorChange(this.value)" oninput="onHotspotColorChange(this.value)">
+                  <div class="color-swatches" style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+                    <div class="color-swatch" style="width: 22px; height: 22px; border-radius: 4px; background: #00a6e0; cursor: pointer; border: 1px solid rgba(255,255,255,0.2);" onclick="onHotspotColorChange('#00a6e0')" title="Cyan Sky"></div>
+                    <div class="color-swatch" style="width: 22px; height: 22px; border-radius: 4px; background: #3b82f6; cursor: pointer; border: 1px solid rgba(255,255,255,0.2);" onclick="onHotspotColorChange('#3b82f6')" title="Royal Blue"></div>
+                    <div class="color-swatch" style="width: 22px; height: 22px; border-radius: 4px; background: #10b981; cursor: pointer; border: 1px solid rgba(255,255,255,0.2);" onclick="onHotspotColorChange('#10b981')" title="Emerald Green"></div>
+                    <div class="color-swatch" style="width: 22px; height: 22px; border-radius: 4px; background: #ef4444; cursor: pointer; border: 1px solid rgba(255,255,255,0.2);" onclick="onHotspotColorChange('#ef4444')" title="Crimson Red"></div>
+                    <div class="color-swatch" style="width: 22px; height: 22px; border-radius: 4px; background: #f59e0b; cursor: pointer; border: 1px solid rgba(255,255,255,0.2);" onclick="onHotspotColorChange('#f59e0b')" title="Amber Orange"></div>
+                    <div class="color-swatch" style="width: 22px; height: 22px; border-radius: 4px; background: #8b5cf6; cursor: pointer; border: 1px solid rgba(255,255,255,0.2);" onclick="onHotspotColorChange('#8b5cf6')" title="Violet Purple"></div>
+                    <div class="color-swatch" style="width: 22px; height: 22px; border-radius: 4px; background: #ffffff; cursor: pointer; border: 1px solid rgba(0,0,0,0.4);" onclick="onHotspotColorChange('#ffffff')" title="Pure White"></div>
+                  </div>
+                </div>
+              </div>
+
               <!-- 1b. Size Section -->
               <div class="property-group">
                 <label class="property-label">Icon Size</label>

@@ -56,16 +56,46 @@
 		  );
 	</action>
 
-	<scene name="scene_piplod_7" title="Piplod 7" onstart="js(console.log('SCENE START pending custom view:', get(hs_entry_custom), get(hs_entry_hlookat), get(hs_entry_vlookat), get(hs_entry_fov))); if(hs_entry_custom == true, lookat(get(hs_entry_hlookat), get(hs_entry_vlookat), get(hs_entry_fov)); js(console.log('VIEW APPLIED:', get(view.hlookat), get(view.vlookat), get(view.fov))); delete(hs_entry_custom, hs_entry_hlookat, hs_entry_vlookat, hs_entry_fov););" thumburl="../panos/piplod_7.tiles/thumb.jpg" lat="21.153992278333334" lng="72.771999445" heading="">
+	<scene name="scene_DJI_20251222160517_0128_D_equi" title="DJI_20251222160517_0128_D_equi" onstart="js(console.log('SCENE START pending custom view:', get(hs_entry_custom), get(hs_entry_hlookat), get(hs_entry_vlookat), get(hs_entry_fov))); if(hs_entry_custom == true, lookat(get(hs_entry_hlookat), get(hs_entry_vlookat), get(hs_entry_fov)); js(console.log('VIEW APPLIED:', get(view.hlookat), get(view.vlookat), get(view.fov))); delete(hs_entry_custom, hs_entry_hlookat, hs_entry_vlookat, hs_entry_fov););" thumburl="../panos/DJI_20251222160517_0128_D_equi.tiles/thumb.jpg" lat="" lng="" heading="">
 		
 		<control bouncinglimits="calc:image.cube ? true : false" fovspeed="50" />
 
 		<view hlookat="0" vlookat="0" fovtype="MFOV" fov="114" maxpixelzoom="2.0" fovmin="30" fovmax="140" limitview="auto" />
 
-		<preview url="../panos/piplod_7.tiles/preview.jpg" />
+		<preview url="../panos/DJI_20251222160517_0128_D_equi.tiles/preview.jpg" />
 
 		<image>
-			<cube url="../panos/piplod_7.tiles/%s/l%l/%v/l%l_%s_%v_%h.jpg" multires="512,1024,2048,3840" />
+			<cube url="../panos/DJI_20251222160517_0128_D_equi.tiles/%s/l%l/%v/l%l_%s_%v_%h.jpg" multires="512,1024,2048,3840" />
+		</image>
+
+
+	</scene>
+
+	<scene name="scene_DJI_20251222160749_0129_D_equi" title="DJI_20251222160749_0129_D_equi" onstart="js(console.log('SCENE START pending custom view:', get(hs_entry_custom), get(hs_entry_hlookat), get(hs_entry_vlookat), get(hs_entry_fov))); if(hs_entry_custom == true, lookat(get(hs_entry_hlookat), get(hs_entry_vlookat), get(hs_entry_fov)); js(console.log('VIEW APPLIED:', get(view.hlookat), get(view.vlookat), get(view.fov))); delete(hs_entry_custom, hs_entry_hlookat, hs_entry_vlookat, hs_entry_fov););" thumburl="../panos/DJI_20251222160749_0129_D_equi.tiles/thumb.jpg" lat="" lng="" heading="">
+		
+		<control bouncinglimits="calc:image.cube ? true : false" fovspeed="50" />
+
+		<view hlookat="0" vlookat="0" fovtype="MFOV" fov="114" maxpixelzoom="2.0" fovmin="30" fovmax="140" limitview="auto" />
+
+		<preview url="../panos/DJI_20251222160749_0129_D_equi.tiles/preview.jpg" />
+
+		<image>
+			<cube url="../panos/DJI_20251222160749_0129_D_equi.tiles/%s/l%l/%v/l%l_%s_%v_%h.jpg" multires="512,1024,2048,3840" />
+		</image>
+
+
+	</scene>
+
+	<scene name="scene_DJI_20251222162034_0135_D_equi" title="DJI_20251222162034_0135_D_equi" onstart="js(console.log('SCENE START pending custom view:', get(hs_entry_custom), get(hs_entry_hlookat), get(hs_entry_vlookat), get(hs_entry_fov))); if(hs_entry_custom == true, lookat(get(hs_entry_hlookat), get(hs_entry_vlookat), get(hs_entry_fov)); js(console.log('VIEW APPLIED:', get(view.hlookat), get(view.vlookat), get(view.fov))); delete(hs_entry_custom, hs_entry_hlookat, hs_entry_vlookat, hs_entry_fov););" thumburl="../panos/DJI_20251222162034_0135_D_equi.tiles/thumb.jpg" lat="" lng="" heading="">
+		
+		<control bouncinglimits="calc:image.cube ? true : false" fovspeed="50" />
+
+		<view hlookat="0" vlookat="0" fovtype="MFOV" fov="114" maxpixelzoom="2.0" fovmin="30" fovmax="140" limitview="auto" />
+
+		<preview url="../panos/DJI_20251222162034_0135_D_equi.tiles/preview.jpg" />
+
+		<image>
+			<cube url="../panos/DJI_20251222162034_0135_D_equi.tiles/%s/l%l/%v/l%l_%s_%v_%h.jpg" multires="512,1024,2048,3840" />
 		</image>
 
 

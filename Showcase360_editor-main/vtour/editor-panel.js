@@ -110,8 +110,8 @@ window.ICON_LIBRARY_ITEMS = [
   { name: 'Dot Blue', family: 'Dot', type: 'Navigation', svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="48" height="48"><circle cx="32" cy="32" r="24" fill="#10b981" stroke="#ffffff" stroke-width="6"/><circle cx="32" cy="32" r="10" fill="#ffffff"/></svg>' },
   { name: 'Dot Red', family: 'Dot', type: 'Navigation', svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="48" height="48"><circle cx="32" cy="32" r="24" fill="#ef4444" stroke="#ffffff" stroke-width="6"/><circle cx="32" cy="32" r="10" fill="#ffffff"/></svg>' },
   { name: 'Dot White', family: 'Dot', type: 'Navigation', svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="48" height="48"><circle cx="32" cy="32" r="24" fill="#ffffff" stroke="#333333" stroke-width="6"/><circle cx="32" cy="32" r="10" fill="#10b981"/></svg>' },
-
-  { name: 'Info Badge', family: 'Info', type: 'Info', svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="48" height="48"><circle cx="32" cy="32" r="28" fill="#10b981" stroke="#ffffff" stroke-width="4"/><text x="32" y="44" text-anchor="middle" fill="#ffffff" font-family="Outfit, sans-serif" font-weight="900" font-size="34">i</text></svg>' }
+  { name: 'Info Badge', family: 'Info', type: 'Info', svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="48" height="48"><circle cx="32" cy="32" r="28" fill="#10b981" stroke="#ffffff" stroke-width="4"/><text x="32" y="44" text-anchor="middle" fill="#ffffff" font-family="Outfit, sans-serif" font-weight="900" font-size="34">i</text></svg>' },
+  { name: 'Pole Pin', family: 'Pin', type: 'Navigation', svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 80" width="48" height="48"><g><line x1="20" y1="36" x2="20" y2="76" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round"/><circle cx="20" cy="76" r="3" fill="#ffffff"/><rect x="28" y="8" width="38" height="24" rx="5" fill="#d9f2fd" stroke="#b9e6fe" stroke-width="1.2"/><rect x="4" y="4" width="30" height="30" rx="7" fill="#00a6e0" stroke="#ffffff" stroke-width="1.8"/><text x="19" y="24" text-anchor="middle" fill="#ffffff" font-family="Outfit, sans-serif" font-weight="900" font-size="15">R</text></g></svg>' }
 ];
 
 // Custom hotspot icons stored in localStorage
@@ -151,8 +151,9 @@ function getSceneKrpanoName(scene) {
 // Returns true if a hotspot should be treated as an image overlay
 function isImageHotspot(hs) {
   if (!hs) return false;
-  const s = String(hs.style || '');
-  return s.startsWith('assets/') || s.startsWith('http') || s.startsWith('data:image/');
+  if (hs.kind === 'image') return true;
+  const s = String(hs.style || '').toLowerCase();
+  return s === 'pole pin' || s === 'landmark pin' || s === 'pole_pin' || s === 'landmark' || s.startsWith('assets/') || s.startsWith('http') || (s.startsWith('data:image/') && !s.includes('text'));
 }
 
 // Returns true if a hotspot should be treated as a text label
@@ -170,13 +171,44 @@ function isNavHotspot(hs) {
 }
 
 // Generate inline Base64 data URI for SVG icons or standalone Text style
-function getHotspotSvgBase64(style, labelText, color, bgColor, textStyle) {
+function getHotspotSvgBase64(style, labelText, color, bgColor, textStyle, badgeLetter) {
   const s = String(style || 'Arrow').toLowerCase();
-  const fillCol = color || '#ffffff';
+  const fillCol = color || '#00a6e0';
 
   if (style && (String(style).startsWith('data:image/') || String(style).startsWith('assets/'))) {
     return style;
   }
+
+  if (s === 'pole pin' || s === 'landmark pin' || s === 'pole_pin' || s === 'landmark') {
+    const textStr = String(labelText || 'Prince Palace').trim() || 'Prince Palace';
+    const letter = String(badgeLetter || (labelText ? labelText.trim().charAt(0) : 'R') || 'R').toUpperCase().slice(0, 3);
+    const textLen = textStr.length;
+    const bannerWidth = Math.max(84, Math.round(textLen * 8.8 + 26));
+    const totalW = Math.round(44 + bannerWidth + 14);
+
+    const poleSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalW} 115" width="${totalW}" height="115">
+      <defs>
+        <filter id="poleShadow" x="-30%" y="-20%" width="160%" height="150%">
+          <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000000" flood-opacity="0.5"/>
+        </filter>
+      </defs>
+      <g filter="url(#poleShadow)">
+        <line x1="22" y1="42" x2="22" y2="108" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round"/>
+        <circle cx="22" cy="108" r="3.5" fill="#ffffff"/>
+      </g>
+      <g filter="url(#poleShadow)">
+        <rect x="36" y="6" width="${bannerWidth}" height="34" rx="7" fill="#d9f2fd" stroke="#b9e6fe" stroke-width="1.5"/>
+        <text x="46" y="28" fill="#0f172a" font-family="'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="800" font-size="14.5" letter-spacing="0.2">${textStr.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</text>
+      </g>
+      <g filter="url(#poleShadow)">
+        <rect x="2" y="3" width="40" height="40" rx="9" fill="${fillCol}" stroke="#ffffff" stroke-width="2"/>
+        <text x="22" y="30" text-anchor="middle" fill="#ffffff" font-family="'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="20">${letter.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</text>
+      </g>
+    </svg>`;
+
+    return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(poleSvg)))}`;
+  }
+
   const customList = getCustomIcons();
   const foundCustom = customList.find(x => String(x.name).toLowerCase() === s);
   if (foundCustom && foundCustom.dataUrl) {
@@ -197,7 +229,7 @@ function getHotspotSvgBase64(style, labelText, color, bgColor, textStyle) {
         </filter>
       </defs>
       <g filter="url(#shadow)">
-        <text x="150" y="50" text-anchor="middle" fill="${fillCol}" font-family="'Outfit', -apple-system, sans-serif" font-weight="800" font-size="28" letter-spacing="1">${textStr}</text>
+        <text x="150" y="50" text-anchor="middle" fill="${fillCol}" font-family="'Outfit', -apple-system, sans-serif" font-weight="800" font-size="28" letter-spacing="1">${textStr.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</text>
       </g>
     </svg>`;
     return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(textSvg)))}`;
@@ -206,18 +238,18 @@ function getHotspotSvgBase64(style, labelText, color, bgColor, textStyle) {
   let iconSvg = '';
   if (s === 'pin') {
     iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-      <path d="M32 4 C18.7 4 8 14.7 8 28 C8 45.3 32 60 32 60 C32 60 56 45.3 56 28 C56 14.7 45.3 4 32 4 Z" fill="#ef4444" stroke="#ffffff" stroke-width="4"/>
+      <path d="M32 4 C18.7 4 8 14.7 8 28 C8 45.3 32 60 32 60 C32 60 56 45.3 56 28 C56 14.7 45.3 4 32 4 Z" fill="${fillCol !== '#ffffff' && fillCol !== '#00a6e0' ? fillCol : '#ef4444'}" stroke="#ffffff" stroke-width="4"/>
       <circle cx="32" cy="24" r="10" fill="#ffffff"/>
     </svg>`;
   } else if (s === 'dot') {
     iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-      <circle cx="32" cy="32" r="24" fill="#10b981" stroke="#ffffff" stroke-width="6"/>
+      <circle cx="32" cy="32" r="24" fill="${fillCol !== '#ffffff' && fillCol !== '#00a6e0' ? fillCol : '#10b981'}" stroke="#ffffff" stroke-width="6"/>
       <circle cx="32" cy="32" r="10" fill="#ffffff"/>
     </svg>`;
   } else {
     // Arrow default
     iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-      <circle cx="32" cy="32" r="28" fill="#10b981" stroke="#ffffff" stroke-width="4"/>
+      <circle cx="32" cy="32" r="28" fill="${fillCol !== '#ffffff' && fillCol !== '#00a6e0' ? fillCol : '#10b981'}" stroke="#ffffff" stroke-width="4"/>
       <path d="M24 20 L38 32 L24 44" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>`;
   }
@@ -801,6 +833,7 @@ function updatePopoverIconGrid() {
   grid.innerHTML = '';
 
   const defaults = [
+    { name: 'Pole Pin', svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 80" width="32" height="32"><g><line x1="20" y1="36" x2="20" y2="76" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round"/><circle cx="20" cy="76" r="3" fill="#ffffff"/><rect x="28" y="8" width="38" height="24" rx="5" fill="#d9f2fd" stroke="#b9e6fe" stroke-width="1.2"/><rect x="4" y="4" width="30" height="30" rx="7" fill="#00a6e0" stroke="#ffffff" stroke-width="1.8"/><text x="19" y="24" text-anchor="middle" fill="#ffffff" font-family="Outfit, sans-serif" font-weight="900" font-size="15">R</text></g></svg>` },
     { name: 'Arrow', svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="32" height="32"><circle cx="32" cy="32" r="28" fill="#10b981" stroke="#ffffff" stroke-width="4"/><path d="M24 20 L38 32 L24 44" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg>` },
     { name: 'Pin', svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="32" height="32"><path d="M32 4 C18.7 4 8 14.7 8 28 C8 45.3 32 60 32 60 C32 60 56 45.3 56 28 C56 14.7 45.3 4 32 4 Z" fill="#ef4444" stroke="#ffffff" stroke-width="4"/><circle cx="32" cy="24" r="10" fill="#ffffff"/></svg>` },
     { name: 'Dot', svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="32" height="32"><circle cx="32" cy="32" r="24" fill="#10b981" stroke="#ffffff" stroke-width="6"/><circle cx="32" cy="32" r="10" fill="#ffffff"/></svg>` },
@@ -2130,8 +2163,9 @@ async function commitPopover(chosenStyle) {
   if (!pendingDrop) return;
 
   const { ath, atv, targetScene } = pendingDrop;
+  const isPole = String(chosenStyle).toLowerCase() === 'pole pin' || String(chosenStyle).toLowerCase() === 'landmark pin' || String(chosenStyle).toLowerCase() === 'pole_pin' || String(chosenStyle).toLowerCase() === 'landmark';
   const returnCb = document.getElementById('popover-return-cb');
-  const returnChecked = returnCb ? returnCb.checked : true;
+  const returnChecked = !isPole && (returnCb ? returnCb.checked : true);
   const currentScene = scenes.find(s => String(s._id) === String(activeSceneId));
 
   closePopover();
@@ -2142,12 +2176,14 @@ async function commitPopover(chosenStyle) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         sceneId: activeSceneId,
-        title: targetScene.title,
-        kind: 'scene',
-        targetSceneId: targetScene._id,
+        title: isPole ? 'Prince Palace' : (targetScene ? targetScene.title : 'Hotspot'),
+        kind: isPole ? 'image' : 'scene',
+        targetSceneId: isPole ? null : (targetScene ? targetScene._id : null),
         ath,
         atv,
-        style: chosenStyle
+        style: chosenStyle,
+        badgeLetter: isPole ? 'R' : '',
+        color: isPole ? '#00a6e0' : '#ffffff'
       })
     });
     const data = await res.json();
@@ -2159,13 +2195,17 @@ async function commitPopover(chosenStyle) {
     addHotspotToKrpano(newHotspot, targetScene);
     renderCurrentSceneHotspots();
     window._lastHotspotClickTime = Date.now();
-    selectHotspot(newHotspot._id);
+    if (isPole) {
+      selectImageHotspot(newHotspot._id);
+    } else {
+      selectHotspot(newHotspot._id);
+    }
     publishTourSilent();
 
-    if (returnChecked && currentScene) {
+    if (returnChecked && currentScene && !isPole && targetScene) {
       openReturnHotspotModal(targetScene, currentScene, chosenStyle);
     } else {
-      showToast("✓ Hotspot created successfully!");
+      showToast(isPole ? "✓ Pole Pin added to scene!" : "✓ Hotspot created successfully!");
     }
   } catch (err) {
     console.error("Error creating hotspot:", err);
@@ -2181,7 +2221,7 @@ function addHotspotToKrpano(hotspot, targetScene) {
   }
   const name = "hs_" + hotspot._id;
   const styleName = hotspot.style || "Arrow";
-  const svgBase64 = getHotspotSvgBase64(styleName, hotspot.title, hotspot.color, hotspot.bgColor, hotspot.textStyle);
+  const svgBase64 = getHotspotSvgBase64(styleName, hotspot.title, hotspot.color, hotspot.bgColor, hotspot.textStyle, hotspot.badgeLetter);
 
   krpano.call(`addhotspot(${name})`);
   krpano.set(`hotspot[${name}].url`, svgBase64);
@@ -2196,18 +2236,28 @@ function addHotspotToKrpano(hotspot, targetScene) {
   krpano.set(`hotspot[${name}].enabled`, true);
   krpano.set(`hotspot[${name}].capture`, true);
 
-  if (hotspot.kind === 'image' || (hotspot.style && (String(hotspot.style).startsWith('assets/') || String(hotspot.style).startsWith('http')))) {
-    // Render as an actual image overlay in the panorama
+  const isPole = String(styleName).toLowerCase() === 'pole pin' || String(styleName).toLowerCase() === 'landmark pin' || String(styleName).toLowerCase() === 'pole_pin' || String(styleName).toLowerCase() === 'landmark';
+  if (isPole) {
+    krpano.set(`hotspot[${name}].edge`, 'bottomleft');
+    krpano.set(`hotspot[${name}].ox`, -22);
+    krpano.set(`hotspot[${name}].oy`, 0);
+  } else {
+    krpano.set(`hotspot[${name}].edge`, 'center');
+    krpano.set(`hotspot[${name}].ox`, 0);
+    krpano.set(`hotspot[${name}].oy`, 0);
+  }
+
+  const isRasterImg = hotspot.style && (String(hotspot.style).startsWith('assets/') || String(hotspot.style).startsWith('http') || (String(hotspot.style).startsWith('data:image/') && !isPole));
+
+  if (isRasterImg) {
+    // Render as an actual raster image overlay in the panorama
     krpano.set(`hotspot[${name}].type`, 'image');
     krpano.set(`hotspot[${name}].url`, hotspot.style);
     krpano.set(`hotspot[${name}].width`, hotspot.width || 150);
     krpano.set(`hotspot[${name}].height`, hotspot.height || 150);
     krpano.set(`hotspot[${name}].zoom`, false);
-    krpano.set(`hotspot[${name}].ondown`, 'draghotspot()');
+    krpano.set(`hotspot[${name}].ondown`, hotspot.locked ? "" : "draghotspot()");
     krpano.set(`hotspot[${name}].onclick`, `js(window.onHotspotClicked('${hotspot._id}'))`);
-    if (hotspot.locked) {
-      krpano.set(`hotspot[${name}].ondown`, '');
-    }
     return;
   }
 
@@ -2586,13 +2636,12 @@ function selectImageHotspot(hotspotId) {
   const detailsEl = document.getElementById('prop-hs-details-section');
   if (emptyEl) emptyEl.style.display = 'none';
   if (contentEl) contentEl.style.display = 'block';
-  if (detailsEl) detailsEl.style.display = 'none'; // hide all regular properties
+  if (detailsEl) detailsEl.style.display = 'none'; // hide regular navigation properties
   const iconSec = document.getElementById('prop-hs-icon-section');
   if (iconSec) iconSec.style.display = 'none';
   const copyStyleBtns = document.querySelector('.prop-hs-style-btns');
   if (copyStyleBtns) copyStyleBtns.style.display = 'none';
 
-  // Show image-specific minimal panel
   let imgPanel = document.getElementById('prop-image-hotspot-panel');
   if (!imgPanel) {
     imgPanel = document.createElement('div');
@@ -2603,29 +2652,83 @@ function selectImageHotspot(hotspotId) {
   imgPanel.style.display = 'block';
 
   const titleEl = document.getElementById('prop-hs-active-title');
+  const isPole = String(hs.style || '').toLowerCase() === 'pole pin' || String(hs.style || '').toLowerCase() === 'landmark pin' || String(hs.style || '').toLowerCase() === 'pole_pin' || String(hs.style || '').toLowerCase() === 'landmark';
+
   if (titleEl) {
-    titleEl.innerHTML = `<span style="color:#94a3b8; font-weight:700;">IMAGE:</span> <span style="color:#fff; font-weight:800; margin-left:4px;">"${hs.title || 'Image'}"</span>`;
+    titleEl.innerHTML = `<span style="color:#94a3b8; font-weight:700;">${isPole ? 'LANDMARK PIN:' : 'IMAGE:'}</span> <span style="color:#fff; font-weight:800; margin-left:4px;">"${hs.title || (isPole ? 'Prince Palace' : 'Image')}"</span>`;
   }
 
   const isLocked = !!(hs.locked === true || hs.locked === 'true');
-  imgPanel.innerHTML = `
-    <div style="text-align:center; padding: 10px 0;">
-      <img src="${hs.style}" style="max-width:100%; max-height:160px; border-radius:8px; object-fit:contain; border:1px solid #282c35;">
-    </div>
-    <div style="display:flex; gap:10px;">
-      <div style="flex:1;">
-        <label style="font-size:11px;color:#64748b;display:block;margin-bottom:4px;">Width (px)</label>
-        <input id="img-hs-width" type="number" class="property-input" value="${hs.width || 150}" ${isLocked ? 'disabled' : ''} style="${isLocked ? 'opacity:0.5;' : ''}" oninput="onImageHotspotSizeChange()">
+
+  if (isPole) {
+    imgPanel.innerHTML = `
+      <!-- Landmark Pin Title / Text -->
+      <div class="property-group">
+        <label class="property-label">Pin Text / Label</label>
+        <div style="display:flex; gap:8px;">
+          <input id="img-hs-title" type="text" class="property-input" style="flex:1;" value="${hs.title || 'Prince Palace'}" placeholder="e.g. Prince Palace" ${isLocked ? 'disabled' : ''} oninput="onHotspotTitleInput(this.value)">
+          <div style="width:70px;">
+            <input id="img-hs-badge" type="text" class="property-input" maxlength="3" style="text-align:center; font-weight:800; text-transform:uppercase;" value="${hs.badgeLetter || (hs.title ? hs.title.trim().charAt(0).toUpperCase() : 'R')}" placeholder="R" title="Badge Letter" ${isLocked ? 'disabled' : ''} oninput="onHotspotBadgeLetterInput(this.value)">
+          </div>
+        </div>
       </div>
-      <div style="flex:1;">
-        <label style="font-size:11px;color:#64748b;display:block;margin-bottom:4px;">Height (px)</label>
-        <input id="img-hs-height" type="number" class="property-input" value="${hs.height || 150}" ${isLocked ? 'disabled' : ''} style="${isLocked ? 'opacity:0.5;' : ''}" oninput="onImageHotspotSizeChange()">
+
+      <!-- Landmark Pin Color -->
+      <div class="property-group">
+        <label class="property-label">Badge Color</label>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <input type="color" id="img-hs-color" class="property-color-picker" style="width:38px; height:38px; border-radius:6px; padding:2px; cursor:pointer; border:1px solid #334155; background:#1e293b;" value="${hs.color || '#00a6e0'}" ${isLocked ? 'disabled' : ''} onchange="onHotspotColorChange(this.value)" oninput="onHotspotColorChange(this.value)">
+          <div class="color-swatches" style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+            <div class="color-swatch" style="width:22px; height:22px; border-radius:4px; background:#00a6e0; cursor:pointer; border:1px solid rgba(255,255,255,0.2);" onclick="onHotspotColorChange('#00a6e0')" title="Cyan Sky"></div>
+            <div class="color-swatch" style="width:22px; height:22px; border-radius:4px; background:#3b82f6; cursor:pointer; border:1px solid rgba(255,255,255,0.2);" onclick="onHotspotColorChange('#3b82f6')" title="Royal Blue"></div>
+            <div class="color-swatch" style="width:22px; height:22px; border-radius:4px; background:#10b981; cursor:pointer; border:1px solid rgba(255,255,255,0.2);" onclick="onHotspotColorChange('#10b981')" title="Emerald Green"></div>
+            <div class="color-swatch" style="width:22px; height:22px; border-radius:4px; background:#ef4444; cursor:pointer; border:1px solid rgba(255,255,255,0.2);" onclick="onHotspotColorChange('#ef4444')" title="Crimson Red"></div>
+            <div class="color-swatch" style="width:22px; height:22px; border-radius:4px; background:#f59e0b; cursor:pointer; border:1px solid rgba(255,255,255,0.2);" onclick="onHotspotColorChange('#f59e0b')" title="Amber Orange"></div>
+            <div class="color-swatch" style="width:22px; height:22px; border-radius:4px; background:#8b5cf6; cursor:pointer; border:1px solid rgba(255,255,255,0.2);" onclick="onHotspotColorChange('#8b5cf6')" title="Violet Purple"></div>
+            <div class="color-swatch" style="width:22px; height:22px; border-radius:4px; background:#ffffff; cursor:pointer; border:1px solid rgba(0,0,0,0.4);" onclick="onHotspotColorChange('#ffffff')" title="Pure White"></div>
+          </div>
+        </div>
       </div>
-    </div>
-    <button onclick="deleteSelectedHotspotAction()" class="property-btn-outline" style="color:#ef4444;border-color:#ef4444;width:100%;padding:8px;">
-      Delete Image
-    </button>
-  `;
+
+      <!-- Size -->
+      <div class="property-group">
+        <label class="property-label">Icon Size</label>
+        <div style="display:flex; gap:10px;">
+          <div style="flex:1;">
+            <label style="font-size:11px;color:#64748b;display:block;margin-bottom:4px;">Horizontal (px)</label>
+            <input id="img-hs-width" type="number" class="property-input" value="${hs.width || ''}" placeholder="Auto" ${isLocked ? 'disabled' : ''} style="${isLocked ? 'opacity:0.5;' : ''}" oninput="onImageHotspotSizeChange()">
+          </div>
+          <div style="flex:1;">
+            <label style="font-size:11px;color:#64748b;display:block;margin-bottom:4px;">Vertical (px)</label>
+            <input id="img-hs-height" type="number" class="property-input" value="${hs.height || ''}" placeholder="Auto" ${isLocked ? 'disabled' : ''} style="${isLocked ? 'opacity:0.5;' : ''}" oninput="onImageHotspotSizeChange()">
+          </div>
+        </div>
+      </div>
+
+      <button onclick="deleteSelectedHotspotAction()" class="property-btn-outline" style="color:#ef4444;border-color:#ef4444;width:100%;padding:8px; margin-top: 8px;">
+        🗑 Delete This Pin
+      </button>
+    `;
+  } else {
+    imgPanel.innerHTML = `
+      <div style="text-align:center; padding: 10px 0;">
+        <img src="${hs.style}" style="max-width:100%; max-height:160px; border-radius:8px; object-fit:contain; border:1px solid #282c35;">
+      </div>
+      <div style="display:flex; gap:10px;">
+        <div style="flex:1;">
+          <label style="font-size:11px;color:#64748b;display:block;margin-bottom:4px;">Width (px)</label>
+          <input id="img-hs-width" type="number" class="property-input" value="${hs.width || 150}" ${isLocked ? 'disabled' : ''} style="${isLocked ? 'opacity:0.5;' : ''}" oninput="onImageHotspotSizeChange()">
+        </div>
+        <div style="flex:1;">
+          <label style="font-size:11px;color:#64748b;display:block;margin-bottom:4px;">Height (px)</label>
+          <input id="img-hs-height" type="number" class="property-input" value="${hs.height || 150}" ${isLocked ? 'disabled' : ''} style="${isLocked ? 'opacity:0.5;' : ''}" oninput="onImageHotspotSizeChange()">
+        </div>
+      </div>
+      <button onclick="deleteSelectedHotspotAction()" class="property-btn-outline" style="color:#ef4444;border-color:#ef4444;width:100%;padding:8px;">
+        Delete Image
+      </button>
+    `;
+  }
 
   if (typeof renderHotspotList === 'function') renderHotspotList();
 }
@@ -2708,6 +2811,22 @@ function selectHotspot(hotspotId) {
 
   // Render grid but it will be visually disabled if locked
   renderHotspotIconPickerGrid(hs.style || 'Arrow');
+
+  const isPole = String(hs.style || '').toLowerCase() === 'pole pin' || String(hs.style || '').toLowerCase() === 'landmark pin' || String(hs.style || '').toLowerCase() === 'pole_pin' || String(hs.style || '').toLowerCase() === 'landmark';
+  
+  const titleInput = document.getElementById('prop-hs-title');
+  if (titleInput) titleInput.value = hs.title || '';
+
+  const badgeContainer = document.getElementById('prop-hs-badge-letter-container');
+  const badgeInput = document.getElementById('prop-hs-badge-letter');
+  if (badgeContainer) badgeContainer.style.display = isPole ? 'block' : 'none';
+  if (badgeInput) {
+    badgeInput.value = hs.badgeLetter || '';
+    badgeInput.placeholder = hs.title ? hs.title.trim().charAt(0).toUpperCase() : 'R';
+  }
+
+  const colorInput = document.getElementById('prop-hs-color');
+  if (colorInput) colorInput.value = hs.color || '#00a6e0';
 
   const actionEl = document.getElementById('prop-hs-action');
   if (actionEl) actionEl.value = hs.action || 'scene';
@@ -3141,6 +3260,7 @@ function renderHotspotIconPickerGrid(currentStyle) {
   }
 
   const builtInStyles = [
+    { name: 'Pole Pin', label: 'Pole Pin', svg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="12" x2="8" y2="22"></line><rect x="4" y="2" width="10" height="10" rx="2" fill="#00a6e0" stroke="none"></rect><rect x="14" y="4" width="8" height="6" rx="1" fill="#d9f2fd" stroke="none"></rect></svg>' },
     { name: 'Arrow', label: 'Arrow', svg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
     { name: 'Arrow 01', label: 'Chevron', svg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 15 12 9 18 15"></polyline></svg>' },
     { name: 'Arrow 02', label: 'Bold', svg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 4 22 18 18 20 12 11 6 20 2 18"></polygon></svg>' },
@@ -3190,7 +3310,23 @@ async function onHotspotIconStyleChange(newStyle) {
   hs.style = newStyle;
   renderHotspotIconPickerGrid(newStyle);
 
-  const svgBase64 = getHotspotSvgBase64(newStyle, hs.title, hs.color);
+  const isPole = String(newStyle).toLowerCase() === 'pole pin' || String(newStyle).toLowerCase() === 'landmark pin' || String(newStyle).toLowerCase() === 'pole_pin' || String(newStyle).toLowerCase() === 'landmark';
+  const badgeContainer = document.getElementById('prop-hs-badge-letter-container');
+  if (badgeContainer) badgeContainer.style.display = isPole ? 'block' : 'none';
+
+  if (krpano) {
+    if (isPole) {
+      krpano.set(`hotspot[hs_${selectedHotspotId}].edge`, 'bottomleft');
+      krpano.set(`hotspot[hs_${selectedHotspotId}].ox`, -22);
+      krpano.set(`hotspot[hs_${selectedHotspotId}].oy`, 0);
+    } else {
+      krpano.set(`hotspot[hs_${selectedHotspotId}].edge`, 'center');
+      krpano.set(`hotspot[hs_${selectedHotspotId}].ox`, 0);
+      krpano.set(`hotspot[hs_${selectedHotspotId}].oy`, 0);
+    }
+  }
+
+  const svgBase64 = getHotspotSvgBase64(newStyle, hs.title, hs.color, hs.bgColor, hs.textStyle, hs.badgeLetter);
   if (krpano) {
     krpano.set(`hotspot[hs_${selectedHotspotId}].url`, svgBase64);
   }
@@ -3210,6 +3346,102 @@ async function onHotspotIconStyleChange(newStyle) {
     showToast("Error auto-saving icon style");
   }
 }
+
+// Live-update and auto-save Hotspot Title / Text
+let _hsTitleDebounce = null;
+window.onHotspotTitleInput = function(val) {
+  if (!selectedHotspotId) return;
+  const hs = hotspots.find(h => String(h._id) === String(selectedHotspotId));
+  if (!hs) return;
+  hs.title = val;
+  
+  const titleEl = document.getElementById('prop-hs-active-title');
+  const isPole = String(hs.style || '').toLowerCase() === 'pole pin' || String(hs.style || '').toLowerCase() === 'landmark pin' || String(hs.style || '').toLowerCase() === 'pole_pin' || String(hs.style || '').toLowerCase() === 'landmark';
+  if (titleEl) {
+    titleEl.innerHTML = `<span style="color:#94a3b8; font-weight:700;">${isPole ? 'LANDMARK PIN:' : 'ACTIVE:'}</span> <span style="color:#fff; font-weight:800; margin-left:4px;">"${hs.title || 'Untitled'}"</span>`;
+  }
+  
+  const badgeInput = document.getElementById('prop-hs-badge-letter') || document.getElementById('img-hs-badge');
+  if (badgeInput && !hs.badgeLetter) {
+    badgeInput.placeholder = val ? val.trim().charAt(0).toUpperCase() : 'R';
+  }
+
+  const svgBase64 = getHotspotSvgBase64(hs.style || 'Arrow', hs.title, hs.color, hs.bgColor, hs.textStyle, hs.badgeLetter);
+  if (krpano) {
+    krpano.set(`hotspot[hs_${selectedHotspotId}].url`, svgBase64);
+  }
+
+  clearTimeout(_hsTitleDebounce);
+  _hsTitleDebounce = setTimeout(async () => {
+    try {
+      await fetch(`/api/hotspots/${selectedHotspotId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: hs.title })
+      });
+      publishTourSilent();
+    } catch(e) {
+      console.error("Error updating hotspot title:", e);
+    }
+  }, 400);
+};
+
+// Live-update and auto-save Badge Letter (for Pole Pin)
+let _hsBadgeDebounce = null;
+window.onHotspotBadgeLetterInput = function(val) {
+  if (!selectedHotspotId) return;
+  const hs = hotspots.find(h => String(h._id) === String(selectedHotspotId));
+  if (!hs) return;
+  hs.badgeLetter = val.trim().toUpperCase();
+
+  const svgBase64 = getHotspotSvgBase64(hs.style || 'Arrow', hs.title, hs.color, hs.bgColor, hs.textStyle, hs.badgeLetter);
+  if (krpano) {
+    krpano.set(`hotspot[hs_${selectedHotspotId}].url`, svgBase64);
+  }
+
+  clearTimeout(_hsBadgeDebounce);
+  _hsBadgeDebounce = setTimeout(async () => {
+    try {
+      await fetch(`/api/hotspots/${selectedHotspotId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ badgeLetter: hs.badgeLetter })
+      });
+      publishTourSilent();
+    } catch(e) {
+      console.error("Error updating hotspot badge letter:", e);
+    }
+  }, 400);
+};
+
+// Live-update and auto-save Hotspot Color
+window.onHotspotColorChange = async function(color) {
+  if (!selectedHotspotId) return;
+  const hs = hotspots.find(h => String(h._id) === String(selectedHotspotId));
+  if (!hs) return;
+  hs.color = color;
+  
+  const colorInputA = document.getElementById('prop-hs-color');
+  if (colorInputA) colorInputA.value = color;
+  const colorInputB = document.getElementById('img-hs-color');
+  if (colorInputB) colorInputB.value = color;
+
+  const svgBase64 = getHotspotSvgBase64(hs.style || 'Arrow', hs.title, hs.color, hs.bgColor, hs.textStyle, hs.badgeLetter);
+  if (krpano) {
+    krpano.set(`hotspot[hs_${selectedHotspotId}].url`, svgBase64);
+  }
+
+  try {
+    await fetch(`/api/hotspots/${selectedHotspotId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ color: hs.color })
+    });
+    publishTourSilent();
+  } catch(e) {
+    console.error("Error updating hotspot color:", e);
+  }
+};
 
 // Auto-save Target Scene change
 async function onHotspotTargetSceneChange(newTargetSceneId) {
@@ -3613,15 +3845,16 @@ function confirmIconLibrarySelection() {
 }
 
 async function addHotspotFromLibrary(iconStyle) {
+  const isPole = String(iconStyle).toLowerCase() === 'pole pin' || String(iconStyle).toLowerCase() === 'landmark pin' || String(iconStyle).toLowerCase() === 'pole_pin' || String(iconStyle).toLowerCase() === 'landmark';
   const currentScene = scenes.find(s => String(s._id) === String(activeSceneId));
   const targetScene = scenes.find(s => String(s._id) !== String(activeSceneId)) || scenes[0];
-  if (!targetScene) {
+  if (!isPole && !targetScene) {
     showToast("Please add at least one more panorama scene first!");
     return;
   }
 
   const returnCb = document.getElementById('lib-return-hotspot-cb');
-  const returnChecked = returnCb ? returnCb.checked : true;
+  const returnChecked = !isPole && (returnCb ? returnCb.checked : true);
 
   let ath = 0;
   let atv = 0;
@@ -3636,12 +3869,14 @@ async function addHotspotFromLibrary(iconStyle) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         sceneId: activeSceneId,
-        title: targetScene.title,
-        kind: 'scene',
-        targetSceneId: targetScene._id,
+        title: isPole ? 'Prince Palace' : (targetScene ? targetScene.title : 'Hotspot'),
+        kind: isPole ? 'image' : 'scene',
+        targetSceneId: isPole ? null : (targetScene ? targetScene._id : null),
         ath,
         atv,
-        style: iconStyle
+        style: iconStyle,
+        badgeLetter: isPole ? 'R' : '',
+        color: isPole ? '#00a6e0' : '#ffffff'
       })
     });
     const data = await res.json();
@@ -3649,17 +3884,21 @@ async function addHotspotFromLibrary(iconStyle) {
 
     const newHotspot = data.hotspot;
     hotspots.push(newHotspot);
-    console.log("Nav icon created successfully from library:", newHotspot);
+    console.log("Hotspot created successfully from library:", newHotspot);
 
     addHotspotToKrpano(newHotspot);
     renderCurrentSceneHotspots();
-    selectHotspot(newHotspot._id);
+    if (isPole) {
+      selectImageHotspot(newHotspot._id);
+    } else {
+      selectHotspot(newHotspot._id);
+    }
     publishTourSilent();
     
-    if (returnChecked && currentScene) {
+    if (returnChecked && currentScene && !isPole && targetScene) {
       openReturnHotspotModal(targetScene, currentScene, iconStyle);
     } else {
-      showToast(`✓ Added "${iconStyle}" hotspot linking to ${targetScene.title}`);
+      showToast(isPole ? `✓ Added Pole Pin landmark to scene` : `✓ Added "${iconStyle}" hotspot linking to ${targetScene.title}`);
     }
   } catch (err) {
     console.error("Error creating hotspot from library:", err);
@@ -3677,8 +3916,9 @@ function showToast(message) {
 async function commitPopoverFromLibrary(chosenStyle) {
   if (!pendingDrop) return;
   const { ath, atv, targetScene } = pendingDrop;
+  const isPole = String(chosenStyle).toLowerCase() === 'pole pin' || String(chosenStyle).toLowerCase() === 'landmark pin' || String(chosenStyle).toLowerCase() === 'pole_pin' || String(chosenStyle).toLowerCase() === 'landmark';
   const returnCb = document.getElementById('lib-return-hotspot-cb');
-  const returnChecked = returnCb ? returnCb.checked : true;
+  const returnChecked = !isPole && (returnCb ? returnCb.checked : true);
   const currentScene = scenes.find(s => String(s._id) === String(activeSceneId));
 
   try {
@@ -3687,12 +3927,14 @@ async function commitPopoverFromLibrary(chosenStyle) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         sceneId: activeSceneId,
-        title: targetScene.title,
-        kind: 'scene',
-        targetSceneId: targetScene._id,
+        title: isPole ? 'Prince Palace' : (targetScene ? targetScene.title : 'Hotspot'),
+        kind: isPole ? 'image' : 'scene',
+        targetSceneId: isPole ? null : (targetScene ? targetScene._id : null),
         ath,
         atv,
-        style: chosenStyle
+        style: chosenStyle,
+        badgeLetter: isPole ? 'R' : '',
+        color: isPole ? '#00a6e0' : '#ffffff'
       })
     });
     const data = await res.json();
@@ -3702,13 +3944,17 @@ async function commitPopoverFromLibrary(chosenStyle) {
     hotspots.push(newHotspot);
     addHotspotToKrpano(newHotspot);
     renderCurrentSceneHotspots();
-    selectHotspot(newHotspot._id);
+    if (isPole) {
+      selectImageHotspot(newHotspot._id);
+    } else {
+      selectHotspot(newHotspot._id);
+    }
     publishTourSilent();
 
-    if (returnChecked && currentScene) {
+    if (returnChecked && currentScene && !isPole && targetScene) {
       openReturnHotspotModal(targetScene, currentScene, chosenStyle);
     } else {
-      showToast("✓ Hotspot created successfully!");
+      showToast(isPole ? "✓ Pole Pin added to scene!" : "✓ Hotspot created successfully!");
     }
   } catch (err) {
     console.error("Error creating hotspot from drop:", err);

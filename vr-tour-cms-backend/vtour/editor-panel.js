@@ -2247,18 +2247,17 @@ function addHotspotToKrpano(hotspot, targetScene) {
     krpano.set(`hotspot[${name}].oy`, 0);
   }
 
-  if (hotspot.kind === 'image' || (hotspot.style && (String(hotspot.style).startsWith('assets/') || String(hotspot.style).startsWith('http')))) {
-    // Render as an actual image overlay in the panorama
+  const isRasterImg = hotspot.style && (String(hotspot.style).startsWith('assets/') || String(hotspot.style).startsWith('http') || (String(hotspot.style).startsWith('data:image/') && !isPole));
+
+  if (isRasterImg) {
+    // Render as an actual raster image overlay in the panorama
     krpano.set(`hotspot[${name}].type`, 'image');
     krpano.set(`hotspot[${name}].url`, hotspot.style);
     krpano.set(`hotspot[${name}].width`, hotspot.width || 150);
     krpano.set(`hotspot[${name}].height`, hotspot.height || 150);
     krpano.set(`hotspot[${name}].zoom`, false);
-    krpano.set(`hotspot[${name}].ondown`, 'draghotspot()');
+    krpano.set(`hotspot[${name}].ondown`, hotspot.locked ? "" : "draghotspot()");
     krpano.set(`hotspot[${name}].onclick`, `js(window.onHotspotClicked('${hotspot._id}'))`);
-    if (hotspot.locked) {
-      krpano.set(`hotspot[${name}].ondown`, '');
-    }
     return;
   }
 
@@ -3357,11 +3356,12 @@ window.onHotspotTitleInput = function(val) {
   hs.title = val;
   
   const titleEl = document.getElementById('prop-hs-active-title');
+  const isPole = String(hs.style || '').toLowerCase() === 'pole pin' || String(hs.style || '').toLowerCase() === 'landmark pin' || String(hs.style || '').toLowerCase() === 'pole_pin' || String(hs.style || '').toLowerCase() === 'landmark';
   if (titleEl) {
-    titleEl.innerHTML = `<span style="color:#94a3b8; font-weight:700;">ACTIVE:</span> <span style="color:#fff; font-weight:800; margin-left:4px;">"${hs.title || 'Untitled'}"</span>`;
+    titleEl.innerHTML = `<span style="color:#94a3b8; font-weight:700;">${isPole ? 'LANDMARK PIN:' : 'ACTIVE:'}</span> <span style="color:#fff; font-weight:800; margin-left:4px;">"${hs.title || 'Untitled'}"</span>`;
   }
   
-  const badgeInput = document.getElementById('prop-hs-badge-letter');
+  const badgeInput = document.getElementById('prop-hs-badge-letter') || document.getElementById('img-hs-badge');
   if (badgeInput && !hs.badgeLetter) {
     badgeInput.placeholder = val ? val.trim().charAt(0).toUpperCase() : 'R';
   }
@@ -3421,8 +3421,10 @@ window.onHotspotColorChange = async function(color) {
   if (!hs) return;
   hs.color = color;
   
-  const colorInput = document.getElementById('prop-hs-color');
-  if (colorInput) colorInput.value = color;
+  const colorInputA = document.getElementById('prop-hs-color');
+  if (colorInputA) colorInputA.value = color;
+  const colorInputB = document.getElementById('img-hs-color');
+  if (colorInputB) colorInputB.value = color;
 
   const svgBase64 = getHotspotSvgBase64(hs.style || 'Arrow', hs.title, hs.color, hs.bgColor, hs.textStyle, hs.badgeLetter);
   if (krpano) {
