@@ -627,6 +627,25 @@
       "height": null,
       "createdAt": "2026-09-09T07:47:09.088Z",
       "badgeLetter": "R"
+    },
+    {
+      "_id": "mtttaagop3zndd",
+      "sceneId": "msyf9d69l48lr0",
+      "title": "Palace",
+      "kind": "image",
+      "targetSceneId": null,
+      "info": "Prince Palace",
+      "ath": 90.03,
+      "atv": 31.12,
+      "style": "Pole Pin",
+      "color": "#f59e0b",
+      "transition": "BLEND(0.5)",
+      "action": "scene",
+      "textProps": {},
+      "width": null,
+      "height": null,
+      "createdAt": "2026-09-09T08:03:25.944Z",
+      "badgeLetter": "R"
     }
   ],
   "assets": [],
