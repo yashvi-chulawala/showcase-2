@@ -2882,85 +2882,98 @@ function selectImageHotspot(hotspotId) {
     }
 
     const defaultPlaceholder = 'Add text';
+    const textStr = String(hs.title || defaultPlaceholder).trim() || defaultPlaceholder;
+    const autoW = Math.round(44 + Math.max(84, Math.round(textStr.length * 8.8 + 26)) + 14);
+    const autoH = 115;
 
     imgPanel.innerHTML = `
       <!-- Live Badge Preview & Header -->
-      <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between;">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <div id="pin-badge-preview-icon" style="width: 34px; height: 34px; border-radius: 8px; background: ${currentColor}; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 17px; color: #ffffff; box-shadow: 0 2px 10px rgba(0,0,0,0.35); transition: background 0.2s;">
+      <div style="background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%); border: 1px solid rgba(255, 255, 255, 0.09); border-radius: 12px; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 16px rgba(0,0,0,0.25);">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div id="pin-badge-preview-icon" style="width: 36px; height: 36px; border-radius: 9px; background: ${currentColor}; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 18px; color: #ffffff; box-shadow: 0 4px 12px ${currentColor}55; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);">
             ${currentLetter}
           </div>
           <div>
-            <div id="pin-badge-preview-title" style="font-size: 13.5px; font-weight: 700; color: #fff;">${hs.title || 'Landmark Pin'}</div>
-            <div style="font-size: 11px; font-weight: 600; color: #94a3b8;">${hs.style || 'Landmark Pin'}</div>
+            <div id="pin-badge-preview-title" style="font-size: 14px; font-weight: 700; color: #f8fafc; letter-spacing: -0.2px;">${hs.title || 'Landmark Pin'}</div>
+            <div style="font-size: 11px; font-weight: 600; color: #94a3b8; margin-top: 1px;">${hs.style || 'Landmark Pin'}</div>
           </div>
         </div>
-        <span style="font-size: 10px; font-weight: 700; background: rgba(116, 184, 67, 0.15); color: #74b843; padding: 3px 9px; border-radius: 12px;">LANDMARK</span>
+        <span style="font-size: 10px; font-weight: 800; letter-spacing: 0.5px; background: rgba(116, 184, 67, 0.15); color: #74b843; border: 1px solid rgba(116, 184, 67, 0.3); padding: 3px 9px; border-radius: 20px;">PIN</span>
       </div>
 
       <!-- Editable Pin Text -->
-      <div class="property-group" style="margin-top: 4px;">
-        <label class="property-label" style="font-size: 12px; font-weight: 700; color: #cbd5e1;">Pin Text</label>
-        <input id="img-hs-title" type="text" class="property-input" style="width: 100%; font-weight: 600; font-size: 14px;" value="${hs.title || defaultPlaceholder}" placeholder="${defaultPlaceholder}" ${isLocked ? 'disabled' : ''} oninput="onLandmarkPinTextChange(this.value)">
+      <div class="property-group" style="margin-top: 2px;">
+        <label class="property-label" style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8;">Pin Text</label>
+        <input id="img-hs-title" type="text" class="property-input" style="width: 100%; font-weight: 600; font-size: 13.5px; padding: 9px 12px; border-radius: 8px;" value="${hs.title || defaultPlaceholder}" placeholder="${defaultPlaceholder}" ${isLocked ? 'disabled' : ''} oninput="onLandmarkPinTextChange(this.value)">
       </div>
 
       <!-- Editable Badge Letter & Pin Color in 2 columns -->
-      <div style="display: flex; gap: 12px;">
+      <div style="display: flex; gap: 10px;">
         <!-- Badge Letter -->
         <div class="property-group" style="flex: 1;">
-          <label class="property-label" style="font-size: 12px; font-weight: 700; color: #cbd5e1;">Badge Letter</label>
-          <input id="img-hs-badge" type="text" maxlength="3" class="property-input" style="width: 100%; font-weight: 800; font-size: 15px; text-align: center; text-transform: uppercase;" value="${currentLetter}" ${isLocked ? 'disabled' : ''} oninput="onLandmarkPinBadgeChange(this.value)">
+          <label class="property-label" style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8;">Badge</label>
+          <input id="img-hs-badge" type="text" maxlength="3" class="property-input" style="width: 100%; font-weight: 800; font-size: 15px; text-align: center; text-transform: uppercase; padding: 8px;" value="${currentLetter}" ${isLocked ? 'disabled' : ''} oninput="onLandmarkPinBadgeChange(this.value)">
         </div>
 
         <!-- Pin Color Picker -->
-        <div class="property-group" style="flex: 1.5;">
-          <label class="property-label" style="font-size: 12px; font-weight: 700; color: #cbd5e1;">Pin Color</label>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <input id="img-hs-color-picker" type="color" value="${currentColor}" ${isLocked ? 'disabled' : ''} style="width: 36px; height: 36px; border: none; border-radius: 8px; cursor: pointer; background: transparent;" oninput="onLandmarkPinColorChange(this.value)">
-            <input id="img-hs-color-hex" type="text" class="property-input" style="flex: 1; font-weight: 700; font-size: 13px; font-family: monospace;" value="${currentColor}" ${isLocked ? 'disabled' : ''} onchange="onLandmarkPinColorChange(this.value)">
+        <div class="property-group" style="flex: 1.8;">
+          <label class="property-label" style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8;">Color</label>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <input id="img-hs-color-picker" type="color" value="${currentColor}" ${isLocked ? 'disabled' : ''} style="width: 34px; height: 34px; border: none; border-radius: 8px; cursor: pointer; background: transparent; padding: 0;" oninput="onLandmarkPinColorChange(this.value)">
+            <input id="img-hs-color-hex" type="text" class="property-input" style="flex: 1; font-weight: 700; font-size: 12.5px; font-family: monospace; padding: 8px;" value="${currentColor}" ${isLocked ? 'disabled' : ''} onchange="onLandmarkPinColorChange(this.value)">
           </div>
         </div>
       </div>
 
       <!-- Quick Color Swatches Palette -->
       <div class="property-group">
-        <label class="property-label" style="font-size: 11px; font-weight: 600; color: #94a3b8; margin-bottom: 6px;">Color Presets</label>
+        <label class="property-label" style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; margin-bottom: 6px;">Color Presets</label>
         <div style="display: flex; flex-wrap: wrap; gap: 6px;">
           ${['#3b82f6', '#f59e0b', '#8b5cf6', '#ef4444', '#10b981', '#ec4899', '#74b843', '#06b6d4', '#f97316', '#64748b'].map(c => `
-            <div onclick="onLandmarkPinColorChange('${c}')" style="width: 24px; height: 24px; border-radius: 6px; background: ${c}; cursor: pointer; border: 2px solid ${c === currentColor ? '#ffffff' : 'transparent'}; box-shadow: 0 2px 6px rgba(0,0,0,0.3); transition: transform 0.15s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'"></div>
+            <div onclick="onLandmarkPinColorChange('${c}')" style="width: 22px; height: 22px; border-radius: 6px; background: ${c}; cursor: pointer; border: 2px solid ${c.toLowerCase() === currentColor.toLowerCase() ? '#ffffff' : 'transparent'}; box-shadow: 0 2px 6px rgba(0,0,0,0.3); transition: transform 0.15s;" onmouseover="this.style.transform='scale(1.18)'" onmouseout="this.style.transform='scale(1)'"></div>
           `).join('')}
         </div>
       </div>
 
       <!-- Sync Color to Matching Badge Letter Pins Options -->
-      <div style="background: rgba(116, 184, 67, 0.06); border: 1px solid rgba(116, 184, 67, 0.2); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 8px;">
-        <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: #cbd5e1; cursor: pointer;">
-          <input type="checkbox" id="sync-pin-color-toggle" ${window._syncAllPinColors ? 'checked' : ''} onchange="window._syncAllPinColors = this.checked;" style="accent-color: #74b843; width: 16px; height: 16px; cursor: pointer;">
+      <div style="background: linear-gradient(135deg, rgba(116, 184, 67, 0.08) 0%, rgba(116, 184, 67, 0.02) 100%); border: 1px solid rgba(116, 184, 67, 0.22); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 9px;">
+        <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: #e2e8f0; cursor: pointer;">
+          <input type="checkbox" id="sync-pin-color-toggle" ${window._syncAllPinColors ? 'checked' : ''} onchange="window._syncAllPinColors = this.checked;" style="accent-color: #74b843; width: 15px; height: 15px; cursor: pointer;">
           <span id="sync-pin-color-text">Auto-sync color to all "${currentLetter}" pins</span>
         </label>
-        <button id="apply-color-badge-btn" onclick="applyCurrentPinColorToAll('${hs._id}')" class="property-btn-outline" style="border-color: #74b843; color: #74b843; padding: 7px 12px; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; border-radius: 8px; background: rgba(116, 184, 67, 0.1); cursor: pointer; transition: all 0.2s;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+        <button id="apply-color-badge-btn" onclick="applyCurrentPinColorToAll('${hs._id}')" style="border: 1px solid rgba(116, 184, 67, 0.4); color: #74b843; padding: 8px 12px; font-size: 11.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; border-radius: 8px; background: rgba(116, 184, 67, 0.12); cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);" onmouseover="this.style.background='rgba(116,184,67,0.22)'; this.style.borderColor='#74b843';" onmouseout="this.style.background='rgba(116,184,67,0.12)'; this.style.borderColor='rgba(116,184,67,0.4)';">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
           Apply This Color to All "${currentLetter}" Pins
         </button>
       </div>
 
-      <!-- Size Settings -->
-      <div class="property-group">
-        <label class="property-label">Icon Size</label>
-        <div style="display:flex; gap:10px;">
-          <div style="flex:1;">
-            <label style="font-size:11px;color:#64748b;display:block;margin-bottom:4px;">Width (px)</label>
-            <input id="img-hs-width" type="number" class="property-input" value="${hs.width || ''}" placeholder="Auto" ${isLocked ? 'disabled' : ''} style="${isLocked ? 'opacity:0.5;' : ''}" oninput="onImageHotspotSizeChange()">
+      <!-- Size Settings with Dynamic Auto Size Display -->
+      <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; margin: 0;">Icon Size</label>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span id="pin-auto-size-badge" style="font-size: 11px; font-weight: 700; color: #74b843; background: rgba(116, 184, 67, 0.12); border: 1px solid rgba(116, 184, 67, 0.25); padding: 2px 7px; border-radius: 20px; font-family: monospace;">
+              Auto: ${autoW} × ${autoH} px
+            </span>
+            ${(hs.width || hs.height) ? `
+              <button onclick="resetPinSizeToAuto()" title="Reset to Auto size" style="background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 10px; font-weight: 600; text-decoration: underline; padding: 0;">Reset</button>
+            ` : ''}
           </div>
-          <div style="flex:1;">
-            <label style="font-size:11px;color:#64748b;display:block;margin-bottom:4px;">Height (px)</label>
-            <input id="img-hs-height" type="number" class="property-input" value="${hs.height || ''}" placeholder="Auto" ${isLocked ? 'disabled' : ''} style="${isLocked ? 'opacity:0.5;' : ''}" oninput="onImageHotspotSizeChange()">
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <div style="flex: 1;">
+            <label style="font-size: 10.5px; font-weight: 600; color: #64748b; display: block; margin-bottom: 4px;">Width (px)</label>
+            <input id="img-hs-width" type="number" class="property-input" value="${hs.width || ''}" placeholder="Auto (${autoW})" ${isLocked ? 'disabled' : ''} style="padding: 7px 10px; font-size: 12.5px; ${isLocked ? 'opacity:0.5;' : ''}" oninput="onLandmarkPinSizeChange()">
+          </div>
+          <div style="flex: 1;">
+            <label style="font-size: 10.5px; font-weight: 600; color: #64748b; display: block; margin-bottom: 4px;">Height (px)</label>
+            <input id="img-hs-height" type="number" class="property-input" value="${hs.height || ''}" placeholder="Auto (${autoH})" ${isLocked ? 'disabled' : ''} style="padding: 7px 10px; font-size: 12.5px; ${isLocked ? 'opacity:0.5;' : ''}" oninput="onLandmarkPinSizeChange()">
           </div>
         </div>
       </div>
 
-      <button onclick="deleteSelectedHotspotAction()" class="property-btn-outline" style="color:#ef4444;border-color:#ef4444;width:100%;padding:10px; margin-top: 6px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px;">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+      <button onclick="deleteSelectedHotspotAction()" style="border: 1px solid rgba(239, 68, 68, 0.35); color: #ef4444; background: rgba(239, 68, 68, 0.06); width: 100%; padding: 9px; font-size: 12px; font-weight: 700; border-radius: 8px; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); margin-top: 2px;" onmouseover="this.style.background='rgba(239,68,68,0.15)'; this.style.borderColor='#ef4444';" onmouseout="this.style.background='rgba(239,68,68,0.06)'; this.style.borderColor='rgba(239,68,68,0.35)';">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
         Delete This Pin
       </button>
     `;
@@ -3186,6 +3199,17 @@ window.onLandmarkPinTextChange = function(val) {
 
   const previewTitle = document.getElementById('pin-badge-preview-title');
   if (previewTitle) previewTitle.textContent = val || 'Landmark Pin';
+
+  const defaultText = 'Add text';
+  const textStr = String(val || defaultText).trim() || defaultText;
+  const autoW = Math.round(44 + Math.max(84, Math.round(textStr.length * 8.8 + 26)) + 14);
+  const autoH = 115;
+  const autoSizeBadge = document.getElementById('pin-auto-size-badge');
+  if (autoSizeBadge) autoSizeBadge.textContent = `Auto: ${autoW} × ${autoH} px`;
+  const wInput = document.getElementById('img-hs-width');
+  if (wInput && !hs.width) wInput.placeholder = `Auto (${autoW})`;
+  const hInput = document.getElementById('img-hs-height');
+  if (hInput && !hs.height) hInput.placeholder = `Auto (${autoH})`;
 
   const svgBase64 = getHotspotSvgBase64(hs.style || 'Residential Pin', hs.title, hs.color, null, null, hs.badgeLetter);
   if (krpano) {
@@ -3425,8 +3449,76 @@ window.addImageHotspotFromAsset = async function(name, url) {
   }
 };
 
-// Debounced save for image hotspot size
+// Debounced save for landmark pin custom size
 let _imgSizeDebounce = null;
+window.onLandmarkPinSizeChange = function() {
+  if (!selectedHotspotId) return;
+  const hs = hotspots.find(h2 => String(h2._id) === String(selectedHotspotId));
+  if (!hs) return;
+
+  const wVal = document.getElementById('img-hs-width')?.value.trim();
+  const hVal = document.getElementById('img-hs-height')?.value.trim();
+
+  const w = wVal !== '' ? parseInt(wVal, 10) : null;
+  const h = hVal !== '' ? parseInt(hVal, 10) : null;
+
+  hs.width = (w && !isNaN(w) && w > 0) ? w : null;
+  hs.height = (h && !isNaN(h) && h > 0) ? h : null;
+
+  if (krpano) {
+    krpano.set(`hotspot[hs_${selectedHotspotId}].width`, hs.width || 'prop');
+    krpano.set(`hotspot[hs_${selectedHotspotId}].height`, hs.height || 'prop');
+  }
+
+  clearTimeout(_imgSizeDebounce);
+  _imgSizeDebounce = setTimeout(async () => {
+    try {
+      await fetch(`/api/hotspots/${selectedHotspotId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ width: hs.width, height: hs.height })
+      });
+      publishTourSilent();
+    } catch (e) {
+      console.error(e);
+    }
+  }, 600);
+};
+
+// Reset landmark pin size to natural Auto SVG dimensions
+window.resetPinSizeToAuto = async function() {
+  if (!selectedHotspotId) return;
+  const hs = hotspots.find(h2 => String(h2._id) === String(selectedHotspotId));
+  if (!hs) return;
+
+  hs.width = null;
+  hs.height = null;
+
+  const wInput = document.getElementById('img-hs-width');
+  const hInput = document.getElementById('img-hs-height');
+  if (wInput) wInput.value = '';
+  if (hInput) hInput.value = '';
+
+  if (krpano) {
+    krpano.set(`hotspot[hs_${selectedHotspotId}].width`, 'prop');
+    krpano.set(`hotspot[hs_${selectedHotspotId}].height`, 'prop');
+  }
+
+  try {
+    await fetch(`/api/hotspots/${selectedHotspotId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ width: null, height: null })
+    });
+    publishTourSilent();
+    selectImageHotspot(selectedHotspotId);
+    showToast('✓ Reset pin size to Auto');
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+// Debounced save for image overlay hotspot size
 window.onImageHotspotSizeChange = async function() {
   const w = parseInt(document.getElementById('img-hs-width')?.value) || 150;
   const h = parseInt(document.getElementById('img-hs-height')?.value) || 150;
