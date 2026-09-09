@@ -2256,8 +2256,9 @@ function addHotspotToKrpano(hotspot, targetScene) {
     krpano.set(`hotspot[${name}].width`, hotspot.width || 150);
     krpano.set(`hotspot[${name}].height`, hotspot.height || 150);
     krpano.set(`hotspot[${name}].zoom`, false);
-    krpano.set(`hotspot[${name}].ondown`, hotspot.locked ? "" : "draghotspot()");
+    krpano.set(`hotspot[${name}].ondown`, '');
     krpano.set(`hotspot[${name}].onclick`, `js(window.onHotspotClicked('${hotspot._id}'))`);
+    krpano.set(`hotspot[${name}].ondblclick`, hotspot.locked ? '' : `js(window.onHotspotDoubleClicked('${hotspot._id}'))`);
     return;
   }
 
@@ -2315,20 +2316,75 @@ function addHotspotToKrpano(hotspot, targetScene) {
     krpano.set(`hotspot[${name}].url`, svgBase64);
   }
 
-  krpano.set(`hotspot[${name}].onclick`, `js(onHotspotClicked('${hotspot._id}'))`);
-  krpano.set(`hotspot[${name}].ondown`, hotspot.locked ? "" : "draghotspot();");
+  krpano.set(`hotspot[${name}].onclick`, `js(window.onHotspotClicked('${hotspot._id}'))`);
+  krpano.set(`hotspot[${name}].ondblclick`, hotspot.locked ? '' : `js(window.onHotspotDoubleClicked('${hotspot._id}'))`);
+  krpano.set(`hotspot[${name}].ondown`, '');
 }
 
-// Hotspot clicked handler
+// Hotspot single-click handler: Selects hotspot & opens its property tab immediately without shifting position
 window.onHotspotClicked = function (hotspotId) {
   window._lastHotspotClickTime = Date.now();
   console.log("Hotspot clicked:", hotspotId);
   const hs = hotspots.find(h => String(h._id) === String(hotspotId));
   if (hs) {
-    showToast(`Selected hotspot: "${hs.title}"`);
-    openPropertyRightPanel('hotspot');
-    selectHotspot(hotspotId);
+    showToast(`Selected: "${hs.title || 'Hotspot'}"`);
+    if (isImageHotspot(hs)) {
+      showTabOnly('image');
+      currentHotspotFilter = 'image';
+      selectImageHotspot(hotspotId);
+    } else if (isTextHotspot(hs)) {
+      showTabOnly('text');
+      currentHotspotFilter = 'text';
+      selectTextHotspot(hotspotId);
+    } else {
+      showTabOnly('hotspot');
+      currentHotspotFilter = 'hotspot';
+      selectHotspot(hotspotId);
+    }
+    renderHotspotList();
   }
+};
+
+// Hotspot double-click handler: Repositions pin smoothly
+window.onHotspotDoubleClicked = function (hotspotId) {
+  window._lastHotspotClickTime = Date.now();
+  console.log("Hotspot double-clicked for repositioning:", hotspotId);
+  const hs = hotspots.find(h => String(h._id) === String(hotspotId));
+  if (!hs || hs.locked) return;
+
+  // Make sure it's selected in the sidebar
+  window.onHotspotClicked(hotspotId);
+
+  const name = "hs_" + hotspotId;
+  showToast("📌 Move mouse to new position and click to place");
+
+  // In krpano, make hotspot track mouse cursor until next click
+  if (krpano && typeof krpano.call === 'function') {
+    krpano.set('reposition_active', true);
+    krpano.call(`
+      asyncloop(reposition_active,
+        screentosphere(mouse.stagex, mouse.stagey, hotspot[${name}].ath, hotspot[${name}].atv);
+      );
+    `);
+  }
+
+  const panoContainer = document.getElementById('pano-container');
+  if (!panoContainer) return;
+
+  const onPlacePin = function (e) {
+    e.stopPropagation();
+    panoContainer.removeEventListener('click', onPlacePin, true);
+    if (!krpano) return;
+
+    krpano.set('reposition_active', false);
+    const newAth = Number(krpano.get(`hotspot[${name}].ath`)).toFixed(2);
+    const newAtv = Number(krpano.get(`hotspot[${name}].atv`)).toFixed(2);
+    window.onHotspotDragEnd(name, newAth, newAtv);
+  };
+
+  setTimeout(() => {
+    panoContainer.addEventListener('click', onPlacePin, { capture: true, once: true });
+  }, 300);
 };
 
 function setupPanoBackgroundClickListener() {
@@ -2510,7 +2566,8 @@ async function toggleHotspotLock(hotspotId) {
       }
       if (krpano && typeof krpano.set === 'function') {
         const name = `hs_${hotspotId}`;
-        krpano.set(`hotspot[${name}].ondown`, newLockedState ? "" : "draghotspot();");
+        krpano.set(`hotspot[${name}].ondown`, '');
+        krpano.set(`hotspot[${name}].ondblclick`, newLockedState ? '' : `js(window.onHotspotDoubleClicked('${hotspotId}'))`);
       }
       showToast(newLockedState ? "Hotspot Locked" : "Hotspot Unlocked");
     }
