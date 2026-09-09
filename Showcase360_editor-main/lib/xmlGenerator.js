@@ -269,11 +269,17 @@ ${dynamicStylesXml}
         const cssStr = `font-family:${font}; font-size:${fontSize}px; color:${color}; font-weight:${fw}; font-style:${fs}; text-decoration:${td}; text-align:center;`;
         baseAttrs += ` css="${esc(cssStr)}" padding="4 8"`;
       } else {
-        if (isPole) {
-          baseAttrs += ` edge="bottomleft" ox="-22" oy="0"`;
+        const isGif = String(style).toLowerCase().endsWith('.gif') || String(style).toLowerCase().includes('.gif');
+        if (isGif) {
+          const imgUrl = style.startsWith('http') || style.startsWith('data:') ? style : (style.startsWith('assets/') ? `../${style}` : style);
+          baseAttrs += ` type="text" renderer="css3d" distorted="false" bg="false" bgalpha="0.0" bgborder="0 0x000000 0" padding="0" html="${esc(`<img src="${imgUrl}" style="width:100%; height:100%; object-fit:contain; pointer-events:none; display:block;" />`)}" alpha="1.0"`;
+        } else {
+          if (isPole) {
+            baseAttrs += ` edge="bottomleft" ox="-22" oy="0"`;
+          }
+          const svgUrl = getHotspotSvgBase64(style, h.title, h.color, h.badgeLetter);
+          baseAttrs += ` url="${esc(svgUrl)}" alpha="1.0"`;
         }
-        const svgUrl = getHotspotSvgBase64(style, h.title, h.color, h.badgeLetter);
-        baseAttrs += ` url="${esc(svgUrl)}" alpha="1.0"`;
       }
 
       if (h.kind === 'image' || isPole) {

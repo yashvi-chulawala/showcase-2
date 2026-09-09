@@ -2275,6 +2275,24 @@ function addHotspotToKrpano(hotspot, targetScene) {
   const isRasterImg = hotspot.style && (String(hotspot.style).startsWith('assets/') || String(hotspot.style).startsWith('http') || (String(hotspot.style).startsWith('data:image/') && !isPole));
 
   if (isRasterImg) {
+    const isGif = String(hotspot.style).toLowerCase().endsWith('.gif') || String(hotspot.style).toLowerCase().includes('.gif');
+    if (isGif) {
+      // Render animated GIF using CSS3D HTML DOM <img> so all animation frames play natively
+      krpano.set(`hotspot[${name}].type`, 'text');
+      krpano.set(`hotspot[${name}].html`, `<img src="${hotspot.style}" style="width:100%; height:100%; object-fit:contain; pointer-events:none; display:block;" />`);
+      krpano.set(`hotspot[${name}].bg`, false);
+      krpano.set(`hotspot[${name}].bgalpha`, 0.0);
+      krpano.set(`hotspot[${name}].bgborder`, '0 0x000000 0');
+      krpano.set(`hotspot[${name}].padding`, 0);
+      krpano.set(`hotspot[${name}].renderer`, 'css3d');
+      krpano.set(`hotspot[${name}].distorted`, false);
+      krpano.set(`hotspot[${name}].width`, hotspot.width || 150);
+      krpano.set(`hotspot[${name}].height`, hotspot.height || 150);
+      krpano.set(`hotspot[${name}].zoom`, false);
+      krpano.set(`hotspot[${name}].ondown`, hotspot.locked ? '' : 'draghotspot()');
+      return;
+    }
+
     // Render as an actual raster image overlay in the panorama
     krpano.set(`hotspot[${name}].type`, 'image');
     krpano.set(`hotspot[${name}].url`, hotspot.style);
