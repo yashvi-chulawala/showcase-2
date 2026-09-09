@@ -775,70 +775,6 @@ function activateTool(toolName) {
 
 window._selectedImageAsset = null; // { name, url }
 
-function openImageHotspotTool() {
-  const modal = document.getElementById('modal-select-image-asset');
-  if (!modal) return;
-  window._selectedImageAsset = null;
-  _selectedImageAsset = null;
-  modal.style.display = 'flex';
-  _renderImageAssetGrid();
-  _updateImageSelectBtn();
-}
-
-function _renderImageAssetGrid() {
-  const grid = document.getElementById('modal-select-image-asset-grid');
-  if (!grid) return;
-  grid.innerHTML = '';
-
-  if (!assets || assets.length === 0) {
-    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:#64748b;padding:40px;">No images found in Media. Upload some first!</div>`;
-    return;
-  }
-
-  let count = 0;
-  assets.forEach(asset => {
-    const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(asset.url);
-    if (!isImage) return;
-    count++;
-
-    const url = asset.url;
-    const isSelected = _selectedImageAsset && _selectedImageAsset.url === url;
-
-    const card = document.createElement('div');
-    card.className = 'image-card';
-    card.dataset.url = url;
-    card.style.cssText = `cursor:pointer;outline:${isSelected ? '2px solid #10b981' : 'none'};border-radius:10px;transition:outline 0.15s;`;
-    card.innerHTML = `
-      <div class="image-card-thumb-wrap" style="height:120px;position:relative;">
-        <img class="image-card-thumb" src="${url}" alt="${asset.name}" style="object-fit:cover;">
-      </div>
-      <div class="image-card-body" style="padding:8px;">
-        <div style="font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:${isSelected ? '#10b981' : '#fff'};font-weight:${isSelected ? '700' : '500'};" title="${asset.name}">${asset.name}</div>
-      </div>
-    `;
-    card.onclick = () => {
-      _selectedImageAsset = { name: asset.name, url };
-      window._selectedImageAsset = _selectedImageAsset;
-      _renderImageAssetGrid();
-      _updateImageSelectBtn();
-    };
-    grid.appendChild(card);
-  });
-
-  if (count === 0) {
-    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:#64748b;padding:40px;">No images found in Media. Upload some first!</div>`;
-  }
-}
-
-function _updateImageSelectBtn() {
-  const btn = document.getElementById('modal-image-asset-select-btn');
-  if (!btn) return;
-  const has = !!(window._selectedImageAsset);
-  btn.disabled = !has;
-  btn.style.opacity = has ? '1' : '0.4';
-  btn.style.cursor = has ? 'pointer' : 'not-allowed';
-}
-
 async function addImageHotspotFromAsset(assetName, assetUrl) {
   const currentScene = scenes.find(s => String(s._id) === String(activeSceneId));
   if (!currentScene) {
@@ -2935,8 +2871,10 @@ window.switchImageModalTab = function(tab) {
     }
     if (statusText) statusText.textContent = 'Select a pin to place in the current panorama view';
     if (selectBtn) {
+      selectBtn.disabled = false;
       selectBtn.style.opacity = '1';
       selectBtn.style.cursor = 'pointer';
+      selectBtn.textContent = 'Add Pin to Scene';
     }
     selectPresetPinCard(_selectedPresetPinType || 'residential');
   } else {
@@ -2951,6 +2889,12 @@ window.switchImageModalTab = function(tab) {
       btnMedia.style.color = '#fff';
     }
     if (statusText) statusText.textContent = 'Choose an uploaded image asset to add to the tour';
+    if (selectBtn) {
+      selectBtn.textContent = 'Select Image';
+      selectBtn.disabled = !window._selectedImageAsset;
+      selectBtn.style.opacity = window._selectedImageAsset ? '1' : '0.4';
+      selectBtn.style.cursor = window._selectedImageAsset ? 'pointer' : 'not-allowed';
+    }
     renderModalImageAssetGrid();
   }
 };
@@ -2982,9 +2926,11 @@ window.selectPresetPinCard = function(type) {
     }
   }
 
-  if (selectBtn) {
+  if (selectBtn && _currentImageModalTab === 'pins') {
+    selectBtn.disabled = false;
     selectBtn.style.opacity = '1';
     selectBtn.style.cursor = 'pointer';
+    selectBtn.textContent = 'Add Pin to Scene';
   }
 };
 
