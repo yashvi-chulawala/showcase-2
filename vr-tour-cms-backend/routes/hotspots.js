@@ -12,13 +12,14 @@ const router = express.Router();
  *   - kind "info" requires info (non-empty text)
  */
 router.post('/hotspots', (req, res) => {
-  const { sceneId, targetSceneId, ath, atv, style, title, kind, info, color, transition, textProps, action, width, height } = req.body;
+  const { sceneId, targetSceneId, ath, atv, style, badgeLetter, title, kind, info, color, transition, textProps, action, width, height } = req.body;
 
   if (!sceneId) return res.status(400).json({ error: 'sceneId is required' });
   if (!title || !title.trim()) return res.status(400).json({ error: 'title is required' });
   if (!Number.isFinite(ath) || !Number.isFinite(atv)) return res.status(400).json({ error: 'ath and atv must be valid finite numbers' });
 
-  const resolvedKind = ['info', 'image'].includes(kind) ? kind : 'scene'; // default to scene-link for backward compatibility
+  const isPole = style && (String(style).toLowerCase() === 'pole pin' || String(style).toLowerCase() === 'landmark pin' || String(style).toLowerCase() === 'pole_pin' || String(style).toLowerCase() === 'landmark');
+  const resolvedKind = ['info', 'image'].includes(kind) || isPole ? (kind || 'image') : 'scene'; // default to scene-link for backward compatibility
   const resolvedInfo = (info && String(info).trim()) ? info : (title || 'INFO');
 
   if (resolvedKind === 'scene') {
@@ -32,10 +33,11 @@ router.post('/hotspots', (req, res) => {
     ath,
     atv,
     style,
+    badgeLetter: badgeLetter || '',
     title,
     kind: resolvedKind,
     info: ['info', 'image'].includes(resolvedKind) ? resolvedInfo : '',
-    color: color || '#ffffff',
+    color: color || '#00a6e0',
     transition,
     action: action || 'scene',
     textProps: textProps || {},

@@ -151,8 +151,9 @@ function getSceneKrpanoName(scene) {
 // Returns true if a hotspot should be treated as an image overlay
 function isImageHotspot(hs) {
   if (!hs) return false;
-  const s = String(hs.style || '');
-  return s.startsWith('assets/') || s.startsWith('http') || s.startsWith('data:image/');
+  if (hs.kind === 'image') return true;
+  const s = String(hs.style || '').toLowerCase();
+  return s === 'pole pin' || s === 'landmark pin' || s === 'pole_pin' || s === 'landmark' || s.startsWith('assets/') || s.startsWith('http') || (s.startsWith('data:image/') && !s.includes('text'));
 }
 
 // Returns true if a hotspot should be treated as a text label
@@ -2162,8 +2163,9 @@ async function commitPopover(chosenStyle) {
   if (!pendingDrop) return;
 
   const { ath, atv, targetScene } = pendingDrop;
+  const isPole = String(chosenStyle).toLowerCase() === 'pole pin' || String(chosenStyle).toLowerCase() === 'landmark pin' || String(chosenStyle).toLowerCase() === 'pole_pin' || String(chosenStyle).toLowerCase() === 'landmark';
   const returnCb = document.getElementById('popover-return-cb');
-  const returnChecked = returnCb ? returnCb.checked : true;
+  const returnChecked = !isPole && (returnCb ? returnCb.checked : true);
   const currentScene = scenes.find(s => String(s._id) === String(activeSceneId));
 
   closePopover();
@@ -2174,12 +2176,14 @@ async function commitPopover(chosenStyle) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         sceneId: activeSceneId,
-        title: targetScene.title,
-        kind: 'scene',
-        targetSceneId: targetScene._id,
+        title: isPole ? 'Prince Palace' : (targetScene ? targetScene.title : 'Hotspot'),
+        kind: isPole ? 'image' : 'scene',
+        targetSceneId: isPole ? null : (targetScene ? targetScene._id : null),
         ath,
         atv,
-        style: chosenStyle
+        style: chosenStyle,
+        badgeLetter: isPole ? 'R' : '',
+        color: isPole ? '#00a6e0' : '#ffffff'
       })
     });
     const data = await res.json();
@@ -2191,13 +2195,17 @@ async function commitPopover(chosenStyle) {
     addHotspotToKrpano(newHotspot, targetScene);
     renderCurrentSceneHotspots();
     window._lastHotspotClickTime = Date.now();
-    selectHotspot(newHotspot._id);
+    if (isPole) {
+      selectImageHotspot(newHotspot._id);
+    } else {
+      selectHotspot(newHotspot._id);
+    }
     publishTourSilent();
 
-    if (returnChecked && currentScene) {
+    if (returnChecked && currentScene && !isPole && targetScene) {
       openReturnHotspotModal(targetScene, currentScene, chosenStyle);
     } else {
-      showToast("✓ Hotspot created successfully!");
+      showToast(isPole ? "✓ Pole Pin added to scene!" : "✓ Hotspot created successfully!");
     }
   } catch (err) {
     console.error("Error creating hotspot:", err);
@@ -2629,13 +2637,12 @@ function selectImageHotspot(hotspotId) {
   const detailsEl = document.getElementById('prop-hs-details-section');
   if (emptyEl) emptyEl.style.display = 'none';
   if (contentEl) contentEl.style.display = 'block';
-  if (detailsEl) detailsEl.style.display = 'none'; // hide all regular properties
+  if (detailsEl) detailsEl.style.display = 'none'; // hide regular navigation properties
   const iconSec = document.getElementById('prop-hs-icon-section');
   if (iconSec) iconSec.style.display = 'none';
   const copyStyleBtns = document.querySelector('.prop-hs-style-btns');
   if (copyStyleBtns) copyStyleBtns.style.display = 'none';
 
-  // Show image-specific minimal panel
   let imgPanel = document.getElementById('prop-image-hotspot-panel');
   if (!imgPanel) {
     imgPanel = document.createElement('div');
@@ -2646,29 +2653,83 @@ function selectImageHotspot(hotspotId) {
   imgPanel.style.display = 'block';
 
   const titleEl = document.getElementById('prop-hs-active-title');
+  const isPole = String(hs.style || '').toLowerCase() === 'pole pin' || String(hs.style || '').toLowerCase() === 'landmark pin' || String(hs.style || '').toLowerCase() === 'pole_pin' || String(hs.style || '').toLowerCase() === 'landmark';
+
   if (titleEl) {
-    titleEl.innerHTML = `<span style="color:#94a3b8; font-weight:700;">IMAGE:</span> <span style="color:#fff; font-weight:800; margin-left:4px;">"${hs.title || 'Image'}"</span>`;
+    titleEl.innerHTML = `<span style="color:#94a3b8; font-weight:700;">${isPole ? 'LANDMARK PIN:' : 'IMAGE:'}</span> <span style="color:#fff; font-weight:800; margin-left:4px;">"${hs.title || (isPole ? 'Prince Palace' : 'Image')}"</span>`;
   }
 
   const isLocked = !!(hs.locked === true || hs.locked === 'true');
-  imgPanel.innerHTML = `
-    <div style="text-align:center; padding: 10px 0;">
-      <img src="${hs.style}" style="max-width:100%; max-height:160px; border-radius:8px; object-fit:contain; border:1px solid #282c35;">
-    </div>
-    <div style="display:flex; gap:10px;">
-      <div style="flex:1;">
-        <label style="font-size:11px;color:#64748b;display:block;margin-bottom:4px;">Width (px)</label>
-        <input id="img-hs-width" type="number" class="property-input" value="${hs.width || 150}" ${isLocked ? 'disabled' : ''} style="${isLocked ? 'opacity:0.5;' : ''}" oninput="onImageHotspotSizeChange()">
+
+  if (isPole) {
+    imgPanel.innerHTML = `
+      <!-- Landmark Pin Title / Text -->
+      <div class="property-group">
+        <label class="property-label">Pin Text / Label</label>
+        <div style="display:flex; gap:8px;">
+          <input id="img-hs-title" type="text" class="property-input" style="flex:1;" value="${hs.title || 'Prince Palace'}" placeholder="e.g. Prince Palace" ${isLocked ? 'disabled' : ''} oninput="onHotspotTitleInput(this.value)">
+          <div style="width:70px;">
+            <input id="img-hs-badge" type="text" class="property-input" maxlength="3" style="text-align:center; font-weight:800; text-transform:uppercase;" value="${hs.badgeLetter || (hs.title ? hs.title.trim().charAt(0).toUpperCase() : 'R')}" placeholder="R" title="Badge Letter" ${isLocked ? 'disabled' : ''} oninput="onHotspotBadgeLetterInput(this.value)">
+          </div>
+        </div>
       </div>
-      <div style="flex:1;">
-        <label style="font-size:11px;color:#64748b;display:block;margin-bottom:4px;">Height (px)</label>
-        <input id="img-hs-height" type="number" class="property-input" value="${hs.height || 150}" ${isLocked ? 'disabled' : ''} style="${isLocked ? 'opacity:0.5;' : ''}" oninput="onImageHotspotSizeChange()">
+
+      <!-- Landmark Pin Color -->
+      <div class="property-group">
+        <label class="property-label">Badge Color</label>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <input type="color" id="img-hs-color" class="property-color-picker" style="width:38px; height:38px; border-radius:6px; padding:2px; cursor:pointer; border:1px solid #334155; background:#1e293b;" value="${hs.color || '#00a6e0'}" ${isLocked ? 'disabled' : ''} onchange="onHotspotColorChange(this.value)" oninput="onHotspotColorChange(this.value)">
+          <div class="color-swatches" style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+            <div class="color-swatch" style="width:22px; height:22px; border-radius:4px; background:#00a6e0; cursor:pointer; border:1px solid rgba(255,255,255,0.2);" onclick="onHotspotColorChange('#00a6e0')" title="Cyan Sky"></div>
+            <div class="color-swatch" style="width:22px; height:22px; border-radius:4px; background:#3b82f6; cursor:pointer; border:1px solid rgba(255,255,255,0.2);" onclick="onHotspotColorChange('#3b82f6')" title="Royal Blue"></div>
+            <div class="color-swatch" style="width:22px; height:22px; border-radius:4px; background:#10b981; cursor:pointer; border:1px solid rgba(255,255,255,0.2);" onclick="onHotspotColorChange('#10b981')" title="Emerald Green"></div>
+            <div class="color-swatch" style="width:22px; height:22px; border-radius:4px; background:#ef4444; cursor:pointer; border:1px solid rgba(255,255,255,0.2);" onclick="onHotspotColorChange('#ef4444')" title="Crimson Red"></div>
+            <div class="color-swatch" style="width:22px; height:22px; border-radius:4px; background:#f59e0b; cursor:pointer; border:1px solid rgba(255,255,255,0.2);" onclick="onHotspotColorChange('#f59e0b')" title="Amber Orange"></div>
+            <div class="color-swatch" style="width:22px; height:22px; border-radius:4px; background:#8b5cf6; cursor:pointer; border:1px solid rgba(255,255,255,0.2);" onclick="onHotspotColorChange('#8b5cf6')" title="Violet Purple"></div>
+            <div class="color-swatch" style="width:22px; height:22px; border-radius:4px; background:#ffffff; cursor:pointer; border:1px solid rgba(0,0,0,0.4);" onclick="onHotspotColorChange('#ffffff')" title="Pure White"></div>
+          </div>
+        </div>
       </div>
-    </div>
-    <button onclick="deleteSelectedHotspotAction()" class="property-btn-outline" style="color:#ef4444;border-color:#ef4444;width:100%;padding:8px;">
-      Delete Image
-    </button>
-  `;
+
+      <!-- Size -->
+      <div class="property-group">
+        <label class="property-label">Icon Size</label>
+        <div style="display:flex; gap:10px;">
+          <div style="flex:1;">
+            <label style="font-size:11px;color:#64748b;display:block;margin-bottom:4px;">Horizontal (px)</label>
+            <input id="img-hs-width" type="number" class="property-input" value="${hs.width || ''}" placeholder="Auto" ${isLocked ? 'disabled' : ''} style="${isLocked ? 'opacity:0.5;' : ''}" oninput="onImageHotspotSizeChange()">
+          </div>
+          <div style="flex:1;">
+            <label style="font-size:11px;color:#64748b;display:block;margin-bottom:4px;">Vertical (px)</label>
+            <input id="img-hs-height" type="number" class="property-input" value="${hs.height || ''}" placeholder="Auto" ${isLocked ? 'disabled' : ''} style="${isLocked ? 'opacity:0.5;' : ''}" oninput="onImageHotspotSizeChange()">
+          </div>
+        </div>
+      </div>
+
+      <button onclick="deleteSelectedHotspotAction()" class="property-btn-outline" style="color:#ef4444;border-color:#ef4444;width:100%;padding:8px; margin-top: 8px;">
+        🗑 Delete This Pin
+      </button>
+    `;
+  } else {
+    imgPanel.innerHTML = `
+      <div style="text-align:center; padding: 10px 0;">
+        <img src="${hs.style}" style="max-width:100%; max-height:160px; border-radius:8px; object-fit:contain; border:1px solid #282c35;">
+      </div>
+      <div style="display:flex; gap:10px;">
+        <div style="flex:1;">
+          <label style="font-size:11px;color:#64748b;display:block;margin-bottom:4px;">Width (px)</label>
+          <input id="img-hs-width" type="number" class="property-input" value="${hs.width || 150}" ${isLocked ? 'disabled' : ''} style="${isLocked ? 'opacity:0.5;' : ''}" oninput="onImageHotspotSizeChange()">
+        </div>
+        <div style="flex:1;">
+          <label style="font-size:11px;color:#64748b;display:block;margin-bottom:4px;">Height (px)</label>
+          <input id="img-hs-height" type="number" class="property-input" value="${hs.height || 150}" ${isLocked ? 'disabled' : ''} style="${isLocked ? 'opacity:0.5;' : ''}" oninput="onImageHotspotSizeChange()">
+        </div>
+      </div>
+      <button onclick="deleteSelectedHotspotAction()" class="property-btn-outline" style="color:#ef4444;border-color:#ef4444;width:100%;padding:8px;">
+        Delete Image
+      </button>
+    `;
+  }
 
   if (typeof renderHotspotList === 'function') renderHotspotList();
 }
@@ -3782,15 +3843,16 @@ function confirmIconLibrarySelection() {
 }
 
 async function addHotspotFromLibrary(iconStyle) {
+  const isPole = String(iconStyle).toLowerCase() === 'pole pin' || String(iconStyle).toLowerCase() === 'landmark pin' || String(iconStyle).toLowerCase() === 'pole_pin' || String(iconStyle).toLowerCase() === 'landmark';
   const currentScene = scenes.find(s => String(s._id) === String(activeSceneId));
   const targetScene = scenes.find(s => String(s._id) !== String(activeSceneId)) || scenes[0];
-  if (!targetScene) {
+  if (!isPole && !targetScene) {
     showToast("Please add at least one more panorama scene first!");
     return;
   }
 
   const returnCb = document.getElementById('lib-return-hotspot-cb');
-  const returnChecked = returnCb ? returnCb.checked : true;
+  const returnChecked = !isPole && (returnCb ? returnCb.checked : true);
 
   let ath = 0;
   let atv = 0;
@@ -3805,12 +3867,14 @@ async function addHotspotFromLibrary(iconStyle) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         sceneId: activeSceneId,
-        title: targetScene.title,
-        kind: 'scene',
-        targetSceneId: targetScene._id,
+        title: isPole ? 'Prince Palace' : (targetScene ? targetScene.title : 'Hotspot'),
+        kind: isPole ? 'image' : 'scene',
+        targetSceneId: isPole ? null : (targetScene ? targetScene._id : null),
         ath,
         atv,
-        style: iconStyle
+        style: iconStyle,
+        badgeLetter: isPole ? 'R' : '',
+        color: isPole ? '#00a6e0' : '#ffffff'
       })
     });
     const data = await res.json();
@@ -3818,17 +3882,21 @@ async function addHotspotFromLibrary(iconStyle) {
 
     const newHotspot = data.hotspot;
     hotspots.push(newHotspot);
-    console.log("Nav icon created successfully from library:", newHotspot);
+    console.log("Hotspot created successfully from library:", newHotspot);
 
     addHotspotToKrpano(newHotspot);
     renderCurrentSceneHotspots();
-    selectHotspot(newHotspot._id);
+    if (isPole) {
+      selectImageHotspot(newHotspot._id);
+    } else {
+      selectHotspot(newHotspot._id);
+    }
     publishTourSilent();
     
-    if (returnChecked && currentScene) {
+    if (returnChecked && currentScene && !isPole && targetScene) {
       openReturnHotspotModal(targetScene, currentScene, iconStyle);
     } else {
-      showToast(`✓ Added "${iconStyle}" hotspot linking to ${targetScene.title}`);
+      showToast(isPole ? `✓ Added Pole Pin landmark to scene` : `✓ Added "${iconStyle}" hotspot linking to ${targetScene.title}`);
     }
   } catch (err) {
     console.error("Error creating hotspot from library:", err);
@@ -3846,8 +3914,9 @@ function showToast(message) {
 async function commitPopoverFromLibrary(chosenStyle) {
   if (!pendingDrop) return;
   const { ath, atv, targetScene } = pendingDrop;
+  const isPole = String(chosenStyle).toLowerCase() === 'pole pin' || String(chosenStyle).toLowerCase() === 'landmark pin' || String(chosenStyle).toLowerCase() === 'pole_pin' || String(chosenStyle).toLowerCase() === 'landmark';
   const returnCb = document.getElementById('lib-return-hotspot-cb');
-  const returnChecked = returnCb ? returnCb.checked : true;
+  const returnChecked = !isPole && (returnCb ? returnCb.checked : true);
   const currentScene = scenes.find(s => String(s._id) === String(activeSceneId));
 
   try {
@@ -3856,12 +3925,14 @@ async function commitPopoverFromLibrary(chosenStyle) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         sceneId: activeSceneId,
-        title: targetScene.title,
-        kind: 'scene',
-        targetSceneId: targetScene._id,
+        title: isPole ? 'Prince Palace' : (targetScene ? targetScene.title : 'Hotspot'),
+        kind: isPole ? 'image' : 'scene',
+        targetSceneId: isPole ? null : (targetScene ? targetScene._id : null),
         ath,
         atv,
-        style: chosenStyle
+        style: chosenStyle,
+        badgeLetter: isPole ? 'R' : '',
+        color: isPole ? '#00a6e0' : '#ffffff'
       })
     });
     const data = await res.json();
@@ -3871,13 +3942,17 @@ async function commitPopoverFromLibrary(chosenStyle) {
     hotspots.push(newHotspot);
     addHotspotToKrpano(newHotspot);
     renderCurrentSceneHotspots();
-    selectHotspot(newHotspot._id);
+    if (isPole) {
+      selectImageHotspot(newHotspot._id);
+    } else {
+      selectHotspot(newHotspot._id);
+    }
     publishTourSilent();
 
-    if (returnChecked && currentScene) {
+    if (returnChecked && currentScene && !isPole && targetScene) {
       openReturnHotspotModal(targetScene, currentScene, chosenStyle);
     } else {
-      showToast("✓ Hotspot created successfully!");
+      showToast(isPole ? "✓ Pole Pin added to scene!" : "✓ Hotspot created successfully!");
     }
   } catch (err) {
     console.error("Error creating hotspot from drop:", err);

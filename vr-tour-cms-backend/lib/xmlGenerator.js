@@ -276,7 +276,14 @@ ${dynamicStylesXml}
         baseAttrs += ` url="${esc(svgUrl)}" alpha="1.0"`;
       }
 
-      if (h.kind === 'info') {
+      if (h.kind === 'image' || isPole) {
+        if (h.info) {
+          const jsSafeText = String(h.info).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n');
+          return `\t\t<hotspot name="${esc(hsName)}" ${baseAttrs}\n` +
+            `\t\t         onclick="js(alert('${jsSafeText}'));" />`;
+        }
+        return `\t\t<hotspot name="${esc(hsName)}" ${baseAttrs} />`;
+      } else if (h.kind === 'info') {
         const rawText = String(h.info || h.title || '');
         const jsSafeText = rawText.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n');
         return `\t\t<hotspot name="${esc(hsName)}" ${baseAttrs}\n` +
