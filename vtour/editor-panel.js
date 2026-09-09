@@ -309,11 +309,13 @@ function onKrpanoReady(krpanoInterface) {
     asyncloop(pressed,
       sub(moved_x, mouse.stagex, drag_start_mx);
       sub(moved_y, mouse.stagey, drag_start_my);
-      Math.abs(moved_x, abs_x);
-      Math.abs(moved_y, abs_y);
-      add(total_moved, abs_x, abs_y);
+      set(is_moved, false);
+      if(moved_x LT -6, set(is_moved, true));
+      if(moved_x GT 6, set(is_moved, true));
+      if(moved_y LT -6, set(is_moved, true));
+      if(moved_y GT 6, set(is_moved, true));
       
-      if(total_moved GT 6,
+      if(is_moved,
         set(has_actually_dragged, true);
         sub(dx, mouse.stagex, drag_dx);
         sub(dy, mouse.stagey, drag_dy);
@@ -2346,43 +2348,45 @@ let _lastClickedId = null;
 let _isRepositioning = false;
 
 window.onHotspotClicked = function (hotspotId) {
+  const cleanId = String(hotspotId || '').replace(/^hs_/, '');
   const now = Date.now();
   window._lastHotspotClickTime = now;
 
   if (_isRepositioning) return;
 
   // Check for Double Click within 380ms
-  if (_lastClickedId === hotspotId && (now - _lastClickTime < 380)) {
+  if (_lastClickedId === cleanId && (now - _lastClickTime < 380)) {
     _lastClickedId = null;
     _lastClickTime = 0;
-    startHotspotReposition(hotspotId);
+    startHotspotReposition(cleanId);
     return;
   }
 
-  _lastClickedId = hotspotId;
+  _lastClickedId = cleanId;
   _lastClickTime = now;
 
   // Execute single-click selection immediately without moving pin
-  executeHotspotSelection(hotspotId);
+  executeHotspotSelection(cleanId);
 };
 
 function executeHotspotSelection(hotspotId) {
-  console.log("Hotspot selected:", hotspotId);
-  const hs = hotspots.find(h => String(h._id) === String(hotspotId));
+  const cleanId = String(hotspotId || '').replace(/^hs_/, '');
+  console.log("Hotspot selected:", cleanId);
+  const hs = hotspots.find(h => String(h._id) === cleanId || String(h._id) === String(hotspotId));
   if (hs) {
     showToast(`Selected: "${hs.title || 'Hotspot'}"`);
     if (isImageHotspot(hs)) {
       showTabOnly('image');
       currentHotspotFilter = 'image';
-      selectImageHotspot(hotspotId);
+      selectImageHotspot(hs._id);
     } else if (isTextHotspot(hs)) {
       showTabOnly('text');
       currentHotspotFilter = 'text';
-      selectTextHotspot(hotspotId);
+      selectTextHotspot(hs._id);
     } else {
       showTabOnly('hotspot');
       currentHotspotFilter = 'hotspot';
-      selectHotspot(hotspotId);
+      selectHotspot(hs._id);
     }
     renderHotspotList();
   }
@@ -2390,13 +2394,14 @@ function executeHotspotSelection(hotspotId) {
 
 // Reposition pin on double-click
 function startHotspotReposition(hotspotId) {
-  const hs = hotspots.find(h => String(h._id) === String(hotspotId));
+  const cleanId = String(hotspotId || '').replace(/^hs_/, '');
+  const hs = hotspots.find(h => String(h._id) === cleanId || String(h._id) === String(hotspotId));
   if (!hs || hs.locked) return;
 
   _isRepositioning = true;
-  executeHotspotSelection(hotspotId);
+  executeHotspotSelection(cleanId);
 
-  const name = "hs_" + hotspotId;
+  const name = "hs_" + cleanId;
   showToast("📌 Move cursor to new location and click to place pin");
 
   const panoContainer = document.getElementById('pano-container');
