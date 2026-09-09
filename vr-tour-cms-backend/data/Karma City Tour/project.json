@@ -862,6 +862,24 @@
       "width": null,
       "height": null,
       "createdAt": "2026-09-09T11:59:42.756Z"
+    },
+    {
+      "_id": "mtu20u49kogz3p",
+      "sceneId": "msyf9d69l48lr0",
+      "title": "Add text",
+      "kind": "image",
+      "targetSceneId": null,
+      "info": "Add text",
+      "ath": 36.75,
+      "atv": 6.57,
+      "style": "Residential Pin",
+      "color": "#3b82f6",
+      "transition": "BLEND(0.5)",
+      "action": "scene",
+      "textProps": {},
+      "width": null,
+      "height": null,
+      "createdAt": "2026-09-09T12:08:01.401Z"
     }
   ],
   "assets": [],

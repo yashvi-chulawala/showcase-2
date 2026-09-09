@@ -2905,12 +2905,14 @@ window.switchImageModalTab = function(tab) {
     if (tabPins) tabPins.style.display = 'flex';
     if (tabMedia) tabMedia.style.display = 'none';
     if (btnPins) {
-      btnPins.style.background = '#10b981';
+      btnPins.style.background = '#74b843';
       btnPins.style.color = '#fff';
+      btnPins.style.boxShadow = '0 2px 8px rgba(116, 184, 67, 0.35)';
     }
     if (btnMedia) {
       btnMedia.style.background = 'transparent';
       btnMedia.style.color = '#94a3b8';
+      btnMedia.style.boxShadow = 'none';
     }
     if (statusText) statusText.textContent = 'Select a pin to place in the current panorama view';
     if (selectBtn) {
@@ -2926,10 +2928,12 @@ window.switchImageModalTab = function(tab) {
     if (btnPins) {
       btnPins.style.background = 'transparent';
       btnPins.style.color = '#94a3b8';
+      btnPins.style.boxShadow = 'none';
     }
     if (btnMedia) {
-      btnMedia.style.background = '#10b981';
+      btnMedia.style.background = '#74b843';
       btnMedia.style.color = '#fff';
+      btnMedia.style.boxShadow = '0 2px 8px rgba(116, 184, 67, 0.35)';
     }
     if (statusText) statusText.textContent = 'Choose an uploaded image asset to add to the tour';
     if (selectBtn) {
@@ -2951,20 +2955,32 @@ window.selectPresetPinCard = function(type) {
 
   if (cardRes) {
     if (type === 'residential') {
-      cardRes.style.borderColor = '#10b981';
+      cardRes.style.borderColor = '#74b843';
+      cardRes.style.background = 'linear-gradient(180deg, rgba(116, 184, 67, 0.12) 0%, #161a22 100%)';
+      cardRes.style.boxShadow = '0 0 0 1px #74b843, 0 8px 24px -4px rgba(116, 184, 67, 0.35)';
+      cardRes.style.transform = 'translateY(-2px)';
       cardRes.classList.add('selected');
     } else {
-      cardRes.style.borderColor = 'transparent';
+      cardRes.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+      cardRes.style.background = 'linear-gradient(180deg, #1a1d26 0%, #151720 100%)';
+      cardRes.style.boxShadow = '0 4px 16px rgba(0,0,0,0.25)';
+      cardRes.style.transform = 'translateY(0px)';
       cardRes.classList.remove('selected');
     }
   }
 
   if (cardComm) {
     if (type === 'commercial') {
-      cardComm.style.borderColor = '#10b981';
+      cardComm.style.borderColor = '#74b843';
+      cardComm.style.background = 'linear-gradient(180deg, rgba(116, 184, 67, 0.12) 0%, #161a22 100%)';
+      cardComm.style.boxShadow = '0 0 0 1px #74b843, 0 8px 24px -4px rgba(116, 184, 67, 0.35)';
+      cardComm.style.transform = 'translateY(-2px)';
       cardComm.classList.add('selected');
     } else {
-      cardComm.style.borderColor = 'transparent';
+      cardComm.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+      cardComm.style.background = 'linear-gradient(180deg, #1a1d26 0%, #151720 100%)';
+      cardComm.style.boxShadow = '0 4px 16px rgba(0,0,0,0.25)';
+      cardComm.style.transform = 'translateY(0px)';
       cardComm.classList.remove('selected');
     }
   }
@@ -3094,16 +3110,22 @@ function renderModalImageAssetGrid() {
 
   mediaList.forEach(asset => {
     const card = document.createElement('div');
-    card.style.cssText = 'background: #16181d; border: 2px solid #282c35; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; transition: all 0.2s;';
+    card.style.cssText = 'background: #181b24; border: 1.5px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; align-items: center; gap: 10px; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 4px 14px rgba(0,0,0,0.25);';
     card.innerHTML = `
-      <div style="width: 100%; height: 100px; display: flex; align-items: center; justify-content: center; background: #000; border-radius: 4px; overflow: hidden;">
+      <div style="width: 100%; height: 100px; display: flex; align-items: center; justify-content: center; background: #0c0e13; border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; overflow: hidden;">
         <img src="${asset.url}" style="max-width: 100%; max-height: 100%; object-fit: contain;">
       </div>
       <div style="font-size: 12px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px; text-align: center;">${asset.name}</div>
     `;
     card.onclick = () => {
-      grid.querySelectorAll('div').forEach(c => c.style.borderColor = '#282c35');
-      card.style.borderColor = '#10b981';
+      grid.querySelectorAll('div').forEach(c => {
+        c.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+        c.style.boxShadow = '0 4px 14px rgba(0,0,0,0.25)';
+        c.style.transform = 'translateY(0)';
+      });
+      card.style.borderColor = '#74b843';
+      card.style.boxShadow = '0 0 0 1px #74b843, 0 8px 20px -4px rgba(116, 184, 67, 0.35)';
+      card.style.transform = 'translateY(-2px)';
       window._selectedImageAsset = asset;
       if (selectBtn) {
         selectBtn.style.opacity = '1';

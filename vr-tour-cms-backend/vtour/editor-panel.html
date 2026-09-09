@@ -3030,28 +3030,28 @@
   </div>
 
   <!-- Modal: Select Pin or Image Asset -->
-  <div class="modal-overlay" id="modal-select-image-asset" style="display: none; z-index: 10000;">
-    <div class="modal-box" style="width: 780px; max-width: 95vw; height: 500px; display: flex; flex-direction: column; padding: 0; overflow: hidden; background: #1e2128; border: 1px solid #334155; border-radius: 10px;">
+  <div class="modal-overlay" id="modal-select-image-asset" style="display: none; z-index: 10000; backdrop-filter: blur(8px); background: rgba(0, 0, 0, 0.65);">
+    <div class="modal-box" style="width: 760px; max-width: 95vw; height: 520px; display: flex; flex-direction: column; padding: 0; overflow: hidden; background: #14171f; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75), 0 0 1px rgba(255, 255, 255, 0.12);">
       
       <!-- Header -->
-      <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; background: #242832; border-bottom: 2px solid #10b981;">
-        <div style="display: flex; align-items: center; gap: 16px;">
-          <span style="font-size: 15px; font-weight: 700; color: #fff;">Select Pin / Image</span>
-          <div style="display: flex; background: #16181d; border-radius: 8px; padding: 3px; border: 1px solid #2d333f;">
-            <button id="tab-btn-pins" class="active" onclick="switchImageModalTab('pins')" style="background: #10b981; color: #fff; border: none; padding: 5px 14px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s;">📍 Landmark Pins</button>
-            <button id="tab-btn-media" onclick="switchImageModalTab('media')" style="background: transparent; color: #94a3b8; border: none; padding: 5px 14px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s;">🖼 Media Images</button>
+      <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 22px; background: #191c24; border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
+        <div style="display: flex; align-items: center; gap: 18px;">
+          <span style="font-size: 15px; font-weight: 700; color: #ffffff; letter-spacing: -0.2px;">Select Pin / Image</span>
+          <div style="display: inline-flex; background: rgba(0, 0, 0, 0.35); border-radius: 999px; padding: 3px; border: 1px solid rgba(255, 255, 255, 0.08); gap: 2px;">
+            <button id="tab-btn-pins" class="active" onclick="switchImageModalTab('pins')" style="background: #74b843; color: #fff; border: none; padding: 6px 16px; border-radius: 999px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 2px 8px rgba(116, 184, 67, 0.35);">📍 Landmark Pins</button>
+            <button id="tab-btn-media" onclick="switchImageModalTab('media')" style="background: transparent; color: #94a3b8; border: none; padding: 6px 16px; border-radius: 999px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">🖼 Media Images</button>
           </div>
         </div>
-        <button onclick="document.getElementById('modal-select-image-asset').style.display='none'" style="font-size: 20px; color: #94a3b8; background: none; border: none; cursor: pointer;">&times;</button>
+        <button onclick="document.getElementById('modal-select-image-asset').style.display='none'" class="modal-close" style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: rgba(255,255,255,0.05); color: #94a3b8; border: none; font-size: 20px; cursor: pointer; transition: all 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.1)';this.style.color='#fff';" onmouseout="this.style.background='rgba(255,255,255,0.05)';this.style.color='#94a3b8';">&times;</button>
       </div>
 
       <!-- Tab Content: Landmark Pins -->
-      <div id="image-modal-tab-pins" style="flex: 1; overflow-y: auto; background: #20242d; padding: 36px 24px; display: flex; align-items: center; justify-content: center;">
-        <div style="display: grid; grid-template-columns: repeat(2, 230px); gap: 24px; justify-content: center; width: 100%;">
+      <div id="image-modal-tab-pins" style="flex: 1; overflow-y: auto; background: #0f1117; padding: 36px 28px; display: flex; align-items: center; justify-content: center;">
+        <div style="display: grid; grid-template-columns: repeat(2, 250px); gap: 28px; justify-content: center; width: 100%;">
           
           <!-- Residential Pin Card -->
-          <div id="pin-card-residential" class="lib-icon-card selected" onclick="selectPresetPinCard('residential')" ondblclick="confirmPresetPinSelection()" style="background: #181b22; border: 2px solid #10b981; border-radius: 10px; padding: 18px 14px 14px; display: flex; flex-direction: column; align-items: center; gap: 12px; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 14px rgba(0,0,0,0.3);">
-            <div style="width: 100%; height: 110px; background: #12141a; border: 1px solid #232733; border-radius: 8px; display: flex; align-items: center; justify-content: center; padding: 6px;">
+          <div id="pin-card-residential" class="lib-icon-card selected" onclick="selectPresetPinCard('residential')" ondblclick="confirmPresetPinSelection()" style="background: linear-gradient(180deg, rgba(116, 184, 67, 0.12) 0%, #161a22 100%); border: 1.5px solid #74b843; border-radius: 14px; padding: 18px 16px 16px; display: flex; flex-direction: column; align-items: center; gap: 14px; cursor: pointer; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 0 0 1px #74b843, 0 8px 24px -4px rgba(116, 184, 67, 0.35); transform: translateY(-2px);">
+            <div style="width: 100%; height: 116px; background: #0c0e13; border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 10px; display: flex; align-items: center; justify-content: center; padding: 6px;">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 115" width="145" height="100">
                 <line x1="22" y1="42" x2="22" y2="108" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round"/>
                 <circle cx="22" cy="108" r="3.5" fill="#ffffff"/>
@@ -3061,12 +3061,15 @@
                 <text x="22" y="30" text-anchor="middle" fill="#ffffff" font-family="'Outfit', sans-serif" font-weight="900" font-size="20">R</text>
               </svg>
             </div>
-            <div style="font-size: 13px; font-weight: 700; color: #fff; text-align: center;">Residential Pin</div>
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 3px;">
+              <div style="font-size: 14px; font-weight: 700; color: #ffffff; letter-spacing: 0.2px;">Residential Pin</div>
+              <div style="font-size: 11px; font-weight: 600; color: #74b843; background: rgba(116, 184, 67, 0.12); padding: 2px 8px; border-radius: 999px;">Preset Landmark</div>
+            </div>
           </div>
 
           <!-- Commercial Pin Card -->
-          <div id="pin-card-commercial" class="lib-icon-card" onclick="selectPresetPinCard('commercial')" ondblclick="confirmPresetPinSelection()" style="background: #181b22; border: 2px solid transparent; border-radius: 10px; padding: 18px 14px 14px; display: flex; flex-direction: column; align-items: center; gap: 12px; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 14px rgba(0,0,0,0.3);">
-            <div style="width: 100%; height: 110px; background: #12141a; border: 1px solid #232733; border-radius: 8px; display: flex; align-items: center; justify-content: center; padding: 6px;">
+          <div id="pin-card-commercial" class="lib-icon-card" onclick="selectPresetPinCard('commercial')" ondblclick="confirmPresetPinSelection()" style="background: linear-gradient(180deg, #1a1d26 0%, #151720 100%); border: 1.5px solid rgba(255, 255, 255, 0.08); border-radius: 14px; padding: 18px 16px 16px; display: flex; flex-direction: column; align-items: center; gap: 14px; cursor: pointer; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 4px 16px rgba(0,0,0,0.25);">
+            <div style="width: 100%; height: 116px; background: #0c0e13; border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 10px; display: flex; align-items: center; justify-content: center; padding: 6px;">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 115" width="145" height="100">
                 <line x1="22" y1="42" x2="22" y2="108" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round"/>
                 <circle cx="22" cy="108" r="3.5" fill="#ffffff"/>
@@ -3076,25 +3079,28 @@
                 <text x="22" y="30" text-anchor="middle" fill="#ffffff" font-family="'Outfit', sans-serif" font-weight="900" font-size="20">C</text>
               </svg>
             </div>
-            <div style="font-size: 13px; font-weight: 700; color: #fff; text-align: center;">Commercial Pin</div>
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 3px;">
+              <div style="font-size: 14px; font-weight: 700; color: #ffffff; letter-spacing: 0.2px;">Commercial Pin</div>
+              <div style="font-size: 11px; font-weight: 600; color: #f59e0b; background: rgba(245, 158, 11, 0.12); padding: 2px 8px; border-radius: 999px;">Preset Landmark</div>
+            </div>
           </div>
 
         </div>
       </div>
 
       <!-- Tab Content: Media Images -->
-      <div id="image-modal-tab-media" style="flex: 1; overflow-y: auto; background: #20242d; padding: 20px; display: none; flex-direction: column; gap: 16px;">
+      <div id="image-modal-tab-media" style="flex: 1; overflow-y: auto; background: #0f1117; padding: 22px; display: none; flex-direction: column; gap: 16px;">
         <div id="modal-select-image-asset-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; align-content: start;">
           <!-- Filled dynamically -->
         </div>
       </div>
 
       <!-- Footer -->
-      <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; background: #1a1d24; border-top: 1px solid #282c35;">
-        <span style="font-size: 12px; color: #94a3b8;" id="modal-image-status-text">Select a pin to place in the current panorama view</span>
+      <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 22px; background: #14171f; border-top: 1px solid rgba(255, 255, 255, 0.08);">
+        <span style="font-size: 13px; color: #94a3b8; font-weight: 500;" id="modal-image-status-text">Select a pin to place in the current panorama view</span>
         <div style="display: flex; gap: 10px;">
-          <button class="property-btn-outline" style="width: auto; padding: 7px 18px; margin: 0;" onclick="document.getElementById('modal-select-image-asset').style.display='none'">Cancel</button>
-          <button class="btn-upload-center" id="modal-image-asset-select-btn" style="margin: 0; padding: 7px 24px; font-size: 13px; background: #10b981; color: #fff; border: none;" onclick="confirmImageModalSelection()">Select</button>
+          <button class="property-btn-outline" style="width: auto; padding: 8px 20px; margin: 0; border-radius: 8px; font-weight: 600; color: #cbd5e1; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);" onclick="document.getElementById('modal-select-image-asset').style.display='none'">Cancel</button>
+          <button class="btn-upload-center" id="modal-image-asset-select-btn" style="margin: 0; padding: 8px 26px; font-size: 13px; font-weight: 700; background: linear-gradient(135deg, #74b843 0%, #5f9736 100%); color: #fff; border: none; border-radius: 8px; box-shadow: 0 4px 14px rgba(116, 184, 67, 0.35);" onclick="confirmImageModalSelection()">Add Pin to Scene</button>
         </div>
       </div>
     </div>
