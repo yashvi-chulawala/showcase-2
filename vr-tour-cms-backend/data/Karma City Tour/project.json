@@ -682,6 +682,24 @@
       "width": null,
       "height": null,
       "createdAt": "2026-09-09T10:41:44.248Z"
+    },
+    {
+      "_id": "mttz68esjtlbcg",
+      "sceneId": "msyf9d69l48lr0",
+      "title": "Add text",
+      "kind": "image",
+      "targetSceneId": null,
+      "info": "Add text",
+      "ath": 0,
+      "atv": 0,
+      "style": "Commercial Pin",
+      "color": "#f59e0b",
+      "transition": "BLEND(0.5)",
+      "action": "scene",
+      "textProps": {},
+      "width": null,
+      "height": null,
+      "createdAt": "2026-09-09T10:48:14.356Z"
     }
   ],
   "assets": [],

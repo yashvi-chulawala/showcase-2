@@ -3048,8 +3048,10 @@ window.addPresetPinHotspot = async function(type) {
     color = '#f59e0b';
   }
 
-  const ath = Number(Number(krpano.get('view.hlookat') || 0).toFixed(2));
-  const atv = Number(Number(krpano.get('view.vlookat') || 0).toFixed(2));
+  const hlookat = Number(krpano.get('view.hlookat') || 0);
+  const vlookat = Number(krpano.get('view.vlookat') || 0);
+  const ath = Number(hlookat.toFixed(2));
+  const atv = Number(vlookat.toFixed(2));
 
   try {
     const res = await fetch('/api/hotspots', {
@@ -3075,8 +3077,9 @@ window.addPresetPinHotspot = async function(type) {
     renderCurrentSceneHotspots();
     window._lastHotspotClickTime = Date.now();
     selectImageHotspot(newHotspot._id);
+    krpano.call(`lookto(${ath}, ${atv}, get(view.fov), smooth(100, 100, 200))`);
     publishTourSilent();
-    showToast(`✓ Added ${styleName} to scene!`);
+    showToast(`✓ Added ${styleName} at current view!`);
   } catch (err) {
     console.error('Error creating preset pin:', err);
     showToast(`Error: ${err.message}`);

@@ -231,8 +231,8 @@ ${dynamicStylesXml}
     const sceneHotspots = hotspots.filter(h => String(h.sceneId) === String(scene._id));
     const hotspotXML = sceneHotspots.map(h => {
       const hsName = h._id ? `hs_${h._id}` : `hs_${slugify(scene.title)}_${Math.random().toString(36).substring(2, 7)}`;
-      const style = h.style || 'Arrow';
-      const isPole = String(style).toLowerCase() === 'pole pin' || String(style).toLowerCase() === 'landmark pin' || String(style).toLowerCase() === 'pole_pin' || String(style).toLowerCase() === 'landmark';
+      const sLower = String(style).toLowerCase();
+      const isPole = sLower.includes('residential') || sLower.includes('commercial') || sLower === 'pole pin' || sLower === 'landmark pin' || sLower === 'pole_pin' || sLower === 'landmark';
       
       const customIcon = Array.isArray(customIcons) ? customIcons.find(x => String(x.name).toLowerCase() === String(style).toLowerCase() || String(x.id) === String(style)) : null;
       const customDataUrl = customIcon ? customIcon.dataUrl : (style && (String(style).startsWith('data:image/') || String(style).startsWith('http') || String(style).startsWith('assets/')) ? style : null);
