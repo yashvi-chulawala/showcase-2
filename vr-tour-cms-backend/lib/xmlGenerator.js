@@ -92,11 +92,11 @@ function getHotspotSvgBase64(style, labelText, color, badgeLetter, customIcons =
   const isRes = s === 'residential pin' || s === 'residential' || s === 'res' || s.includes('residential');
   const isComm = s === 'commercial pin' || s === 'commercial' || s === 'comm' || s.includes('commercial');
   const isPole = isRes || isComm || s === 'pole pin' || s === 'landmark pin' || s === 'pole_pin' || s === 'landmark';
+  const fillCol = isRes ? '#3b82f6' : (isComm ? '#f59e0b' : (color || '#3b82f6'));
 
   if (isPole) {
     const textStr = esc(String(labelText || 'Add text').trim() || 'Add text');
     const letter = esc(String(isRes ? 'R' : (isComm ? 'C' : (badgeLetter || (labelText ? labelText.trim().charAt(0) : 'R') || 'R'))).toUpperCase().slice(0, 3));
-    const fillCol = isRes ? '#3b82f6' : (isComm ? '#f59e0b' : (color || '#3b82f6'));
     const textLen = textStr.length;
     const bannerWidth = Math.max(84, Math.round(textLen * 8.8 + 26));
     const totalW = Math.round(44 + bannerWidth + 14);

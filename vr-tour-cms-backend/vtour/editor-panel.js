@@ -226,12 +226,12 @@ function getHotspotSvgBase64(style, labelText, color, bgColor, textStyle, badgeL
   const isRes = s === 'residential pin' || s === 'residential' || s === 'res' || s.includes('residential');
   const isComm = s === 'commercial pin' || s === 'commercial' || s === 'comm' || s.includes('commercial');
   const isPole = isRes || isComm || s === 'pole pin' || s === 'landmark pin' || s === 'pole_pin' || s === 'landmark';
+  const fillCol = isRes ? '#3b82f6' : (isComm ? '#f59e0b' : (color || '#3b82f6'));
 
   if (isPole) {
     const defaultText = 'Add text';
     const textStr = String(labelText || defaultText).trim() || defaultText;
     const letter = (isRes ? 'R' : (isComm ? 'C' : String(badgeLetter || (labelText ? labelText.trim().charAt(0) : 'R') || 'R'))).toUpperCase().slice(0, 3);
-    const fillCol = isRes ? '#3b82f6' : (isComm ? '#f59e0b' : (color || '#3b82f6'));
     const textLen = textStr.length;
     const bannerWidth = Math.max(84, Math.round(textLen * 8.8 + 26));
     const totalW = Math.round(44 + bannerWidth + 14);
@@ -1962,11 +1962,14 @@ function clearAllKrpanoHotspots() {
       }
     }
     toRemove.forEach(name => {
-      if (typeof krpano.removehotspot === "function") {
-        krpano.removehotspot(name);
-      } else {
-        krpano.call(`removehotspot('${name}')`);
-      }
+      try {
+        if (typeof krpano.removehotspot === "function") {
+          krpano.removehotspot(name);
+        }
+      } catch (e) {}
+      try {
+        krpano.call(`removehotspot(${name})`);
+      } catch (e) {}
     });
   } catch (e) {
     console.warn("Error clearing krpano hotspots:", e);
@@ -2222,6 +2225,15 @@ function addHotspotToKrpano(hotspot, targetScene) {
   const name = "hs_" + hotspot._id;
   const styleName = hotspot.style || "Arrow";
   const svgBase64 = getHotspotSvgBase64(styleName, hotspot.title, hotspot.color, hotspot.bgColor, hotspot.textStyle, hotspot.badgeLetter);
+
+  try {
+    if (typeof krpano.removehotspot === "function") {
+      krpano.removehotspot(name);
+    }
+  } catch (e) {}
+  try {
+    krpano.call(`removehotspot(${name})`);
+  } catch (e) {}
 
   krpano.call(`addhotspot(${name})`);
   krpano.set(`hotspot[${name}].url`, svgBase64);
@@ -3769,7 +3781,8 @@ window.onHotspotTitleInput = function(val) {
   hs.title = val;
   
   const titleEl = document.getElementById('prop-hs-active-title');
-  const isPole = String(hs.style || '').toLowerCase() === 'pole pin' || String(hs.style || '').toLowerCase() === 'landmark pin' || String(hs.style || '').toLowerCase() === 'pole_pin' || String(hs.style || '').toLowerCase() === 'landmark';
+  const sLower = String(hs.style || '').toLowerCase();
+  const isPole = sLower.includes('residential') || sLower.includes('commercial') || sLower === 'pole pin' || sLower === 'landmark pin' || sLower === 'pole_pin' || sLower === 'landmark';
   if (titleEl) {
     titleEl.innerHTML = `<span style="color:#94a3b8; font-weight:700;">${isPole ? 'LANDMARK PIN:' : 'ACTIVE:'}</span> <span style="color:#fff; font-weight:800; margin-left:4px;">"${hs.title || 'Untitled'}"</span>`;
   }
@@ -4101,12 +4114,20 @@ async function deleteSelectedHotspotAction() {
     if (!res.ok) throw new Error('Failed to delete hotspot');
 
     if (krpano && typeof krpano.call === 'function') {
-      krpano.call(`removehotspot(hs_${selectedHotspotId});`);
+      try {
+        if (typeof krpano.removehotspot === 'function') {
+          krpano.removehotspot(`hs_${selectedHotspotId}`);
+        }
+      } catch (e) {}
+      try {
+        krpano.call(`removehotspot(hs_${selectedHotspotId})`);
+      } catch (e) {}
     }
 
     hotspots = hotspots.filter(h => String(h._id) !== String(selectedHotspotId));
     selectedHotspotId = null;
 
+    renderCurrentSceneHotspots();
     switchPropertyPanel('pano');
     publishTourSilent();
     showToast("✓ Hotspot deleted");
