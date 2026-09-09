@@ -273,7 +273,8 @@ function listToursWithDetails() {
           const latestScene = projDb.scenes && projDb.scenes.length > 0 ? 
             projDb.scenes.sort((a,b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())[0] : null;
 
-          toursMap.set(tourPath, {
+          const normKey = path.resolve(tourPath).toLowerCase();
+          toursMap.set(normKey, {
             id: tourPath,
             title: entry.name,
             date: latestScene ? latestScene.createdAt : mtime,
@@ -290,39 +291,30 @@ function listToursWithDetails() {
   const recent = getRecentProjects();
   recent.forEach(tourPath => {
     const resolved = resolveTourPath(tourPath);
-    if (resolved && !toursMap.has(resolved)) {
-      const pJsonPath = path.join(resolved, 'project.json');
-      if (fs.existsSync(pJsonPath)) {
-        try {
-          const projDb = JSON.parse(fs.readFileSync(pJsonPath, 'utf8'));
-          const title = path.basename(resolved);
-          const latestScene = projDb.scenes && projDb.scenes.length > 0 ? 
-            projDb.scenes.sort((a,b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())[0] : null;
-          
-          toursMap.set(resolved, {
-            id: resolved,
-            title: title,
-            date: latestScene ? latestScene.createdAt : fs.statSync(pJsonPath).mtime.toISOString(),
-            thumbnail: latestScene ? `panos/${latestScene.tilesFolder}/thumb.jpg` : null
-          });
-        } catch (e) {
-          console.error("Error reading project.json in listToursWithDetails for", resolved, e);
+    if (resolved) {
+      const normKey = path.resolve(resolved).toLowerCase();
+      if (!toursMap.has(normKey)) {
+        const pJsonPath = path.join(resolved, 'project.json');
+        if (fs.existsSync(pJsonPath)) {
+          try {
+            const projDb = JSON.parse(fs.readFileSync(pJsonPath, 'utf8'));
+            const title = path.basename(resolved);
+            const latestScene = projDb.scenes && projDb.scenes.length > 0 ? 
+              projDb.scenes.sort((a,b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())[0] : null;
+            
+            toursMap.set(normKey, {
+              id: resolved,
+              title: title,
+              date: latestScene ? latestScene.createdAt : fs.statSync(pJsonPath).mtime.toISOString(),
+              thumbnail: latestScene ? `panos/${latestScene.tilesFolder}/thumb.jpg` : null
+            });
+          } catch (e) {
+            console.error("Error reading project.json in listToursWithDetails for", resolved, e);
+          }
         }
       }
     }
   });
-
-  // 3. Add default legacy tour if legacy DB has scenes
-  const legacyDb = readDB('default');
-  if (legacyDb.scenes && legacyDb.scenes.length > 0 && !toursMap.has('default')) {
-    const latestScene = legacyDb.scenes.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
-    toursMap.set('default', {
-      id: 'default',
-      title: 'Legacy Project (Please Migrate)',
-      date: latestScene ? latestScene.createdAt : new Date().toISOString(),
-      thumbnail: latestScene ? `panos/${latestScene.tilesFolder}/thumb.jpg` : null
-    });
-  }
 
   return Array.from(toursMap.values()).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 }

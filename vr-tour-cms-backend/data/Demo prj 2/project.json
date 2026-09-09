@@ -1,33 +1,5 @@
 {
-  "scenes": [
-    {
-      "_id": "mtu48jasc0sur6",
-      "tourId": "default",
-      "title": "DJI_20251222160517_0128_D_equi",
-      "slug": "dji_20251222160517_0128_d_equi",
-      "tilesFolder": "DJI_20251222160517_0128_D_equi.tiles",
-      "order": 0,
-      "createdAt": "2026-09-09T13:09:59.860Z"
-    },
-    {
-      "_id": "mtu48jbfr5fpyk",
-      "tourId": "default",
-      "title": "DJI_20251222160749_0129_D_equi",
-      "slug": "dji_20251222160749_0129_d_equi",
-      "tilesFolder": "DJI_20251222160749_0129_D_equi.tiles",
-      "order": 1,
-      "createdAt": "2026-09-09T13:09:59.883Z"
-    },
-    {
-      "_id": "mtu48jbtwat5su",
-      "tourId": "default",
-      "title": "DJI_20251222162034_0135_D_equi",
-      "slug": "dji_20251222162034_0135_d_equi",
-      "tilesFolder": "DJI_20251222162034_0135_D_equi.tiles",
-      "order": 2,
-      "createdAt": "2026-09-09T13:09:59.897Z"
-    }
-  ],
+  "scenes": [],
   "hotspots": [],
   "assets": [],
   "customIcons": [
