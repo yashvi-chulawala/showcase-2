@@ -59,12 +59,14 @@ router.get('/tours/:tourId/hotspots', (req, res) => {
  *  - the hotspot placement/edit form (title/kind/targetSceneId/info/color)
  */
 router.patch('/hotspots/:hotspotId', (req, res) => {
-  const { ath, atv, title, kind, targetSceneId, info, color, locked, transition, textProps, action, width, height, targetAth, targetAtv, targetFov, targetViewMode } = req.body;
+  const { ath, atv, style, badgeLetter, title, kind, targetSceneId, info, color, locked, transition, textProps, action, width, height, targetAth, targetAtv, targetFov, targetViewMode } = req.body;
   const hotspotId = req.params.hotspotId;
 
   const patch = {};
   if (ath !== undefined) patch.ath = ath;
   if (atv !== undefined) patch.atv = atv;
+  if (style !== undefined) patch.style = style;
+  if (badgeLetter !== undefined) patch.badgeLetter = badgeLetter;
   if (title !== undefined) patch.title = title;
   if (kind !== undefined) patch.kind = kind;
   if (targetSceneId !== undefined) patch.targetSceneId = targetSceneId;

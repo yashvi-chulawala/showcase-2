@@ -144,12 +144,12 @@ router.delete('/scenes/:sceneId', (req, res) => {
 router.post('/tours/:tourId/scenes/reorder', (req, res) => {
   const { orderedSceneIds } = req.body;
   if (!Array.isArray(orderedSceneIds)) return res.status(400).json({ error: 'orderedSceneIds must be an array' });
-  res.json({ scenes: db.reorderScenes(req.params.tourId, orderedSceneIds) });
+  res.json({ scenes: db.reorderScenes(orderedSceneIds, req.params.tourId) });
 });
 
 /** POST /api/tours/:tourId/scenes/:sceneId/set-start */
 router.post('/tours/:tourId/scenes/:sceneId/set-start', (req, res) => {
-  const scene = db.setStartScene(req.params.tourId, req.params.sceneId);
+  const scene = db.setStartScene(req.params.sceneId, req.params.tourId);
   if (!scene) return res.status(404).json({ error: 'Scene not found in this tour' });
   res.json({ scene });
 });
