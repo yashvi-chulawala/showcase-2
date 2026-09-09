@@ -263,7 +263,17 @@ app.use(['/assets', '/vtour/assets', '/vtour/src/assets'], (req, res, next) => {
 
 // Serve static vtour directory with no-cache headers for instant dev updates
 const vtourDir = path.resolve(__dirname, './vtour');
+
+// Make editor panel the home page
+app.get('/', (req, res) => {
+  res.sendFile(path.join(vtourDir, 'editor-panel.html'));
+});
+app.get('/index.html', (req, res) => {
+  res.sendFile(path.join(vtourDir, 'editor-panel.html'));
+});
+
 app.use(express.static(vtourDir, {
+  index: ['editor-panel.html', 'index.html'],
   setHeaders: (res, path) => {
     if (path.endsWith('.html') || path.endsWith('.js') || path.endsWith('.css') || path.endsWith('.xml')) {
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -273,17 +283,12 @@ app.use(express.static(vtourDir, {
   }
 }));
 
-// Auto-redirect root to editor-panel.html
-app.get('/', (req, res) => {
-  res.redirect('/editor-panel.html');
-});
-
 const PORT = process.env.PORT || 5050;
 app.listen(PORT, () => {
   console.log(`vr-tour-cms-backend listening on :${PORT}`);
   console.log(`Data file: ${db.DB_FILE}`);
   console.log(`Serving static tour files from: ${vtourDir}`);
-  console.log(`Open Editor at: http://localhost:${PORT}/editor-panel.html`);
+  console.log(`Open Editor at: http://localhost:${PORT}/`);
 });
 
 app.post('/api/system/rename-tour', (req, res) => {
