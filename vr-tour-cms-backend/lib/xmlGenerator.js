@@ -66,8 +66,7 @@ const ICON_LIBRARY_ITEMS = [
   { name: 'Dot Blue', svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="48" height="48"><circle cx="32" cy="32" r="24" fill="#3b82f6" stroke="#ffffff" stroke-width="6"/><circle cx="32" cy="32" r="10" fill="#ffffff"/></svg>' },
   { name: 'Dot Red', svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="48" height="48"><circle cx="32" cy="32" r="24" fill="#ef4444" stroke="#ffffff" stroke-width="6"/><circle cx="32" cy="32" r="10" fill="#ffffff"/></svg>' },
   { name: 'Dot White', svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="48" height="48"><circle cx="32" cy="32" r="24" fill="#ffffff" stroke="#333333" stroke-width="6"/><circle cx="32" cy="32" r="10" fill="#3b82f6"/></svg>' },
-  { name: 'Info Badge', svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="48" height="48"><circle cx="32" cy="32" r="28" fill="#3b82f6" stroke="#ffffff" stroke-width="4"/><text x="32" y="44" text-anchor="middle" fill="#ffffff" font-family="Outfit, sans-serif" font-weight="900" font-size="34">i</text></svg>' },
-  { name: 'Pole Pin', svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 80" width="48" height="48"><g><line x1="20" y1="36" x2="20" y2="76" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round"/><circle cx="20" cy="76" r="3" fill="#ffffff"/><rect x="28" y="8" width="38" height="24" rx="5" fill="#d9f2fd" stroke="#b9e6fe" stroke-width="1.2"/><rect x="4" y="4" width="30" height="30" rx="7" fill="#00a6e0" stroke="#ffffff" stroke-width="1.8"/><text x="19" y="24" text-anchor="middle" fill="#ffffff" font-family="Outfit, sans-serif" font-weight="900" font-size="15">R</text></g></svg>' }
+  { name: 'Info Badge', svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="48" height="48"><circle cx="32" cy="32" r="28" fill="#3b82f6" stroke="#ffffff" stroke-width="4"/><text x="32" y="44" text-anchor="middle" fill="#ffffff" font-family="Outfit, sans-serif" font-weight="900" font-size="34">i</text></svg>' }
 ];
 
 /**
@@ -75,7 +74,6 @@ const ICON_LIBRARY_ITEMS = [
  */
 function getHotspotSvgBase64(style, labelText, color, badgeLetter, customIcons = []) {
   const s = String(style || 'Arrow').toLowerCase();
-  const fillCol = color || '#00a6e0';
 
   if (style && (String(style).startsWith('data:image/') || String(style).startsWith('http'))) {
     return style;
@@ -91,9 +89,14 @@ function getHotspotSvgBase64(style, labelText, color, badgeLetter, customIcons =
     }
   }
 
-  if (s === 'pole pin' || s === 'landmark pin' || s === 'pole_pin' || s === 'landmark') {
-    const textStr = esc(String(labelText || 'Prince Palace').trim() || 'Prince Palace');
-    const letter = esc(String(badgeLetter || (labelText ? labelText.trim().charAt(0) : 'R') || 'R').toUpperCase().slice(0, 3));
+  const isRes = s === 'residential pin' || s === 'residential' || s === 'res' || s.includes('residential');
+  const isComm = s === 'commercial pin' || s === 'commercial' || s === 'comm' || s.includes('commercial');
+  const isPole = isRes || isComm || s === 'pole pin' || s === 'landmark pin' || s === 'pole_pin' || s === 'landmark';
+
+  if (isPole) {
+    const textStr = esc(String(labelText || (isRes ? 'Happy Residency' : (isComm ? 'Surana Supremus' : 'Prince Palace'))).trim());
+    const letter = esc(String(isRes ? 'R' : (isComm ? 'C' : (badgeLetter || (labelText ? labelText.trim().charAt(0) : 'R') || 'R'))).toUpperCase().slice(0, 3));
+    const fillCol = isRes ? '#3b82f6' : (isComm ? (color && color !== '#00a6e0' ? color : '#f59e0b') : (color || '#00a6e0'));
     const textLen = textStr.length;
     const bannerWidth = Math.max(84, Math.round(textLen * 8.8 + 26));
     const totalW = Math.round(44 + bannerWidth + 14);

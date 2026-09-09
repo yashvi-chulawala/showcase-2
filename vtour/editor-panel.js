@@ -110,8 +110,7 @@ window.ICON_LIBRARY_ITEMS = [
   { name: 'Dot Blue', family: 'Dot', type: 'Navigation', svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="48" height="48"><circle cx="32" cy="32" r="24" fill="#10b981" stroke="#ffffff" stroke-width="6"/><circle cx="32" cy="32" r="10" fill="#ffffff"/></svg>' },
   { name: 'Dot Red', family: 'Dot', type: 'Navigation', svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="48" height="48"><circle cx="32" cy="32" r="24" fill="#ef4444" stroke="#ffffff" stroke-width="6"/><circle cx="32" cy="32" r="10" fill="#ffffff"/></svg>' },
   { name: 'Dot White', family: 'Dot', type: 'Navigation', svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="48" height="48"><circle cx="32" cy="32" r="24" fill="#ffffff" stroke="#333333" stroke-width="6"/><circle cx="32" cy="32" r="10" fill="#10b981"/></svg>' },
-  { name: 'Info Badge', family: 'Info', type: 'Info', svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="48" height="48"><circle cx="32" cy="32" r="28" fill="#10b981" stroke="#ffffff" stroke-width="4"/><text x="32" y="44" text-anchor="middle" fill="#ffffff" font-family="Outfit, sans-serif" font-weight="900" font-size="34">i</text></svg>' },
-  { name: 'Pole Pin', family: 'Pin', type: 'Navigation', svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 80" width="48" height="48"><g><line x1="20" y1="36" x2="20" y2="76" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round"/><circle cx="20" cy="76" r="3" fill="#ffffff"/><rect x="28" y="8" width="38" height="24" rx="5" fill="#d9f2fd" stroke="#b9e6fe" stroke-width="1.2"/><rect x="4" y="4" width="30" height="30" rx="7" fill="#00a6e0" stroke="#ffffff" stroke-width="1.8"/><text x="19" y="24" text-anchor="middle" fill="#ffffff" font-family="Outfit, sans-serif" font-weight="900" font-size="15">R</text></g></svg>' }
+  { name: 'Info Badge', family: 'Info', type: 'Info', svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="48" height="48"><circle cx="32" cy="32" r="28" fill="#10b981" stroke="#ffffff" stroke-width="4"/><text x="32" y="44" text-anchor="middle" fill="#ffffff" font-family="Outfit, sans-serif" font-weight="900" font-size="34">i</text></svg>' }
 ];
 
 // Custom hotspot icons stored in localStorage & synced with backend
@@ -194,12 +193,12 @@ function getSceneKrpanoName(scene) {
   return 'scene_' + getOriginalBaseName(scene);
 }
 
-// Returns true if a hotspot should be treated as an image overlay
+// Returns true if a hotspot should be treated as an image overlay or landmark pin
 function isImageHotspot(hs) {
   if (!hs) return false;
   if (hs.kind === 'image') return true;
   const s = String(hs.style || '').toLowerCase();
-  return s === 'pole pin' || s === 'landmark pin' || s === 'pole_pin' || s === 'landmark' || s.startsWith('assets/') || s.startsWith('http') || (s.startsWith('data:image/') && !s.includes('text'));
+  return s.includes('residential') || s.includes('commercial') || s === 'pole pin' || s === 'landmark pin' || s === 'pole_pin' || s === 'landmark' || s.startsWith('assets/') || s.startsWith('http') || (s.startsWith('data:image/') && !s.includes('text'));
 }
 
 // Returns true if a hotspot should be treated as a text label
@@ -219,15 +218,21 @@ function isNavHotspot(hs) {
 // Generate inline Base64 data URI for SVG icons or standalone Text style
 function getHotspotSvgBase64(style, labelText, color, bgColor, textStyle, badgeLetter) {
   const s = String(style || 'Arrow').toLowerCase();
-  const fillCol = color || '#00a6e0';
 
   if (style && (String(style).startsWith('data:image/') || String(style).startsWith('assets/'))) {
     return style;
   }
 
-  if (s === 'pole pin' || s === 'landmark pin' || s === 'pole_pin' || s === 'landmark') {
-    const textStr = String(labelText || 'Prince Palace').trim() || 'Prince Palace';
-    const letter = String(badgeLetter || (labelText ? labelText.trim().charAt(0) : 'R') || 'R').toUpperCase().slice(0, 3);
+  const isRes = s === 'residential pin' || s === 'residential' || s === 'res' || s.includes('residential');
+  const isComm = s === 'commercial pin' || s === 'commercial' || s === 'comm' || s.includes('commercial');
+  const isCyanComm = s.includes('cyan');
+  const isPole = isRes || isComm || s === 'pole pin' || s === 'landmark pin' || s === 'pole_pin' || s === 'landmark';
+
+  if (isPole) {
+    const defaultText = isRes ? 'Happy Residency' : (isCyanComm ? 'Sns Arista' : (isComm ? 'Surana Supremus' : 'Prince Palace'));
+    const textStr = String(labelText || defaultText).trim() || defaultText;
+    const letter = (isRes ? 'R' : (isComm ? 'C' : String(badgeLetter || (labelText ? labelText.trim().charAt(0) : 'R') || 'R'))).toUpperCase().slice(0, 3);
+    const fillCol = isRes ? '#3b82f6' : (isCyanComm ? '#00a6e0' : (isComm ? '#f59e0b' : (color || '#00a6e0')));
     const textLen = textStr.length;
     const bannerWidth = Math.max(84, Math.round(textLen * 8.8 + 26));
     const totalW = Math.round(44 + bannerWidth + 14);
@@ -2802,7 +2807,7 @@ window.lookAtHotspot = function(hotspotId) {
   }
 };
 
-// Select a Hotspot and populate Hotspot Property Editor
+// Select an Image / Landmark Hotspot and populate Property Editor
 function selectImageHotspot(hotspotId) {
   selectedHotspotId = hotspotId;
   const hs = hotspots.find(h => String(h._id) === String(hotspotId));
@@ -2831,62 +2836,66 @@ function selectImageHotspot(hotspotId) {
   }
   imgPanel.style.display = 'block';
 
-  const titleEl = document.getElementById('prop-hs-active-title');
-  const isPole = String(hs.style || '').toLowerCase() === 'pole pin' || String(hs.style || '').toLowerCase() === 'landmark pin' || String(hs.style || '').toLowerCase() === 'pole_pin' || String(hs.style || '').toLowerCase() === 'landmark';
+  const s = String(hs.style || '').toLowerCase();
+  const isRes = s.includes('residential') || s === 'res';
+  const isComm = s.includes('commercial') || s === 'comm';
+  const isCyanComm = s.includes('cyan');
+  const isPole = isRes || isComm || s === 'pole pin' || s === 'landmark pin' || s === 'pole_pin' || s === 'landmark';
 
+  const titleEl = document.getElementById('prop-hs-active-title');
   if (titleEl) {
-    titleEl.innerHTML = `<span style="color:#94a3b8; font-weight:700;">${isPole ? 'LANDMARK PIN:' : 'IMAGE:'}</span> <span style="color:#fff; font-weight:800; margin-left:4px;">"${hs.title || (isPole ? 'Prince Palace' : 'Image')}"</span>`;
+    const defaultName = isRes ? 'Residential Pin' : (isComm ? 'Commercial Pin' : (isPole ? 'Landmark Pin' : 'Image Hotspot'));
+    titleEl.innerHTML = `<span style="color:#94a3b8; font-weight:700;">${isPole ? 'LANDMARK PIN:' : 'IMAGE:'}</span> <span style="color:#fff; font-weight:800; margin-left:4px;">"${hs.title || defaultName}"</span>`;
   }
 
   const isLocked = !!(hs.locked === true || hs.locked === 'true');
 
   if (isPole) {
+    const badgeLetter = isRes ? 'R' : (isComm ? 'C' : (hs.badgeLetter || 'R'));
+    const badgeColor = isRes ? '#3b82f6' : (isCyanComm ? '#00a6e0' : (isComm ? '#f59e0b' : (hs.color || '#00a6e0')));
+    const badgeLabel = isRes ? 'Residential Pin (R)' : (isCyanComm ? 'Commercial Pin (Cyan)' : (isComm ? 'Commercial Pin (C)' : 'Landmark Pin'));
+    const defaultPlaceholder = isRes ? 'Happy Residency' : (isCyanComm ? 'Sns Arista' : (isComm ? 'Surana Supremus' : 'Landmark Name'));
+
     imgPanel.innerHTML = `
-      <!-- Landmark Pin Title / Text -->
-      <div class="property-group">
-        <label class="property-label">Pin Text / Label</label>
-        <div style="display:flex; gap:8px;">
-          <input id="img-hs-title" type="text" class="property-input" style="flex:1;" value="${hs.title || 'Prince Palace'}" placeholder="e.g. Prince Palace" ${isLocked ? 'disabled' : ''} oninput="onHotspotTitleInput(this.value)">
-          <div style="width:70px;">
-            <input id="img-hs-badge" type="text" class="property-input" maxlength="3" style="text-align:center; font-weight:800; text-transform:uppercase;" value="${hs.badgeLetter || (hs.title ? hs.title.trim().charAt(0).toUpperCase() : 'R')}" placeholder="R" title="Badge Letter" ${isLocked ? 'disabled' : ''} oninput="onHotspotBadgeLetterInput(this.value)">
+      <!-- Fixed Pin Type Badge Info -->
+      <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 32px; height: 32px; border-radius: 7px; background: ${badgeColor}; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 16px; color: #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+            ${badgeLetter}
+          </div>
+          <div>
+            <div style="font-size: 13px; font-weight: 700; color: #fff;">${badgeLabel}</div>
+            <div style="font-size: 11px; color: #94a3b8;">Color & Badge: <span style="color: ${badgeColor}; font-weight: 700;">Fixed Preset</span></div>
           </div>
         </div>
+        <span style="font-size: 10px; font-weight: 700; background: rgba(255,255,255,0.08); color: #cbd5e1; padding: 3px 8px; border-radius: 12px;">PRESET</span>
       </div>
 
-      <!-- Landmark Pin Color -->
-      <div class="property-group">
-        <label class="property-label">Badge Color</label>
-        <div style="display:flex; align-items:center; gap:8px;">
-          <input type="color" id="img-hs-color" class="property-color-picker" style="width:38px; height:38px; border-radius:6px; padding:2px; cursor:pointer; border:1px solid #334155; background:#1e293b;" value="${hs.color || '#00a6e0'}" ${isLocked ? 'disabled' : ''} onchange="onHotspotColorChange(this.value)" oninput="onHotspotColorChange(this.value)">
-          <div class="color-swatches" style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
-            <div class="color-swatch" style="width:22px; height:22px; border-radius:4px; background:#00a6e0; cursor:pointer; border:1px solid rgba(255,255,255,0.2);" onclick="onHotspotColorChange('#00a6e0')" title="Cyan Sky"></div>
-            <div class="color-swatch" style="width:22px; height:22px; border-radius:4px; background:#3b82f6; cursor:pointer; border:1px solid rgba(255,255,255,0.2);" onclick="onHotspotColorChange('#3b82f6')" title="Royal Blue"></div>
-            <div class="color-swatch" style="width:22px; height:22px; border-radius:4px; background:#10b981; cursor:pointer; border:1px solid rgba(255,255,255,0.2);" onclick="onHotspotColorChange('#10b981')" title="Emerald Green"></div>
-            <div class="color-swatch" style="width:22px; height:22px; border-radius:4px; background:#ef4444; cursor:pointer; border:1px solid rgba(255,255,255,0.2);" onclick="onHotspotColorChange('#ef4444')" title="Crimson Red"></div>
-            <div class="color-swatch" style="width:22px; height:22px; border-radius:4px; background:#f59e0b; cursor:pointer; border:1px solid rgba(255,255,255,0.2);" onclick="onHotspotColorChange('#f59e0b')" title="Amber Orange"></div>
-            <div class="color-swatch" style="width:22px; height:22px; border-radius:4px; background:#8b5cf6; cursor:pointer; border:1px solid rgba(255,255,255,0.2);" onclick="onHotspotColorChange('#8b5cf6')" title="Violet Purple"></div>
-            <div class="color-swatch" style="width:22px; height:22px; border-radius:4px; background:#ffffff; cursor:pointer; border:1px solid rgba(0,0,0,0.4);" onclick="onHotspotColorChange('#ffffff')" title="Pure White"></div>
-          </div>
-        </div>
+      <!-- Editable Pin Text / Landmark Name ONLY -->
+      <div class="property-group" style="margin-top: 4px;">
+        <label class="property-label" style="font-size: 12px; font-weight: 700; color: #cbd5e1;">Pin Text / Landmark Name</label>
+        <input id="img-hs-title" type="text" class="property-input" style="width: 100%; font-weight: 600; font-size: 14px;" value="${hs.title || defaultPlaceholder}" placeholder="${defaultPlaceholder}" ${isLocked ? 'disabled' : ''} oninput="onHotspotTitleInput(this.value)">
+        <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Edit the landmark name to display on the pin banner in the 360 tour.</div>
       </div>
 
-      <!-- Size -->
+      <!-- Size Settings -->
       <div class="property-group">
         <label class="property-label">Icon Size</label>
         <div style="display:flex; gap:10px;">
           <div style="flex:1;">
-            <label style="font-size:11px;color:#64748b;display:block;margin-bottom:4px;">Horizontal (px)</label>
+            <label style="font-size:11px;color:#64748b;display:block;margin-bottom:4px;">Width (px)</label>
             <input id="img-hs-width" type="number" class="property-input" value="${hs.width || ''}" placeholder="Auto" ${isLocked ? 'disabled' : ''} style="${isLocked ? 'opacity:0.5;' : ''}" oninput="onImageHotspotSizeChange()">
           </div>
           <div style="flex:1;">
-            <label style="font-size:11px;color:#64748b;display:block;margin-bottom:4px;">Vertical (px)</label>
+            <label style="font-size:11px;color:#64748b;display:block;margin-bottom:4px;">Height (px)</label>
             <input id="img-hs-height" type="number" class="property-input" value="${hs.height || ''}" placeholder="Auto" ${isLocked ? 'disabled' : ''} style="${isLocked ? 'opacity:0.5;' : ''}" oninput="onImageHotspotSizeChange()">
           </div>
         </div>
       </div>
 
-      <button onclick="deleteSelectedHotspotAction()" class="property-btn-outline" style="color:#ef4444;border-color:#ef4444;width:100%;padding:8px; margin-top: 8px;">
-        🗑 Delete This Pin
+      <button onclick="deleteSelectedHotspotAction()" class="property-btn-outline" style="color:#ef4444;border-color:#ef4444;width:100%;padding:10px; margin-top: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+        Delete This Pin
       </button>
     `;
   } else {
@@ -2904,7 +2913,7 @@ function selectImageHotspot(hotspotId) {
           <input id="img-hs-height" type="number" class="property-input" value="${hs.height || 150}" ${isLocked ? 'disabled' : ''} style="${isLocked ? 'opacity:0.5;' : ''}" oninput="onImageHotspotSizeChange()">
         </div>
       </div>
-      <button onclick="deleteSelectedHotspotAction()" class="property-btn-outline" style="color:#ef4444;border-color:#ef4444;width:100%;padding:8px;">
+      <button onclick="deleteSelectedHotspotAction()" class="property-btn-outline" style="color:#ef4444;border-color:#ef4444;width:100%;padding:8px; margin-top: 10px;">
         Delete Image
       </button>
     `;
@@ -2912,6 +2921,201 @@ function selectImageHotspot(hotspotId) {
 
   if (typeof renderHotspotList === 'function') renderHotspotList();
 }
+
+// Modal tab switcher for Add Pin / Image Modal
+window.switchImageModalTab = function(tab) {
+  const tabPins = document.getElementById('image-modal-tab-pins');
+  const tabMedia = document.getElementById('image-modal-tab-media');
+  const btnPins = document.getElementById('tab-btn-pins');
+  const btnMedia = document.getElementById('tab-btn-media');
+  const selectBtn = document.getElementById('modal-image-asset-select-btn');
+
+  if (tab === 'pins') {
+    if (tabPins) tabPins.style.display = 'flex';
+    if (tabMedia) tabMedia.style.display = 'none';
+    if (btnPins) {
+      btnPins.style.background = '#10b981';
+      btnPins.style.color = '#fff';
+    }
+    if (btnMedia) {
+      btnMedia.style.background = 'transparent';
+      btnMedia.style.color = '#94a3b8';
+    }
+    if (selectBtn) selectBtn.style.display = 'none';
+  } else {
+    if (tabPins) tabPins.style.display = 'none';
+    if (tabMedia) tabMedia.style.display = 'flex';
+    if (btnPins) {
+      btnPins.style.background = 'transparent';
+      btnPins.style.color = '#94a3b8';
+    }
+    if (btnMedia) {
+      btnMedia.style.background = '#10b981';
+      btnMedia.style.color = '#fff';
+    }
+    if (selectBtn) selectBtn.style.display = 'inline-block';
+    renderModalImageAssetGrid();
+  }
+};
+
+// Open the Add Pin / Image tool
+window.openImageHotspotTool = function() {
+  const modal = document.getElementById('modal-select-image-asset');
+  if (modal) {
+    modal.style.display = 'flex';
+    switchImageModalTab('pins');
+  }
+};
+
+// Add preset landmark pin (Residential / Commercial / Commercial Cyan)
+window.addPresetPinHotspot = async function(type) {
+  const modal = document.getElementById('modal-select-image-asset');
+  if (modal) modal.style.display = 'none';
+
+  if (!activeSceneId || !krpano) {
+    showToast('Please open a panorama scene first');
+    return;
+  }
+
+  let styleName = 'Residential Pin';
+  let defaultTitle = 'Happy Residency';
+  let badgeLetter = 'R';
+  let color = '#3b82f6';
+
+  if (type === 'commercial') {
+    styleName = 'Commercial Pin';
+    defaultTitle = 'Surana Supremus';
+    badgeLetter = 'C';
+    color = '#f59e0b';
+  } else if (type === 'commercial_cyan') {
+    styleName = 'Commercial Pin (Cyan)';
+    defaultTitle = 'Sns Arista';
+    badgeLetter = 'C';
+    color = '#00a6e0';
+  }
+
+  const ath = Number(Number(krpano.get('view.hlookat') || 0).toFixed(2));
+  const atv = Number(Number(krpano.get('view.vlookat') || 0).toFixed(2));
+
+  try {
+    const res = await fetch('/api/hotspots', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sceneId: activeSceneId,
+        title: defaultTitle,
+        kind: 'image',
+        ath,
+        atv,
+        style: styleName,
+        badgeLetter: badgeLetter,
+        color: color
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to create landmark pin');
+
+    const newHotspot = data.hotspot;
+    hotspots.push(newHotspot);
+    addHotspotToKrpano(newHotspot);
+    renderCurrentSceneHotspots();
+    window._lastHotspotClickTime = Date.now();
+    selectImageHotspot(newHotspot._id);
+    publishTourSilent();
+    showToast(`✓ Added ${styleName} to scene!`);
+  } catch (err) {
+    console.error('Error creating preset pin:', err);
+    showToast(`Error: ${err.message}`);
+  }
+};
+
+// Selected media image asset
+window._selectedImageAsset = null;
+
+// Render media images grid inside the modal
+function renderModalImageAssetGrid() {
+  const grid = document.getElementById('modal-select-image-asset-grid');
+  const selectBtn = document.getElementById('modal-image-asset-select-btn');
+  if (!grid) return;
+  grid.innerHTML = '';
+  window._selectedImageAsset = null;
+  if (selectBtn) {
+    selectBtn.style.opacity = '0.4';
+    selectBtn.style.cursor = 'not-allowed';
+  }
+
+  const mediaList = Array.isArray(window.mediaAssets) ? window.mediaAssets : [];
+  if (mediaList.length === 0) {
+    grid.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; color: #94a3b8; padding: 40px 0; font-size: 13px;">No media assets uploaded yet. Upload images in the Assets section.</div>`;
+    return;
+  }
+
+  mediaList.forEach(asset => {
+    const card = document.createElement('div');
+    card.style.cssText = 'background: #16181d; border: 2px solid #282c35; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; transition: all 0.2s;';
+    card.innerHTML = `
+      <div style="width: 100%; height: 100px; display: flex; align-items: center; justify-content: center; background: #000; border-radius: 4px; overflow: hidden;">
+        <img src="${asset.url}" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+      </div>
+      <div style="font-size: 12px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px; text-align: center;">${asset.name}</div>
+    `;
+    card.onclick = () => {
+      grid.querySelectorAll('div').forEach(c => c.style.borderColor = '#282c35');
+      card.style.borderColor = '#10b981';
+      window._selectedImageAsset = asset;
+      if (selectBtn) {
+        selectBtn.style.opacity = '1';
+        selectBtn.style.cursor = 'pointer';
+      }
+    };
+    grid.appendChild(card);
+  });
+}
+
+// Add Image Hotspot from uploaded asset
+window.addImageHotspotFromAsset = async function(name, url) {
+  const modal = document.getElementById('modal-select-image-asset');
+  if (modal) modal.style.display = 'none';
+
+  if (!activeSceneId || !krpano) {
+    showToast('Please open a panorama scene first');
+    return;
+  }
+
+  const ath = Number(Number(krpano.get('view.hlookat') || 0).toFixed(2));
+  const atv = Number(Number(krpano.get('view.vlookat') || 0).toFixed(2));
+
+  try {
+    const res = await fetch('/api/hotspots', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sceneId: activeSceneId,
+        title: name || 'Image',
+        kind: 'image',
+        ath,
+        atv,
+        style: url,
+        width: 150,
+        height: 150
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to create image hotspot');
+
+    const newHotspot = data.hotspot;
+    hotspots.push(newHotspot);
+    addHotspotToKrpano(newHotspot);
+    renderCurrentSceneHotspots();
+    window._lastHotspotClickTime = Date.now();
+    selectImageHotspot(newHotspot._id);
+    publishTourSilent();
+    showToast('✓ Added image hotspot to scene!');
+  } catch (err) {
+    console.error('Error adding image hotspot:', err);
+    showToast(`Error: ${err.message}`);
+  }
+};
 
 // Debounced save for image hotspot size
 let _imgSizeDebounce = null;
@@ -3440,7 +3644,6 @@ function renderHotspotIconPickerGrid(currentStyle) {
   }
 
   const builtInStyles = [
-    { name: 'Pole Pin', label: 'Pole Pin', svg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="12" x2="8" y2="22"></line><rect x="4" y="2" width="10" height="10" rx="2" fill="#00a6e0" stroke="none"></rect><rect x="14" y="4" width="8" height="6" rx="1" fill="#d9f2fd" stroke="none"></rect></svg>' },
     { name: 'Arrow', label: 'Arrow', svg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
     { name: 'Arrow 01', label: 'Chevron', svg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 15 12 9 18 15"></polyline></svg>' },
     { name: 'Arrow 02', label: 'Bold', svg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 4 22 18 18 20 12 11 6 20 2 18"></polygon></svg>' },
