@@ -685,7 +685,7 @@
     }
 
     .sidebar-right {
-      width: 280px;
+      width: 330px;
       background: #111116;
       border-left: 1px solid var(--border-color);
       display: none;
@@ -902,32 +902,39 @@
 
     .property-tabs-header {
       display: flex;
-      gap: 8px;
-      padding: 12px 16px;
+      align-items: center;
+      gap: 5px;
+      padding: 10px 10px;
       background: #121218;
       border-bottom: 1px solid var(--border-color);
+      flex-shrink: 0;
     }
 
     .prop-tab-btn {
       flex: 1;
-      padding: 9px 12px;
+      min-width: 0;
+      padding: 8px 4px;
       border-radius: 8px;
-      font-size: 13px;
+      font-size: 11.5px;
       font-weight: 700;
       color: #94a3b8;
       background: #1c1c28;
       border: 1px solid rgba(255, 255, 255, 0.08);
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       display: flex;
       align-items: center;
       justify-content: center;
+      gap: 4px;
+      white-space: nowrap;
+      user-select: none;
     }
 
     .prop-tab-btn:hover {
       color: #fff;
-      background: rgba(255, 255, 255, 0.08);
-      border-color: rgba(255, 255, 255, 0.2);
+      background: #252536;
+      border-color: var(--accent-green);
+      transform: translateY(-1px);
     }
 
     .prop-tab-btn.active {
@@ -937,49 +944,7 @@
       box-shadow: 0 0 12px rgba(16, 185, 129, 0.25);
     }
 
-    .prop-quick-add-group {
-      display: flex;
-      gap: 8px;
-      padding: 10px 16px;
-      background: #14141d;
-      border-bottom: 1px solid var(--border-color);
-    }
-
-    .prop-quick-btn {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      padding: 8px 6px;
-      border-radius: 8px;
-      font-size: 12px;
-      font-weight: 700;
-      color: #cbd5e1;
-      background: #1c1c28;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      cursor: pointer;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      user-select: none;
-      white-space: nowrap;
-    }
-
-    .prop-quick-btn:hover {
-      color: #fff;
-      background: #252536;
-      border-color: var(--accent-green);
-      transform: translateY(-1px);
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
-    }
-
-    .prop-quick-btn.active {
-      color: #fff;
-      background: #232334;
-      border-color: var(--accent-green);
-      box-shadow: 0 0 12px rgba(16, 185, 129, 0.25);
-    }
-
-    .prop-quick-btn svg {
+    .prop-tab-btn svg {
       flex-shrink: 0;
       stroke: currentColor;
     }
@@ -2241,36 +2206,31 @@
           <span>Property Editor</span>
         </div>
         <div class="property-tabs-header">
-          <button class="prop-tab-btn active" id="prop-tab-pano" onclick="switchPropertyPanel('pano')">Pano
-            Setting</button>
-          <button class="prop-tab-btn" id="prop-tab-hotspot" onclick="switchPropertyPanel('hotspot')">Hotspot
-            Setting</button>
-        </div>
-
-        <!-- 3 Quick Filter / Category Buttons (Hotspot, Text, Image) -->
-        <div class="prop-quick-add-group" id="prop-quick-add-bar" style="display: none;">
-          <button class="prop-quick-btn active" id="prop-quick-hotspot" onclick="setHotspotFilter('hotspot')" title="Filter Navigation Hotspots">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <button class="prop-tab-btn active" id="prop-tab-pano" onclick="switchPropertyPanel('pano')" title="Panorama Settings">
+            <span>Pano Setting</span>
+          </button>
+          <button class="prop-tab-btn" id="prop-tab-hotspot" onclick="switchPropertyPanel('hotspot')" title="Navigation Hotspot Settings">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="7" y1="17" x2="17" y2="7"></line>
               <polyline points="7 7 17 7 17 17"></polyline>
             </svg>
             <span>Hotspot</span>
           </button>
-          <button class="prop-quick-btn" id="prop-quick-text" onclick="setHotspotFilter('text')" title="Filter Text Hotspots">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <button class="prop-tab-btn" id="prop-tab-text" onclick="switchPropertyPanel('text')" title="Text Hotspot Settings">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="4 7 4 4 20 4 20 7"></polyline>
               <line x1="9" y1="20" x2="15" y2="20"></line>
               <line x1="12" y1="4" x2="12" y2="20"></line>
             </svg>
             <span>Text</span>
           </button>
-          <button class="prop-quick-btn" id="prop-quick-image" onclick="setHotspotFilter('image')" title="Filter Image Hotspots">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <button class="prop-tab-btn" id="prop-tab-image" onclick="switchPropertyPanel('image')" title="Image Hotspot Settings">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
               <circle cx="8.5" cy="8.5" r="1.5"></circle>
               <polyline points="21 15 16 10 5 21"></polyline>
             </svg>
-            <span>Image</span>
+            <span>Img</span>
           </button>
         </div>
 

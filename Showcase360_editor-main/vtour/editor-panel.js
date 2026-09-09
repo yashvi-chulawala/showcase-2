@@ -2337,20 +2337,23 @@ function showTabOnly(panel) {
   }
   const btnPano = document.getElementById('prop-tab-pano');
   const btnHotspot = document.getElementById('prop-tab-hotspot');
+  const btnText = document.getElementById('prop-tab-text');
+  const btnImg = document.getElementById('prop-tab-image');
+
   const panelPano = document.getElementById('panel-pano-properties');
   const panelHotspot = document.getElementById('panel-hotspot-properties');
   const panelText = document.getElementById('panel-text-properties');
   const hsListGroup = document.getElementById('prop-hs-list-group');
-  const quickAddBar = document.getElementById('prop-quick-add-bar');
 
   if (btnPano) btnPano.classList.remove('active');
   if (btnHotspot) btnHotspot.classList.remove('active');
+  if (btnText) btnText.classList.remove('active');
+  if (btnImg) btnImg.classList.remove('active');
 
   if (panelPano) panelPano.style.display = 'none';
   if (panelHotspot) panelHotspot.style.display = 'none';
   if (panelText) panelText.style.display = 'none';
   if (hsListGroup) hsListGroup.style.display = 'none';
-  if (quickAddBar) quickAddBar.style.display = 'none';
 
   if (panel === 'pano') {
     if (btnPano) btnPano.classList.add('active');
@@ -2359,12 +2362,14 @@ function showTabOnly(panel) {
     if (btnHotspot) btnHotspot.classList.add('active');
     if (panelHotspot) panelHotspot.style.display = 'flex';
     if (hsListGroup) hsListGroup.style.display = 'flex';
-    if (quickAddBar) quickAddBar.style.display = 'flex';
   } else if (panel === 'text') {
-    if (btnHotspot) btnHotspot.classList.add('active');
+    if (btnText) btnText.classList.add('active');
     if (panelText) panelText.style.display = 'flex';
     if (hsListGroup) hsListGroup.style.display = 'flex';
-    if (quickAddBar) quickAddBar.style.display = 'flex';
+  } else if (panel === 'image') {
+    if (btnImg) btnImg.classList.add('active');
+    if (panelHotspot) panelHotspot.style.display = 'flex';
+    if (hsListGroup) hsListGroup.style.display = 'flex';
   }
 }
 
@@ -2372,14 +2377,7 @@ let currentHotspotFilter = 'hotspot'; // 'hotspot' | 'text' | 'image'
 
 window.setHotspotFilter = function(type) {
   currentHotspotFilter = type;
-  
-  const btnHs = document.getElementById('prop-quick-hotspot');
-  const btnTxt = document.getElementById('prop-quick-text');
-  const btnImg = document.getElementById('prop-quick-image');
-  
-  if (btnHs) btnHs.classList.toggle('active', type === 'hotspot');
-  if (btnTxt) btnTxt.classList.toggle('active', type === 'text');
-  if (btnImg) btnImg.classList.toggle('active', type === 'image');
+  showTabOnly(type);
 
   const sceneHs = hotspots.filter(h => String(h.sceneId) === String(activeSceneId));
   let filtered = [];
@@ -2404,10 +2402,8 @@ window.setHotspotFilter = function(type) {
   } else {
     selectedHotspotId = null;
     if (type === 'text') {
-      showTabOnly('text');
       renderEmptyTextPanel();
     } else {
-      showTabOnly('hotspot');
       renderEmptyHotspotPanel();
     }
   }
@@ -2415,14 +2411,12 @@ window.setHotspotFilter = function(type) {
   renderHotspotList();
 };
 
-// Switch Property Editor between Panorama, Hotspot, and Text tabs
+// Switch Property Editor between Panorama, Hotspot, Text, Image tabs
 function switchPropertyPanel(panel) {
-  showTabOnly(panel);
-
-  if (panel === 'hotspot') {
-    setHotspotFilter(currentHotspotFilter || 'hotspot');
-  } else if (panel === 'text') {
-    setHotspotFilter('text');
+  if (panel === 'pano') {
+    showTabOnly('pano');
+  } else {
+    setHotspotFilter(panel);
   }
 }
 
@@ -2579,21 +2573,13 @@ window.lookAtHotspot = function(hotspotId) {
 };
 
 // Select a Hotspot and populate Hotspot Property Editor
-// Select an Image Hotspot - shows minimal panel (no icon/action/target scene props)
 function selectImageHotspot(hotspotId) {
   selectedHotspotId = hotspotId;
   const hs = hotspots.find(h => String(h._id) === String(hotspotId));
   if (!hs) return;
 
-  showTabOnly('hotspot');
-
+  showTabOnly('image');
   currentHotspotFilter = 'image';
-  const btnHs = document.getElementById('prop-quick-hotspot');
-  const btnTxt = document.getElementById('prop-quick-text');
-  const btnImg = document.getElementById('prop-quick-image');
-  if (btnHs) btnHs.classList.remove('active');
-  if (btnTxt) btnTxt.classList.remove('active');
-  if (btnImg) btnImg.classList.add('active');
 
   const emptyEl = document.getElementById('prop-hs-empty-state');
   const contentEl = document.getElementById('prop-hs-content-state');
@@ -2658,15 +2644,14 @@ window.onImageHotspotSizeChange = async function() {
     krpano.set(`hotspot[hs_${selectedHotspotId}].width`, w);
     krpano.set(`hotspot[hs_${selectedHotspotId}].height`, h);
   }
-  clearTimeout(_imgSizeDebounce);
-  _imgSizeDebounce = setTimeout(async () => {
+  clearTimeout(_imgSizeDebounce = setTimeout(async () => {
     await fetch(`/api/hotspots/${selectedHotspotId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ width: w, height: h })
     });
     publishTourSilent();
-  }, 600);
+  }, 600));
 };
 
 function selectHotspot(hotspotId) {
@@ -2685,14 +2670,7 @@ function selectHotspot(hotspotId) {
   }
 
   showTabOnly('hotspot');
-
   currentHotspotFilter = 'hotspot';
-  const btnHs = document.getElementById('prop-quick-hotspot');
-  const btnTxt = document.getElementById('prop-quick-text');
-  const btnImg = document.getElementById('prop-quick-image');
-  if (btnHs) btnHs.classList.add('active');
-  if (btnTxt) btnTxt.classList.remove('active');
-  if (btnImg) btnImg.classList.remove('active');
 
   const emptyEl = document.getElementById('prop-hs-empty-state');
   const contentEl = document.getElementById('prop-hs-content-state');
@@ -2778,14 +2756,7 @@ function selectTextHotspot(hotspotId) {
   if (!hs) return;
 
   showTabOnly('text');
-
   currentHotspotFilter = 'text';
-  const btnHs = document.getElementById('prop-quick-hotspot');
-  const btnTxt = document.getElementById('prop-quick-text');
-  const btnImg = document.getElementById('prop-quick-image');
-  if (btnHs) btnHs.classList.remove('active');
-  if (btnTxt) btnTxt.classList.add('active');
-  if (btnImg) btnImg.classList.remove('active');
 
   const emptyEl = document.getElementById('prop-text-empty-state');
   const contentEl = document.getElementById('prop-text-content-state');
