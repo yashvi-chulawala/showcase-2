@@ -2234,8 +2234,7 @@ function addHotspotToKrpano(hotspot, targetScene) {
   krpano.set(`hotspot[${name}].visible`, true);
   krpano.set(`hotspot[${name}].zorder`, 100);
   krpano.set(`hotspot[${name}].enabled`, true);
-  krpano.set(`hotspot[${name}].capture`, true);
-  krpano.set(`hotspot[${name}].onclick`, `js(onHotspotClicked(${name}))`);
+  krpano.set(`hotspot[${name}].onclick`, `js(window.onHotspotClicked(get(name)))`);
 
   const isPole = String(styleName).toLowerCase().includes('residential') || String(styleName).toLowerCase().includes('commercial') || String(styleName).toLowerCase() === 'pole pin' || String(styleName).toLowerCase() === 'landmark pin' || String(styleName).toLowerCase() === 'pole_pin' || String(styleName).toLowerCase() === 'landmark';
   if (isPole) {
@@ -2343,10 +2342,11 @@ let _lastClickedId = null;
 let _isRepositioning = false;
 
 window.onHotspotClicked = function (hotspotId) {
+  window._lastHotspotClickTime = Date.now();
   const cleanId = String(hotspotId || '').replace(/^hs_/, '');
-  const now = Date.now();
-  window._lastHotspotClickTime = now;
+  if (!cleanId) return;
 
+  const now = Date.now();
   if (_isRepositioning) return;
 
   // Check for Double Click within 380ms
@@ -2365,6 +2365,7 @@ window.onHotspotClicked = function (hotspotId) {
 };
 
 function executeHotspotSelection(hotspotId) {
+  window._lastHotspotClickTime = Date.now();
   const cleanId = String(hotspotId || '').replace(/^hs_/, '');
   console.log("Hotspot selected:", cleanId);
   const hs = hotspots.find(h => String(h._id) === cleanId || String(h._id) === String(hotspotId));
@@ -2418,30 +2419,60 @@ function startHotspotReposition(hotspotId) {
     e.stopPropagation();
     e.preventDefault();
     if (panoContainer) {
-      panoContainer.removeEventListener('click', onPlaceDrop, true);
       panoContainer.style.cursor = '';
+      window.removeEventListener('click', onPlaceDrop, true);
     }
-    
+
     if (krpano) {
       krpano.set('reposition_active', false);
-      const newAth = Number(krpano.get(`hotspot[${name}].ath`)).toFixed(2);
-      const newAtv = Number(krpano.get(`hotspot[${name}].atv`)).toFixed(2);
-      window.onHotspotDragEnd(name, newAth, newAtv);
-    }
-    
-    setTimeout(() => {
+      const newAth = Number(Number(krpano.get(`hotspot[${name}].ath`)).toFixed(2));
+      const newAtv = Number(Number(krpano.get(`hotspot[${name}].atv`)).toFixed(2));
       _isRepositioning = false;
-    }, 200);
+      onHotspotDragEnd(name, newAth, newAtv);
+    }
   };
 
   setTimeout(() => {
-    if (panoContainer) {
-      panoContainer.addEventListener('click', onPlaceDrop, { capture: true, once: true });
-    }
-  }, 250);
+    window.addEventListener('click', onPlaceDrop, true);
+  }, 100);
 }
 
-function setupPanoBackgroundClickListener() {
+// Handler when user finishes dragging a hotspot (or finishes double-click move)
+window.onHotspotDragEnd = async function (hotspotName, ath, atv) {
+  window._lastHotspotClickTime = Date.now();
+  const cleanId = String(hotspotName || '').replace(/^hs_/, '');
+  const hs = hotspots.find(h => String(h._id) === cleanId);
+  if (!hs) return;
+
+  const numAth = Number(Number(ath).toFixed(2));
+  const numAtv = Number(Number(atv).toFixed(2));
+
+  hs.ath = numAth;
+  hs.atv = numAtv;
+
+  if (isImageHotspot(hs)) {
+    selectImageHotspot(hs._id);
+  } else if (isTextHotspot(hs)) {
+    selectTextHotspot(hs._id);
+  } else {
+    selectHotspot(hs._id);
+  }
+
+  try {
+    const res = await fetch(`/api/hotspots/${cleanId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ath: numAth, atv: numAtv })
+    });
+    if (!res.ok) throw new Error('Failed to update position');
+    publishTourSilent();
+  } catch (err) {
+    console.error('Error saving dragged hotspot:', err);
+    showToast(`Failed to save position: ${err.message}`);
+  }
+};
+
+function setupPanoBackgroundListener() {
   const panoContainer = document.getElementById('pano-container');
   if (panoContainer) {
     panoContainer.addEventListener('click', (e) => {
@@ -2452,13 +2483,13 @@ function setupPanoBackgroundClickListener() {
 
 window.onPanoBackgroundClicked = function () {
   setTimeout(() => {
-    // If a hotspot was clicked within the last 250ms, do not close the right panel!
-    if (window._lastHotspotClickTime && (Date.now() - window._lastHotspotClickTime < 250)) {
+    // If a hotspot was clicked within the last 400ms, do not close the right panel!
+    if (window._lastHotspotClickTime && (Date.now() - window._lastHotspotClickTime < 400)) {
       return;
     }
     // Otherwise, this click was on the krpano panorama background -> close right panel
     closePropertyRightPanel();
-  }, 50);
+  }, 100);
 };
 
 window.openPropertyRightPanel = function (tab = null) {
@@ -2749,8 +2780,8 @@ function selectImageHotspot(hotspotId) {
   if (detailsEl) detailsEl.style.display = 'none'; // hide regular navigation properties
   const iconSec = document.getElementById('prop-hs-icon-section');
   if (iconSec) iconSec.style.display = 'none';
-  const copyStyleBtns = document.querySelector('.prop-hs-style-btns');
-  if (copyStyleBtns) copyStyleBtns.style.display = 'none';
+  const styleBtnsRow = document.getElementById('prop-hs-style-btns-row');
+  if (styleBtnsRow) styleBtnsRow.style.display = 'none';
 
   let imgPanel = document.getElementById('prop-image-hotspot-panel');
   if (!imgPanel) {
@@ -3161,8 +3192,8 @@ function selectHotspot(hotspotId) {
   if (imgPanelA) imgPanelA.style.display = 'none';
   const iconSecA = document.getElementById('prop-hs-icon-section');
   if (iconSecA) iconSecA.style.display = '';
-  const copyStyleBtnsA = document.querySelector('.prop-hs-style-btns');
-  if (copyStyleBtnsA) copyStyleBtnsA.style.display = '';
+  const styleBtnsRow = document.getElementById('prop-hs-style-btns-row');
+  if (styleBtnsRow) styleBtnsRow.style.display = 'flex';
 
   const titleEl = document.getElementById('prop-hs-active-title');
   if (titleEl) {
