@@ -6,7 +6,7 @@ const multer = require('multer');
 const AdmZip = require('adm-zip');
 const db = require('../lib/db');
 
-const tempUploadsDir = path.join(__dirname, '../temp_uploads');
+const tempUploadsDir = path.join(__dirname, '../../temp_uploads');
 if (!fs.existsSync(tempUploadsDir)) {
   fs.mkdirSync(tempUploadsDir, { recursive: true });
 }
@@ -74,7 +74,7 @@ router.get('/export', (req, res) => {
 router.post('/create', (req, res) => {
   const { name } = req.body || {};
   const originalName = (name || 'New_Project').replace(/[^a-zA-Z0-9 \-_]/g, '').trim() || 'New_Project';
-  const dataDir = path.join(__dirname, '../data');
+  const dataDir = path.join(__dirname, '../../database');
   fs.mkdirSync(dataDir, { recursive: true });
 
   let targetDir = path.join(dataDir, originalName);
@@ -141,7 +141,7 @@ router.post('/import', upload.single('projectFile'), (req, res) => {
   const tempPath = req.file.path;
   try {
     const originalName = path.basename(req.file.originalname, '.s360').replace(/[^a-zA-Z0-9 \-_]/g, '').trim() || 'Imported_Project';
-    const dataDir = path.join(__dirname, '../data');
+    const dataDir = path.join(__dirname, '../../database');
     fs.mkdirSync(dataDir, { recursive: true });
 
     let targetDir = path.join(dataDir, originalName);

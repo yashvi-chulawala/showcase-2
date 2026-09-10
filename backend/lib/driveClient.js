@@ -3,8 +3,8 @@ const fs = require('fs');
 const path = require('path');
 const { Readable } = require('stream');
 
-const CLIENT_SECRET_FILE = path.join(__dirname, '../oauth-client.json');
-const TOKEN_PATH = path.join(__dirname, '../oauth-tokens.json');
+const CLIENT_SECRET_FILE = path.join(__dirname, '../config/oauth-client.json');
+const TOKEN_PATH = path.join(__dirname, '../config/oauth-tokens.json');
 
 function createDriveClient() {
   if (!fs.existsSync(CLIENT_SECRET_FILE) || !fs.existsSync(TOKEN_PATH)) {

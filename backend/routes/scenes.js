@@ -8,7 +8,7 @@ const db = require('../lib/db');
 const exifr = require('exifr');
 
 const router = express.Router();
-const tmpUploadsDir = path.join(__dirname, '../tmp_uploads');
+const tmpUploadsDir = path.join(__dirname, '../../temp_uploads');
 if (!fs.existsSync(tmpUploadsDir)) {
   fs.mkdirSync(tmpUploadsDir, { recursive: true });
 }
@@ -114,7 +114,7 @@ router.patch('/scenes/:sceneId', (req, res) => {
   // If a custom 3D canvas screenshot is provided, save it over thumb.jpg
     if (thumbBase64 && typeof thumbBase64 === 'string' && thumbBase64.startsWith('data:image/')) {
       try {
-        const tourDir = db.resolveTourPath(scene.tourId) || path.resolve(__dirname, '../vtour');
+        const tourDir = db.resolveTourPath(scene.tourId) || path.resolve(__dirname, '../../frontend');
         const PANOS_DIR = path.join(tourDir, 'panos');
         const tilesFolder = scene.tilesFolder || `${scene.slug || scene.title}.tiles`;
         let thumbPath = path.join(PANOS_DIR, tilesFolder, 'thumb.jpg');

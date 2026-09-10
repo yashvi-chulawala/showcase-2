@@ -385,13 +385,13 @@ ${dynamicStylesXml}
     const fs = require('fs');
     const path = require('path');
     const db = require('./db');
-    const tourDir = db.resolveTourPath(scene.tourId) || path.resolve(__dirname, '../vtour');
+    const tourDir = db.resolveTourPath(scene.tourId) || path.resolve(__dirname, '../../frontend');
     const PANOS_DIR = path.join(tourDir, 'panos');
 
-    // Check if cube faces exist in active tour, vtour, or anywhere in data/
-    let hasCubeFaces = fs.existsSync(path.join(PANOS_DIR, tiles, 'f')) || fs.existsSync(path.join(__dirname, '../vtour/panos', tiles, 'f'));
+    // Check if cube faces exist in active tour, frontend, or anywhere in database/
+    let hasCubeFaces = fs.existsSync(path.join(PANOS_DIR, tiles, 'f')) || fs.existsSync(path.join(__dirname, '../../frontend/panos', tiles, 'f'));
     if (!hasCubeFaces) {
-      const dataDir = path.join(__dirname, '../data');
+      const dataDir = path.join(__dirname, '../../database');
       if (fs.existsSync(dataDir)) {
         try {
           const projs = fs.readdirSync(dataDir, { withFileTypes: true });

@@ -2,9 +2,11 @@ const fs = require('fs');
 const readline = require('readline');
 const { google } = require('googleapis');
 
+const path = require('path');
+
 // The file downloaded from Google Cloud Console containing client ID and secret
-const CLIENT_SECRET_FILE = 'oauth-client.json';
-const TOKEN_PATH = 'oauth-tokens.json';
+const CLIENT_SECRET_FILE = path.join(__dirname, '../config/oauth-client.json');
+const TOKEN_PATH = path.join(__dirname, '../config/oauth-tokens.json');
 const SCOPES = ['https://www.googleapis.com/auth/drive'];
 
 fs.readFile(CLIENT_SECRET_FILE, (err, content) => {

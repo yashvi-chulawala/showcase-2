@@ -3,7 +3,7 @@ const path = require('path');
 const db = require('./db');
 const { generateScenesXML } = require('./xmlGenerator');
 
-const TOUR_SRC_DIR = process.env.VR_TOUR_SRC_DIR || path.resolve(__dirname, '../vtour/src');
+const TOUR_SRC_DIR = process.env.VR_TOUR_SRC_DIR || path.resolve(__dirname, '../../frontend/src');
 
 function timestamp() {
   const d = new Date();
@@ -21,7 +21,7 @@ function publishTour(tourId) {
 
   const xml = generateScenesXML(scenes, hotspots, customIcons);
   
-  const tourDir = db.resolveTourPath(tourId) || path.resolve(__dirname, '../vtour');
+  const tourDir = db.resolveTourPath(tourId) || path.resolve(__dirname, '../../frontend');
   const TOUR_SRC_DIR = path.join(tourDir, 'src');
   
   if (!fs.existsSync(TOUR_SRC_DIR)) {
@@ -33,11 +33,11 @@ function publishTour(tourId) {
   
   fs.writeFileSync(scenesFile, xml, { encoding: 'utf8' });
 
-  // Also sync to vtour/src/scenes.xml so all fallbacks receive the latest scenes
-  const vtourScenes = path.resolve(__dirname, '../vtour/src/scenes.xml');
-  if (scenesFile !== vtourScenes) {
+  // Also sync to frontend/src/scenes.xml so all fallbacks receive the latest scenes
+  const frontendScenes = path.resolve(__dirname, '../../frontend/src/scenes.xml');
+  if (scenesFile !== frontendScenes) {
     try {
-      fs.writeFileSync(vtourScenes, xml, { encoding: 'utf8' });
+      fs.writeFileSync(frontendScenes, xml, { encoding: 'utf8' });
     } catch(e) {}
   }
 

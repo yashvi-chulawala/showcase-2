@@ -4,29 +4,29 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 
-// Set default env paths for vtour integration if not provided
+// Set default env paths for frontend integration if not provided
 if (!process.env.PANOS_DIR) {
-  process.env.PANOS_DIR = path.resolve(__dirname, './vtour/panos');
+  process.env.PANOS_DIR = path.resolve(__dirname, './frontend/panos');
 }
 if (!process.env.VR_TOUR_SRC_DIR) {
-  process.env.VR_TOUR_SRC_DIR = path.resolve(__dirname, './vtour/src');
+  process.env.VR_TOUR_SRC_DIR = path.resolve(__dirname, './frontend/src');
 }
 
-const scenesRouter = require('./routes/scenes');
-const hotspotsRouter = require('./routes/hotspots');
-const projectRouter = require('./routes/project');
-const publishRouter = require('./routes/publish');
-const db = require('./lib/db');
+const scenesRouter = require('./backend/routes/scenes');
+const hotspotsRouter = require('./backend/routes/hotspots');
+const projectRouter = require('./backend/routes/project');
+const publishRouter = require('./backend/routes/publish');
+const db = require('./backend/lib/db');
 
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '15mb' }));
 
-const { seedInitialScenesIfEmpty } = require('./lib/seeder');
+const { seedInitialScenesIfEmpty } = require('./backend/lib/seeder');
 seedInitialScenesIfEmpty();
+
 app.post('/api/system/set-active-tour', (req, res) => {
   let tourId = req.body.tourId || null;
-  const fs = require('fs');
 
   if (tourId && fs.existsSync(tourId)) {
     const stats = fs.statSync(tourId);
@@ -37,10 +37,10 @@ app.post('/api/system/set-active-tour', (req, res) => {
           const AdmZip = require('adm-zip');
           const zip = new AdmZip(tourId);
           const originalName = path.basename(tourId, '.s360').replace(/[^a-zA-Z0-9 -]/g, '').trim() || 'Imported_Project';
-          let targetDir = path.join(__dirname, 'data', originalName);
+          let targetDir = path.join(__dirname, 'database', originalName);
           let counter = 1;
           while (fs.existsSync(targetDir)) {
-            targetDir = path.join(__dirname, 'data', `${originalName}_${counter}`);
+            targetDir = path.join(__dirname, 'database', `${originalName}_${counter}`);
             counter++;
           }
           fs.mkdirSync(targetDir, { recursive: true });
@@ -59,7 +59,7 @@ app.post('/api/system/set-active-tour', (req, res) => {
 
   db.setActiveTour(tourId);
   try {
-    const { publishTour } = require('./lib/publisher');
+    const { publishTour } = require('./backend/lib/publisher');
     publishTour(tourId);
   } catch (e) {
     console.error("Auto-publish on tour switch failed:", e);
@@ -68,20 +68,18 @@ app.post('/api/system/set-active-tour', (req, res) => {
 });
 
 app.get('/api/system/recent-projects', (req, res) => {
-  const dbModule = require('./lib/db');
-  res.json({ projects: dbModule.getRecentProjects() });
+  res.json({ projects: db.getRecentProjects() });
 });
 
 app.get('/api/health', (req, res) => res.json({ ok: true, dbFile: db.DB_FILE }));
 
 app.get('/api/system/pick-folder', (req, res) => {
   const { execSync } = require('child_process');
-  const path = require('path');
   if (process.platform !== 'win32') {
     return res.json({ path: null, error: 'Native OS folder picker is only available in local desktop mode' });
   }
   try {
-    const scriptPath = path.join(__dirname, 'pick-folder.ps1');
+    const scriptPath = path.join(__dirname, 'backend', 'scripts', 'pick-folder.ps1');
     const title = req.query.title || 'Select Project Folder';
     const result = execSync(`powershell -NoProfile -ExecutionPolicy Bypass -STA -File "${scriptPath}" -Title "${title}"`, { encoding: 'utf8' }).trim();
     if (!result) return res.json({ path: null });
@@ -93,12 +91,11 @@ app.get('/api/system/pick-folder', (req, res) => {
 
 app.get('/api/system/pick-save', (req, res) => {
   const { execSync } = require('child_process');
-  const path = require('path');
   if (process.platform !== 'win32') {
     return res.json({ path: null, error: 'Native OS save picker is only available in local desktop mode' });
   }
   try {
-    const scriptPath = path.join(__dirname, 'pick-save.ps1');
+    const scriptPath = path.join(__dirname, 'backend', 'scripts', 'pick-save.ps1');
     const title = req.query.title || 'Save Project As';
     const result = execSync(`powershell -NoProfile -ExecutionPolicy Bypass -STA -File "${scriptPath}" -Title "${title}"`, { encoding: 'utf8' }).trim();
     if (!result) return res.json({ path: null });
@@ -112,8 +109,8 @@ app.use('/api', scenesRouter);
 app.use('/api', hotspotsRouter);
 app.use('/api/project', projectRouter);
 app.use('/api', publishRouter);
-app.use('/api', require('./routes/custom-icons'));
-app.use('/api', require('./routes/gemini-voice'));
+app.use('/api', require('./backend/routes/custom-icons'));
+app.use('/api', require('./backend/routes/gemini-voice'));
 
 app.get('/api/tours/:tourId/thumbnail', (req, res) => {
   const tourId = req.params.tourId;
@@ -127,10 +124,10 @@ app.get('/api/tours/:tourId/thumbnail', (req, res) => {
   if (tourId && path.isAbsolute(tourId)) {
     thumbPath = path.join(tourId, tour.thumbnail);
   } else {
-    thumbPath = path.join(__dirname, './vtour', tour.thumbnail);
+    thumbPath = path.join(__dirname, 'frontend', tour.thumbnail);
   }
 
-  if (require('fs').existsSync(thumbPath)) {
+  if (fs.existsSync(thumbPath)) {
     res.sendFile(thumbPath);
   } else {
     res.status(404).send('Not found');
@@ -158,8 +155,8 @@ function getEffectiveTourDir(req) {
   return db.resolveTourPath(tourId);
 }
 
-// Dynamic serving for panos, src, and assets with smart fallback across all data/ projects
-app.use(['/panos', '/vtour/panos', '/vtour/src/panos'], (req, res, next) => {
+// Dynamic serving for panos, src, and assets with smart fallback across all database/ projects
+app.use(['/panos', '/vtour/panos', '/frontend/panos', '/vtour/src/panos', '/frontend/src/panos'], (req, res, next) => {
   const relPath = decodeURIComponent(req.path.replace(/^\//, ''));
   const tourDir = getEffectiveTourDir(req);
 
@@ -170,12 +167,12 @@ app.use(['/panos', '/vtour/panos', '/vtour/src/panos'], (req, res, next) => {
     }
   }
 
-  const vtourFile = path.join(__dirname, 'vtour', 'panos', relPath);
-  if (fs.existsSync(vtourFile) && fs.statSync(vtourFile).isFile()) {
-    return sendStaticFile(res, vtourFile);
+  const frontendFile = path.join(__dirname, 'frontend', 'panos', relPath);
+  if (fs.existsSync(frontendFile) && fs.statSync(frontendFile).isFile()) {
+    return sendStaticFile(res, frontendFile);
   }
 
-  const dataDir = path.join(__dirname, 'data');
+  const dataDir = path.join(__dirname, 'database');
   if (fs.existsSync(dataDir)) {
     try {
       const projects = fs.readdirSync(dataDir, { withFileTypes: true });
@@ -193,7 +190,7 @@ app.use(['/panos', '/vtour/panos', '/vtour/src/panos'], (req, res, next) => {
   next();
 });
 
-app.use(['/src', '/vtour/src'], (req, res, next) => {
+app.use(['/src', '/vtour/src', '/frontend/src'], (req, res, next) => {
   const relPath = decodeURIComponent(req.path.replace(/^\//, ''));
   const tourDir = getEffectiveTourDir(req);
 
@@ -204,12 +201,12 @@ app.use(['/src', '/vtour/src'], (req, res, next) => {
     }
   }
 
-  const vtourFile = path.join(__dirname, 'vtour', 'src', relPath);
-  if (fs.existsSync(vtourFile) && fs.statSync(vtourFile).isFile()) {
-    return sendStaticFile(res, vtourFile);
+  const frontendFile = path.join(__dirname, 'frontend', 'src', relPath);
+  if (fs.existsSync(frontendFile) && fs.statSync(frontendFile).isFile()) {
+    return sendStaticFile(res, frontendFile);
   }
 
-  const dataDir = path.join(__dirname, 'data');
+  const dataDir = path.join(__dirname, 'database');
   if (fs.existsSync(dataDir)) {
     try {
       const projects = fs.readdirSync(dataDir, { withFileTypes: true });
@@ -227,7 +224,7 @@ app.use(['/src', '/vtour/src'], (req, res, next) => {
   next();
 });
 
-app.use(['/assets', '/vtour/assets', '/vtour/src/assets'], (req, res, next) => {
+app.use(['/assets', '/vtour/assets', '/frontend/assets', '/vtour/src/assets', '/frontend/src/assets'], (req, res, next) => {
   const relPath = decodeURIComponent(req.path.replace(/^\//, ''));
   const tourDir = getEffectiveTourDir(req);
 
@@ -238,12 +235,12 @@ app.use(['/assets', '/vtour/assets', '/vtour/src/assets'], (req, res, next) => {
     }
   }
 
-  const vtourFile = path.join(__dirname, 'vtour', 'assets', relPath);
-  if (fs.existsSync(vtourFile) && fs.statSync(vtourFile).isFile()) {
-    return sendStaticFile(res, vtourFile);
+  const frontendFile = path.join(__dirname, 'frontend', 'assets', relPath);
+  if (fs.existsSync(frontendFile) && fs.statSync(frontendFile).isFile()) {
+    return sendStaticFile(res, frontendFile);
   }
 
-  const dataDir = path.join(__dirname, 'data');
+  const dataDir = path.join(__dirname, 'database');
   if (fs.existsSync(dataDir)) {
     try {
       const projects = fs.readdirSync(dataDir, { withFileTypes: true });
@@ -261,18 +258,18 @@ app.use(['/assets', '/vtour/assets', '/vtour/src/assets'], (req, res, next) => {
   next();
 });
 
-// Serve static vtour directory with no-cache headers for instant dev updates
-const vtourDir = path.resolve(__dirname, './vtour');
+// Serve static frontend directory with no-cache headers for instant dev updates
+const frontendDir = path.resolve(__dirname, './frontend');
 
 // Make editor panel the home page
 app.get('/', (req, res) => {
-  res.sendFile(path.join(vtourDir, 'editor-panel.html'));
+  res.sendFile(path.join(frontendDir, 'editor-panel.html'));
 });
 app.get('/index.html', (req, res) => {
-  res.sendFile(path.join(vtourDir, 'editor-panel.html'));
+  res.sendFile(path.join(frontendDir, 'editor-panel.html'));
 });
 
-app.use(express.static(vtourDir, {
+app.use(express.static(frontendDir, {
   index: ['editor-panel.html', 'index.html'],
   setHeaders: (res, path) => {
     if (path.endsWith('.html') || path.endsWith('.js') || path.endsWith('.css') || path.endsWith('.xml')) {
@@ -285,9 +282,9 @@ app.use(express.static(vtourDir, {
 
 const PORT = process.env.PORT || 5050;
 app.listen(PORT, () => {
-  console.log(`vr-tour-cms-backend listening on :${PORT}`);
-  console.log(`Data file: ${db.DB_FILE}`);
-  console.log(`Serving static tour files from: ${vtourDir}`);
+  console.log(`Showcase 360 backend listening on :${PORT}`);
+  console.log(`Database directory: ${path.resolve(__dirname, './database')}`);
+  console.log(`Serving frontend from: ${frontendDir}`);
   console.log(`Open Editor at: http://localhost:${PORT}/`);
 });
 
@@ -297,26 +294,20 @@ app.post('/api/system/rename-tour', (req, res) => {
   const { newName } = req.body;
   if (!newName) return res.status(400).json({ error: 'New name required' });
 
-  const path = require('path');
-  const dbModule = require('./lib/db');
-
   const oldPath = activeTourId;
-  let newPath = newName; // If it's a legacy virtual project, new ID is just the name
+  let newPath = newName;
 
   try {
     if (path.isAbsolute(oldPath)) {
-      const fs = require('fs');
       newPath = path.join(path.dirname(oldPath), newName);
       if (fs.existsSync(newPath)) return res.status(400).json({ error: 'Folder already exists' });
       fs.renameSync(oldPath, newPath);
     }
 
-    dbModule.renameTour(oldPath, newPath);
-    dbModule.setActiveTour(newPath);
+    db.renameTour(oldPath, newPath);
+    db.setActiveTour(newPath);
     res.json({ success: true, newTourId: newPath });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
-
-

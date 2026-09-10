@@ -2,5 +2,7 @@
 node_modules/
 .DS_Store
 temp_extracted_voice/
+temp_uploads/
+tmp_uploads/
 .env
 

@@ -7,8 +7,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const RECENT_PROJECTS_FILE = path.join(__dirname, '../data/recent_projects.json');
-const LEGACY_DB_FILE = path.join(__dirname, '../data/db.json');
+const RECENT_PROJECTS_FILE = path.join(__dirname, '../../database/recent_projects.json');
+const LEGACY_DB_FILE = path.join(__dirname, '../../database/db.json');
 
 let activeTourId = 'default';
 
@@ -46,12 +46,12 @@ function resolveTourPath(tourId) {
   if (!tourId || tourId === 'default') return null;
   if (path.isAbsolute(tourId) && fs.existsSync(tourId)) return tourId;
 
-  // Check in data folder by basename
+  // Check in database folder by basename
   const name = path.basename(tourId);
-  const inData = path.join(__dirname, '../data', name);
+  const inData = path.join(__dirname, '../../database', name);
   if (fs.existsSync(inData)) return inData;
 
-  const rel = path.resolve(__dirname, '..', tourId);
+  const rel = path.resolve(__dirname, '../..', tourId);
   if (fs.existsSync(rel)) return rel;
 
   return null;
@@ -252,7 +252,7 @@ function resetTour(tourId = activeTourId) {
 
 function listToursWithDetails() {
   const toursMap = new Map();
-  const dataDir = path.join(__dirname, '../data');
+  const dataDir = path.join(__dirname, '../../database');
 
   // 1. Scan data directory directly for projects
   if (fs.existsSync(dataDir)) {
@@ -354,11 +354,11 @@ function cloneTour(oldTourId, newTourId) {
   const oldResolved = resolveTourPath(oldTourId);
   const newResolved = resolveTourPath(newTourId) || newTourId;
 
-  const oldPanosPath = oldResolved ? path.join(oldResolved, 'panos') : path.join(__dirname, '../vtour/panos');
-  const oldAssetsPath = oldResolved ? path.join(oldResolved, 'assets') : path.join(__dirname, '../vtour/assets');
+  const oldPanosPath = oldResolved ? path.join(oldResolved, 'panos') : path.join(__dirname, '../../frontend/panos');
+  const oldAssetsPath = oldResolved ? path.join(oldResolved, 'assets') : path.join(__dirname, '../../frontend/assets');
   
-  const newPanosPath = path.isAbsolute(newResolved) ? path.join(newResolved, 'panos') : path.join(__dirname, '../vtour/panos');
-  const newAssetsPath = path.isAbsolute(newResolved) ? path.join(newResolved, 'assets') : path.join(__dirname, '../vtour/assets');
+  const newPanosPath = path.isAbsolute(newResolved) ? path.join(newResolved, 'panos') : path.join(__dirname, '../../frontend/panos');
+  const newAssetsPath = path.isAbsolute(newResolved) ? path.join(newResolved, 'assets') : path.join(__dirname, '../../frontend/assets');
 
   if (oldTourId !== newTourId) {
     if (fs.existsSync(oldPanosPath)) {
@@ -480,7 +480,7 @@ function listAssets(tourId = activeTourId) {
 
   // Only fall back to vtour/assets if this is the legacy default tour and assets is empty
   if (assets.length === 0 && (!tourId || tourId === 'default')) {
-    const defaultAssetsDir = path.join(__dirname, '../vtour/assets');
+    const defaultAssetsDir = path.join(__dirname, '../../frontend/assets');
     if (fs.existsSync(defaultAssetsDir)) {
       try {
         const files = fs.readdirSync(defaultAssetsDir);
@@ -539,7 +539,7 @@ function deleteAsset(assetId, tourId = activeTourId) {
     }
   }
   // Search other project folders if needed
-  const dataDir = path.join(__dirname, '../data');
+  const dataDir = path.join(__dirname, '../../database');
   if (fs.existsSync(dataDir)) {
     try {
       const dirs = fs.readdirSync(dataDir, { withFileTypes: true });

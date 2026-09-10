@@ -6,7 +6,7 @@ const os = require('os');
 const defaultBin = process.platform === 'win32' ? 'C:\\Users\\Yashvi Chulawala\\Downloads\\krpano-1.20.12\\krpanotools.exe' : '/opt/krpano/krpanotools';
 const KRPANOTOOLS_BIN = process.env.KRPANOTOOLS_BIN || defaultBin;
 const db = require('./db');
-const PANOS_DIR = process.env.PANOS_DIR || path.resolve(__dirname, '../vtour/panos');
+const PANOS_DIR = process.env.PANOS_DIR || path.resolve(__dirname, '../../frontend/panos');
 
 // The .config file lives next to krpanotools.exe itself, in a "templates" subfolder.
 const KRPANOTOOLS_DIR = path.dirname(KRPANOTOOLS_BIN);
@@ -76,7 +76,7 @@ try {
 }
 
 function resolveTourDir(tourId) {
-  return db.resolveTourPath(tourId) || path.resolve(__dirname, '../vtour');
+  return db.resolveTourPath(tourId) || path.resolve(__dirname, '../../frontend');
 }
 
 function processPano(inputImagePath, tilesFolderName, tourId) {
