@@ -37,42 +37,7 @@ const setActiveTourPromise = fetch('/api/system/set-active-tour', {
 }).catch(console.error);
 
 async function showWelcomeModal() {
-  const modal = document.getElementById('welcome-modal');
-  if (modal) modal.style.display = 'flex';
-  
-  try {
-    const res = await fetch('/api/system/recent-projects');
-    const data = await res.json();
-    const grid = document.getElementById('welcome-recent-grid');
-    if (grid) {
-      grid.innerHTML = '';
-      if (data.projects && data.projects.length > 0) {
-        // Reverse array so most recent projects are first
-        [...data.projects].reverse().forEach(p => {
-          // Attempt to extract folder name
-          const folderName = p.replace(/\\/g, '/').split('/').pop();
-          const div = document.createElement('div');
-          div.className = 'welcome-recent-card';
-          div.onclick = () => { window.location.href = `?tour=${encodeURIComponent(p)}`; };
-          div.innerHTML = `
-            <div class="welcome-recent-card-info" style="height:110px; display:flex; align-items:center; justify-content:center;">
-              <div class="welcome-recent-card-title" style="white-space:normal; overflow:visible; text-align:center;">${folderName}</div>
-            </div>
-          `;
-          grid.appendChild(div);
-        });
-      } else {
-        grid.innerHTML = '<div style="color:#94a3b8; font-size:13px; padding:10px;">No recent projects found.</div>';
-      }
-    }
-  } catch (e) {
-    console.error('Failed to load recent projects', e);
-  }
-}
-
-function closeWelcomeModal() {
-  const modal = document.getElementById('welcome-modal');
-  if (modal) modal.style.display = 'none';
+  await openWelcomeModal();
 }
 
 if (!urlParams.get('tour')) {
@@ -5219,20 +5184,37 @@ function renderWelcomeRecentProjects(tours) {
 
   grid.innerHTML = '';
 
-  tours.forEach(tour => {
+  const seen = new Set();
+  const uniqueTours = [];
+  (tours || []).forEach(t => {
+    const key = (t.title || t.id || '').toLowerCase();
+    if (key && !seen.has(key)) {
+      seen.add(key);
+      uniqueTours.push(t);
+    }
+  });
+
+  if (uniqueTours.length === 0) {
+    grid.innerHTML = '<div style="color:#94a3b8; font-size:14px; padding:20px; text-align:center; grid-column:span 2;">No recent projects yet. Click + to create a project!</div>';
+    return;
+  }
+
+  const fallbackThumb = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='160' viewBox='0 0 300 160'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%231e293b'/%3E%3Cstop offset='100%25' stop-color='%230f172a'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='300' height='160' fill='url(%23bg)'/%3E%3Ccircle cx='150' cy='65' r='28' fill='%23334155' opacity='0.7'/%3E%3Ccircle cx='150' cy='65' r='14' fill='%2310b981'/%3E%3Cpath d='M125 115 Q150 100 175 115' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round'/%3E%3Ctext x='150' y='136' fill='%2394a3b8' font-family='system-ui, sans-serif' font-size='11' font-weight='600' text-anchor='middle' letter-spacing='1.5'%3EVIRTUAL TOUR%3C/text%3E%3C/svg%3E";
+
+  uniqueTours.forEach(tour => {
     const card = document.createElement('div');
     card.className = 'welcome-recent-card';
+    const tourParam = tour.title || tour.id;
     card.onclick = () => {
       sessionStorage.setItem('welcomeModalSkipped', 'true');
-      window.location.href = `?tour=${encodeURIComponent(tour.id)}`;
+      window.location.href = `?tour=${encodeURIComponent(tourParam)}`;
     };
 
-    const fallbackThumb = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMzMzMiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMyMjIiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZmlsbD0iIzc3NyIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5ObyBUaHVtYjwvdGV4dD48L3N2Zz4=';
     const thumbUrl = tour.thumbnail 
-      ? `/api/tours/${encodeURIComponent(tour.id)}/thumbnail?t=` + Date.now() 
+      ? `/api/tours/${encodeURIComponent(tourParam)}/thumbnail?t=` + Date.now() 
       : fallbackThumb;
 
-    const dateStr = tour.date ? new Date(tour.date).toLocaleDateString() : '';
+    const dateStr = tour.date ? new Date(tour.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '';
 
     card.innerHTML = `
       <div class="welcome-recent-card-img-wrap">

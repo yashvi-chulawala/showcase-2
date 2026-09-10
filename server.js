@@ -114,24 +114,52 @@ app.use('/api', require('./backend/routes/gemini-voice'));
 
 app.get('/api/tours/:tourId/thumbnail', (req, res) => {
   const tourId = req.params.tourId;
-  const tours = db.listToursWithDetails();
-  const tour = tours.find(t => t.id === tourId);
-  if (!tour || !tour.thumbnail) {
-    return res.status(404).send('Not found');
+  const tourDir = db.resolveTourPath(tourId);
+  if (!tourDir || !fs.existsSync(tourDir)) {
+    return res.status(404).send('Tour not found');
   }
 
-  let thumbPath;
-  if (tourId && path.isAbsolute(tourId)) {
-    thumbPath = path.join(tourId, tour.thumbnail);
-  } else {
-    thumbPath = path.join(__dirname, 'frontend', tour.thumbnail);
+  const pJsonPath = path.join(tourDir, 'project.json');
+  let projDb = { scenes: [] };
+  if (fs.existsSync(pJsonPath)) {
+    try {
+      projDb = JSON.parse(fs.readFileSync(pJsonPath, 'utf8'));
+    } catch (e) {}
   }
 
-  if (fs.existsSync(thumbPath)) {
-    res.sendFile(thumbPath);
-  } else {
-    res.status(404).send('Not found');
+  // 1. Look for first valid thumbnail in scene records
+  if (Array.isArray(projDb.scenes)) {
+    for (const sc of projDb.scenes) {
+      if (sc.tilesFolder) {
+        const tPath = path.join(tourDir, 'panos', sc.tilesFolder, 'thumb.jpg');
+        if (fs.existsSync(tPath)) {
+          return res.sendFile(tPath);
+        }
+        const pPath = path.join(tourDir, 'panos', sc.tilesFolder, 'preview.jpg');
+        if (fs.existsSync(pPath)) {
+          return res.sendFile(pPath);
+        }
+      }
+    }
   }
+
+  // 2. Check if any thumb.jpg or preview.jpg exists anywhere in panos/
+  const panosDir = path.join(tourDir, 'panos');
+  if (fs.existsSync(panosDir)) {
+    try {
+      const dirs = fs.readdirSync(panosDir, { withFileTypes: true });
+      for (const d of dirs) {
+        if (d.isDirectory()) {
+          const tPath = path.join(panosDir, d.name, 'thumb.jpg');
+          if (fs.existsSync(tPath)) return res.sendFile(tPath);
+          const pPath = path.join(panosDir, d.name, 'preview.jpg');
+          if (fs.existsSync(pPath)) return res.sendFile(pPath);
+        }
+      }
+    } catch (e) {}
+  }
+
+  return res.status(404).send('No thumbnail found');
 });
 
 function sendStaticFile(res, filePath) {

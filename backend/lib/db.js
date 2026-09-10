@@ -17,18 +17,37 @@ function getRecentProjects() {
     return [];
   }
   try {
-    return JSON.parse(fs.readFileSync(RECENT_PROJECTS_FILE, 'utf8'));
+    const list = JSON.parse(fs.readFileSync(RECENT_PROJECTS_FILE, 'utf8'));
+    if (!Array.isArray(list)) return [];
+    const seen = new Set();
+    const result = [];
+    for (const item of list) {
+      const resolved = resolveTourPath(item);
+      if (resolved && fs.existsSync(resolved)) {
+        const norm = path.resolve(resolved).toLowerCase();
+        if (!seen.has(norm)) {
+          seen.add(norm);
+          result.push(path.basename(resolved));
+        }
+      }
+    }
+    return result;
   } catch(e) {
     return [];
   }
 }
 
 function addRecentProject(tourId) {
+  if (!tourId || tourId === 'default') return;
+  const resolved = resolveTourPath(tourId) || tourId;
+  const name = path.basename(resolved);
   let projects = getRecentProjects();
-  if (!projects.includes(tourId)) {
-    projects.push(tourId);
+  projects = projects.filter(p => p.toLowerCase() !== name.toLowerCase());
+  projects.unshift(name);
+  projects = projects.slice(0, 10);
+  try {
     fs.writeFileSync(RECENT_PROJECTS_FILE, JSON.stringify(projects, null, 2));
-  }
+  } catch(e) {}
 }
 
 function getActiveTour() {
@@ -37,7 +56,7 @@ function getActiveTour() {
 
 function setActiveTour(tourId) {
   activeTourId = tourId || 'default';
-  if (activeTourId !== 'default' && path.isAbsolute(activeTourId)) {
+  if (activeTourId !== 'default') {
     addRecentProject(activeTourId);
   }
 }
@@ -250,6 +269,41 @@ function resetTour(tourId = activeTourId) {
 
 // ---- Tours -------------------------------------------------------------
 
+function findProjectThumbnail(tourPath, projDb) {
+  if (projDb && Array.isArray(projDb.scenes)) {
+    // 1. Try scenes in reverse order to find existing thumb.jpg
+    for (const sc of projDb.scenes) {
+      if (sc.tilesFolder) {
+        const thumbRel = `panos/${sc.tilesFolder}/thumb.jpg`;
+        if (fs.existsSync(path.join(tourPath, thumbRel))) {
+          return thumbRel;
+        }
+        const prevRel = `panos/${sc.tilesFolder}/preview.jpg`;
+        if (fs.existsSync(path.join(tourPath, prevRel))) {
+          return prevRel;
+        }
+      }
+    }
+  }
+
+  // 2. Scan panos folder on disk directly
+  const panosDir = path.join(tourPath, 'panos');
+  if (fs.existsSync(panosDir)) {
+    try {
+      const dirs = fs.readdirSync(panosDir, { withFileTypes: true });
+      for (const d of dirs) {
+        if (d.isDirectory()) {
+          const tRel = `panos/${d.name}/thumb.jpg`;
+          if (fs.existsSync(path.join(tourPath, tRel))) return tRel;
+          const pRel = `panos/${d.name}/preview.jpg`;
+          if (fs.existsSync(path.join(tourPath, pRel))) return pRel;
+        }
+      }
+    } catch(e) {}
+  }
+  return null;
+}
+
 function listToursWithDetails() {
   const toursMap = new Map();
   const dataDir = path.join(__dirname, '../../database');
@@ -273,12 +327,13 @@ function listToursWithDetails() {
           const latestScene = projDb.scenes && projDb.scenes.length > 0 ? 
             projDb.scenes.sort((a,b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())[0] : null;
 
-          const normKey = path.resolve(tourPath).toLowerCase();
+          const title = entry.name;
+          const normKey = title.toLowerCase();
           toursMap.set(normKey, {
-            id: tourPath,
-            title: entry.name,
+            id: title,
+            title: title,
             date: latestScene ? latestScene.createdAt : mtime,
-            thumbnail: latestScene ? `panos/${latestScene.tilesFolder}/thumb.jpg` : null
+            thumbnail: findProjectThumbnail(tourPath, projDb)
           });
         }
       });
@@ -289,29 +344,30 @@ function listToursWithDetails() {
 
   // 2. Scan recent projects
   const recent = getRecentProjects();
-  recent.forEach(tourPath => {
-    const resolved = resolveTourPath(tourPath);
-    if (resolved) {
-      const normKey = path.resolve(resolved).toLowerCase();
+  recent.forEach(nameOrPath => {
+    const resolved = resolveTourPath(nameOrPath);
+    if (resolved && fs.existsSync(resolved)) {
+      const title = path.basename(resolved);
+      const normKey = title.toLowerCase();
       if (!toursMap.has(normKey)) {
         const pJsonPath = path.join(resolved, 'project.json');
+        let projDb = { scenes: [] };
+        let mtime = new Date().toISOString();
         if (fs.existsSync(pJsonPath)) {
           try {
-            const projDb = JSON.parse(fs.readFileSync(pJsonPath, 'utf8'));
-            const title = path.basename(resolved);
-            const latestScene = projDb.scenes && projDb.scenes.length > 0 ? 
-              projDb.scenes.sort((a,b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())[0] : null;
-            
-            toursMap.set(normKey, {
-              id: resolved,
-              title: title,
-              date: latestScene ? latestScene.createdAt : fs.statSync(pJsonPath).mtime.toISOString(),
-              thumbnail: latestScene ? `panos/${latestScene.tilesFolder}/thumb.jpg` : null
-            });
-          } catch (e) {
-            console.error("Error reading project.json in listToursWithDetails for", resolved, e);
-          }
+            projDb = JSON.parse(fs.readFileSync(pJsonPath, 'utf8'));
+            mtime = fs.statSync(pJsonPath).mtime.toISOString();
+          } catch (e) {}
         }
+        const latestScene = projDb.scenes && projDb.scenes.length > 0 ? 
+          projDb.scenes.sort((a,b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())[0] : null;
+        
+        toursMap.set(normKey, {
+          id: title,
+          title: title,
+          date: latestScene ? latestScene.createdAt : mtime,
+          thumbnail: findProjectThumbnail(resolved, projDb)
+        });
       }
     }
   });
